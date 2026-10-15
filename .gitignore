@@ -1,0 +1,22 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+# Firebase / Google secrets
+google-services.json
+service-account*.json
+*-firebase-adminsdk-*.json
+# Expo / RN (continuous native generation: android/ is generated in CI)
+.expo/
+apps/mobile/android/
+apps/mobile/ios/
+*.apk
+*.aab
+*.keystore
+!debug.keystore
+# Vite / Vercel
+apps/web-demo/dist/
+.vercel/
