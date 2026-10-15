@@ -4,6 +4,8 @@ import { env } from "../src/env";
 import { paths, toCallerKey } from "../src/contract";
 
 const EMERGENCY = ["191", "1669", "199", "1155"];
+// Update 05: a known caller for the demo, so "rings grandma" works before any Accept.
+const DEMO_KNOWN = { displayName: "หลานชาย (demo)", number: "0811112222" };
 
 async function main() {
   const familyId = env.DEFAULT_FAMILY_ID;
@@ -23,7 +25,7 @@ async function main() {
     const [name, num] = pair.split("|").map(s => s.trim());
     return { displayName: name, number: num };
   }).filter(s => s.displayName && s.number);
-  const all = [...seeds, ...EMERGENCY.map(n => ({ displayName: `เบอร์ฉุกเฉิน ${n}`, number: n }))];
+  const all = [...seeds, DEMO_KNOWN, ...EMERGENCY.map(n => ({ displayName: `เบอร์ฉุกเฉิน ${n}`, number: n }))];
 
   const batch = db.batch();
   for (const s of all) {
