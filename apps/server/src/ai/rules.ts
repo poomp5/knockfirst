@@ -30,7 +30,7 @@ export const PATTERNS: Record<Exclude<RedFlag, "refused_identity">, RegExp[]> = 
   personal_info_request: [
     /OTP|โอทีพี/i,
     /รหัส(?!ไปรษณีย์|พัสดุ)/,
-    /เลข(ที่)?บัตร|บัตรประชาชน|เลขประจำตัวประชาชน|เลข(ที่)?บัญชี|หน้าบัตร|หลังบัตร/,
+    /เลข(ที่)?บัตร|บัตรประชาชน|เลขประจำตัวประชาชน|เลข(ที่)?บัญชี|หน้าบัตร/,
     /(ขอ|แจ้ง|บอก|ยืนยัน|กรอก).{0,10}(ที่อยู่|วันเกิด|ชื่อ-?นามสกุลจริง)/,
     /\bPIN\b|password|ID\s*(card\s*)?number|account\s*number|card\s*number|date of birth|security code/i,
   ],
@@ -54,7 +54,7 @@ export const PATTERNS: Record<Exclude<RedFlag, "refused_identity">, RegExp[]> = 
   ],
   unknown_target: [
     /(ไม่รู้|ไม่ทราบ|ไม่แน่ใจ)(ว่า)?.{0,15}(ใคร|ชื่อ)/,
-    /(ขอสาย|ขอเรียนสาย|ขอคุย(กับ)?|ต้องการ(ติดต่อ|คุยกับ)).{0,6}(เจ้าของ(เบอร์|บัญชี|หมายเลข)|ผู้ถือบัญชี)/,
+    /(ขอสาย|ขอเรียนสาย|ขอคุย(กับ)?|ต้องการ(ติดต่อ|คุยกับ)).{0,6}(เจ้าของ(เบอร์|บัญชี|หมายเลข|บ้าน)|ผู้ถือบัญชี)/,
     /whoever|who (am i|is this) (speaking|talking)|the (account|phone) (owner|holder)/i,
   ],
   story_pivot: [
@@ -167,6 +167,16 @@ export function detectFlags(input: AnalyzeInput): RuleHits {
   return { flags, evidence, injection };
 }
 
+/** Minimum score for flag combinations that are scams no matter what the LLM says. */
+export function scoreFloor(flags: RedFlag[], injection: boolean): number {
+  const has = (f: RedFlag) => flags.includes(f);
+  let min = 0;
+  if (has("money_request") && (has("authority_claim") || has("accusation_threat"))) min = Math.max(min, 85);
+  if (has("personal_info_request") && has("authority_claim")) min = Math.max(min, 80);
+  if (injection) min = Math.max(min, 70); // a caller instructing our AI is manipulation by definition
+  return min;
+}
+
 export function scoreFlags(flags: RedFlag[]): number {
   return Math.min(100, flags.reduce((s, f) => s + WEIGHTS[f], 0));
 }
@@ -175,8 +185,7 @@ export function ruleBasedAnalysis(input: AnalyzeInput): CallAnalysis {
   const caller = input.transcript.filter(t => t.role === "caller").map(t => normWs(t.text)).filter(Boolean);
   const { flags, evidence, injection } = detectFlags(input);
   // Keywords can't verify anyone: floor at 20 ("plausible but unverified") and never recommend accept.
-  let score = Math.max(20, scoreFlags(flags));
-  if (injection) score = Math.max(score, 70);
+  const score = Math.max(20, scoreFlags(flags), scoreFloor(flags, injection));
   const callerName = extractCallerName(caller);
   const organization = extractOrganization(caller);
 

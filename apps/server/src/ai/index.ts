@@ -1,8 +1,8 @@
 // OWNER: Sky. analyzeCall(): LLM → validate → merge with rule floors → fallback to rules. Never throws.
-import { CallAnalysis, RedFlag, riskLevelFromScore, TranscriptTurn } from "../contract";
+import { CallAnalysis, riskLevelFromScore, TranscriptTurn } from "../contract";
 import { callLLM, extractJson, llmModel } from "./llm";
 import { ANALYSIS_SYSTEM_PROMPT, buildUserMessage } from "./prompt";
-import { detectFlags, ruleBasedAnalysis } from "./rules";
+import { detectFlags, ruleBasedAnalysis, scoreFloor } from "./rules";
 import { normalize } from "./schema";
 
 export interface AnalyzeInput {
@@ -29,12 +29,9 @@ export async function analyzeCall(input: AnalyzeInput): Promise<CallAnalysis> {
     const { injection } = detectFlags(input);
 
     // Safety floors: deterministic patterns can't be talked down by the LLM.
-    let score = llm.riskScore, adjusted = false;
-    const has = (f: RedFlag) => rules.redFlags.includes(f);
-    const floor = (min: number) => { if (score < min) { score = min; adjusted = true; } };
-    if (has("money_request") && (has("authority_claim") || has("accusation_threat"))) floor(85);
-    if (has("personal_info_request") && has("authority_claim")) floor(80);
-    if (injection) floor(70); // a caller instructing our AI is manipulation by definition
+    const min = scoreFloor(rules.redFlags, injection);
+    const adjusted = llm.riskScore < min;
+    const score = Math.max(llm.riskScore, min);
 
     const redFlags = Array.from(new Set([...llm.redFlags, ...rules.redFlags]));
     // Add rule evidence for flags the LLM didn't quote, so every chip has a quote behind it.
