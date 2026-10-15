@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@twilio/voice-sdk": "^2.18.5",
+    "@elevenlabs/client": "^1.28.0",
     "firebase": "^13.0.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.8",

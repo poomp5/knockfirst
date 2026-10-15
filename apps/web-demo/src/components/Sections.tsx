@@ -22,7 +22,7 @@ export function HowItWorks() {
       </div>
       <p className="built">
         <span>{t("builtWith")}</span>
-        <strong>ElevenLabs Agents</strong><span>Twilio Voice</span><span>Claude</span><span>Firebase</span><span>Expo / React Native</span>
+        <strong>ElevenLabs Agents</strong><span>WebRTC</span><span>Claude</span><span>Firebase</span><span>Expo / React Native</span>
       </p>
     </section>
   );

@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import type { CallDoc } from "../lib/contract";
+import { loadLastNumber, randomThaiMobile, saveLastNumber } from "../lib/callerNumber";
 import { useLang, type StrKey } from "../lib/i18n";
-import type { CallState } from "../lib/useBrowserCall";
+import type { CallPhase, CallState } from "../lib/usePhoneCall";
 
 const SCENARIOS = [
   { id: "rider", icon: "🚚", label: "scenario_rider", say: "scenario_rider_say" },
   { id: "police", icon: "👮", label: "scenario_police", say: "scenario_police_say" },
   { id: "clinic", icon: "🏥", label: "scenario_clinic", say: "scenario_clinic_say" },
 ] as const satisfies readonly { id: string; icon: string; label: StrKey; say: StrKey }[];
+
+const ACTIVE: ReadonlySet<CallPhase> = new Set(["dialing", "connecting", "talking", "ringing"]);
 
 function useClock(since: number | null) {
   const [now, setNow] = useState(() => Date.now());
@@ -22,36 +25,64 @@ function useClock(since: number | null) {
 }
 
 interface Props {
-  identity: string;
   state: CallState;
-  onCall: () => void;
+  onCall: (number: string, name: string) => void;
   onHangUp: () => void;
   myLiveCall: CallDoc | null; // the judge's own call while the AI is on it
 }
 
-export function CallerSide({ identity, state, onCall, onHangUp, myLiveCall }: Props) {
-  const { t } = useLang();
+export function CallerSide({ state, onCall, onHangUp, myLiveCall }: Props) {
+  const { lang, t } = useLang();
   const [scenario, setScenario] = useState<(typeof SCENARIOS)[number]["id"]>("rider");
-  const clock = useClock(state.talkingSince);
-  const active = state.phase === "fetching" || state.phase === "connecting" || state.phase === "talking";
+  const [number, setNumber] = useState(randomThaiMobile);
+  const [last, setLast] = useState(loadLastNumber);
+  const [name, setName] = useState("");
+  const active = ACTIVE.has(state.phase);
+  const clock = useClock(state.phase === "talking" || state.phase === "ringing" ? state.since : null);
   const current = SCENARIOS.find(s => s.id === scenario)!;
 
-  const errorText = state.error && {
+  function call() {
+    saveLastNumber(number);
+    setLast(number);
+    onCall(number, name);
+  }
+
+  const errorText = state.error && ({
     unavailable: t("callUnavailable"),
+    aiUnavailable: t("aiUnavailable"),
+    badNumber: t("badNumber"),
+    busy: t("tooManyCalls"),
     micDenied: t("micDenied"),
     micMissing: t("micMissing"),
     failed: t("callFailed"),
-  }[state.error];
+  } as const)[state.error];
+
+  const who = lang === "en" || !state.ownerName ? t("grandma") : state.ownerName;
+  const statusLine = t(`st_${state.phase}`).replace("{name}", who);
+  const showCaptions = (state.phase === "talking" || state.phase === "ended") && state.captions.length > 0;
 
   return (
     <section className="side side--caller" aria-labelledby="caller-h">
       <h2 id="caller-h" className="side-title">{t("callerSide")}</h2>
       <p className="side-sub">{t("callerSideSub")}</p>
 
-      <dl className="caller-id">
-        <dt>{t("yourId")}</dt>
-        <dd>client:{identity}</dd>
-      </dl>
+      <div className="callas">
+        <label className="field">
+          <span>{t("callAs")}</span>
+          <input type="tel" inputMode="tel" autoComplete="off" value={number} disabled={active}
+            onChange={e => setNumber(e.target.value)} />
+        </label>
+        <div className="callas-btns">
+          <button type="button" className="btn btn--quiet btn--sm" disabled={active} onClick={() => setNumber(randomThaiMobile())}>
+            🔀 {t("newNumber")}</button>
+          <button type="button" className="btn btn--quiet btn--sm" disabled={active || !last || last === number}
+            onClick={() => last && setNumber(last)}>↩ {t("sameNumber")}</button>
+        </div>
+        <label className="field field--name">
+          <span>{t("yourName")}</span>
+          <input type="text" autoComplete="off" maxLength={40} value={name} disabled={active} onChange={e => setName(e.target.value)} />
+        </label>
+      </div>
 
       <fieldset className="roles">
         <legend>{t("pickRole")}</legend>
@@ -72,17 +103,35 @@ export function CallerSide({ identity, state, onCall, onHangUp, myLiveCall }: Pr
             <PhoneIcon down /> <span>{t("hangUp")}</span>
           </button>
         ) : (
-          <button className="dial-btn" onClick={onCall}>
+          <button className="dial-btn" onClick={call} disabled={!number.trim()}>
             <PhoneIcon /> <span>{t("callGrandma")}</span>
           </button>
         )}
-        <p className="dial-state" role="status" aria-live="polite">
-          {t(`st_${state.phase}`)}{clock && state.phase === "talking" ? ` · ${clock}` : ""}
+        <p className={`dial-state${state.phase === "ringing" ? " dial-state--ringing" : ""}`} role="status" aria-live="polite">
+          {statusLine}{clock ? ` · ${clock}` : ""}
         </p>
       </div>
 
+      {showCaptions && (
+        <div className="captions" aria-live="polite">
+          <p className="captions-title">{t("liveCaptions")}</p>
+          <ol>
+            {state.captions.map((c, i) => (
+              <li key={i} className={`cap cap--${c.role}`}>
+                <span className="cap-who">{c.role === "caller" ? t("you") : t("assistant")}</span> {c.text}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
       {myLiveCall && (myLiveCall.status === "screening" || myLiveCall.status === "analyzing") && (
         <p className="note note--alert" role="status">📲 {t("guardianAlertedNow")}</p>
+      )}
+      {state.phase === "blocked" && <p className="note note--error" role="status">📵 {t("blockedNow")}</p>}
+      {state.phase === "answered" && <p className="note note--next" role="status">✅ {t("grandmaAnswered")}<br /><small>{t("noVoiceLine")}</small></p>}
+      {(state.phase === "declined" || state.phase === "noAnswer") && (
+        <p className="note note--done" role="status">{state.phase === "declined" ? t("grandmaDeclined") : t("grandmaNoAnswer")}</p>
       )}
       {state.phase === "ended" && <a className="note note--next" href="#inbox">⬇ {t("afterCall")}</a>}
       {errorText && (
@@ -91,6 +140,7 @@ export function CallerSide({ identity, state, onCall, onHangUp, myLiveCall }: Pr
           {state.error === "unavailable" && <p className="note-hint">{t("callUnavailableHint")}</p>}
         </div>
       )}
+      <p className="tip">🎧 {t("earphones")}</p>
     </section>
   );
 }

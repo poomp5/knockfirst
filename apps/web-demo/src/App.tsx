@@ -5,21 +5,22 @@ import { FamilySide } from "./components/FamilySide";
 import { Footer, GetApp, HowItWorks, Results } from "./components/Sections";
 import { APK_URL } from "./lib/env";
 import { useLang } from "./lib/i18n";
-import { getIdentity, useBrowserCall } from "./lib/useBrowserCall";
+import { addMyKey, loadMyKeys } from "./lib/callerNumber";
+import { usePhoneCall } from "./lib/usePhoneCall";
 import { useCalls } from "./lib/useCalls";
 
 export default function App() {
   const { lang, setLang, t } = useLang();
-  const [identity] = useState(getIdentity);
-  const myKey = `client:${identity}`;
-  const { state, start, hangUp } = useBrowserCall(identity);
+  const [myKeys, setMyKeys] = useState(loadMyKeys);
+  const { state, start, hangUp } = usePhoneCall();
+  const call = useCallback((number: string, name: string) => { setMyKeys(addMyKey(number)); void start(number, name); }, [start]);
   const inbox = useCalls();
   const calls = inbox.kind === "live" || inbox.kind === "preview" ? inbox.calls : [];
   const [openId, setOpenId] = useState<string | null>(null);
   const open = openId ? calls.find(c => c.id === openId) ?? null : null; // live doc, updates in place
   const close = useCallback(() => setOpenId(null), []);
-  const myLiveCall = calls.find(c => c.callerKey === myKey && (c.status === "screening" || c.status === "analyzing")) ?? null;
-  const ringing = state.phase === "connecting" || state.phase === "talking";
+  const myLiveCall = calls.find(c => c.id === state.callId && (c.status === "screening" || c.status === "analyzing")) ?? null;
+  const ringing = state.phase === "connecting" || state.phase === "talking" || state.phase === "ringing";
 
   return (
     <>
@@ -47,9 +48,9 @@ export default function App() {
         </section>
 
         <div className={`stage${ringing ? " stage--knocking" : ""}`} id="stage">
-          <CallerSide identity={identity} state={state} onCall={start} onHangUp={hangUp} myLiveCall={myLiveCall} />
+          <CallerSide state={state} onCall={call} onHangUp={hangUp} myLiveCall={myLiveCall} />
           <div className="door" aria-hidden="true"><span className="knock" /><span className="knock" /><span className="knock" /></div>
-          <FamilySide inbox={inbox} myKey={myKey} onOpen={setOpenId} />
+          <FamilySide inbox={inbox} myKeys={myKeys} onOpen={setOpenId} />
         </div>
 
         <HowItWorks />

@@ -8,11 +8,11 @@ import { callTime, type InboxState } from "../lib/useCalls";
 
 interface Props {
   inbox: InboxState;
-  myKey: string;
+  myKeys: readonly string[]; // caller keys this browser called as
   onOpen: (id: string) => void;
 }
 
-export function FamilySide({ inbox, myKey, onOpen }: Props) {
+export function FamilySide({ inbox, myKeys, onOpen }: Props) {
   const { t } = useLang();
   const listRef = useRef<HTMLOListElement>(null);
   const seen = useRef<Set<string> | null>(null);
@@ -23,12 +23,12 @@ export function FamilySide({ inbox, myKey, onOpen }: Props) {
     if (inbox.kind !== "live") return;
     const ids = new Set(inbox.calls.map(c => c.id));
     if (seen.current) {
-      const fresh = inbox.calls.find(c => c.callerKey === myKey && !seen.current!.has(c.id));
+      const fresh = inbox.calls.find(c => myKeys.includes(c.callerKey) && !seen.current!.has(c.id));
       const el = fresh && listRef.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(fresh.id)}"]`);
       if (el && listRef.current) listRef.current.scrollTo({ top: el.offsetTop - listRef.current.offsetTop - 8, behavior: "smooth" });
     }
     seen.current = ids;
-  }, [inbox, myKey]);
+  }, [inbox, myKeys]);
 
   return (
     <section className="side side--family" id="inbox" aria-labelledby="family-h">
@@ -51,7 +51,7 @@ export function FamilySide({ inbox, myKey, onOpen }: Props) {
       )}
       {calls.length > 0 && (
         <ol className="inbox" ref={listRef} aria-live="polite">
-          {calls.map(c => <CallRow key={c.id} call={c} mine={c.callerKey === myKey} onOpen={onOpen} />)}
+          {calls.map(c => <CallRow key={c.id} call={c} mine={myKeys.includes(c.callerKey)} onOpen={onOpen} />)}
         </ol>
       )}
     </section>
