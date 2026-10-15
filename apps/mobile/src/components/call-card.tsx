@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, View } from "react-native";
-import Animated, { FadeInDown, LinearTransition } from "react-native-reanimated";
+import Animated, { FadeIn, LinearTransition } from "react-native-reanimated";
 import { formatCallerKey, RISK_LABEL_TH, riskLevelFromScore, STATUS_LABEL_TH, type CallDoc } from "@/lib/contract";
 import { timeAgo } from "@/lib/time";
-import { cardStyle, colors, radii, spacing, TAP } from "@/theme";
+import { colors, radii, spacing, TAP } from "@/theme";
 import { AppText } from "./app-text";
 import { PulseDot } from "./pulse-dot";
 import { RedFlagChip } from "./red-flag-chip";
@@ -14,12 +14,16 @@ import { UrgentTag } from "./urgent-tag";
 export interface CallCardProps {
   call: CallDoc;
   onPress: () => void;
+  /** Position inside an inset-grouped section: rounds the outer corners and draws the separator. */
+  first?: boolean;
+  last?: boolean;
 }
 
 const MAX_FLAGS = 2;
+const LEAD = 52;
 
-/** Inbox row (B4). Tolerates missing analysis, null timestamps and client: keys. */
-export function CallCard({ call, onPress }: CallCardProps) {
+/** Inbox row (B4), Apple Phone/Mail style. Tolerates missing analysis, null timestamps and client: keys. */
+export function CallCard({ call, onPress, first = true, last = true }: CallCardProps) {
   const analysis = call.analysis ?? null;
   const live = call.status === "screening" || call.status === "analyzing";
   const urgent = analysis?.urgency === "urgent";
@@ -45,42 +49,50 @@ export function CallCard({ call, onPress }: CallCardProps) {
     .join(", ");
 
   return (
-    <Animated.View entering={FadeInDown.duration(350)} layout={LinearTransition.duration(250)}>
+    <Animated.View
+      entering={FadeIn.duration(300)}
+      layout={LinearTransition.duration(250)}
+      style={[styles.shell, first && styles.first, last && styles.last]}
+    >
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={a11y}
         accessibilityHint="แตะเพื่อดูรายละเอียดสาย"
-        style={({ pressed }) => [styles.card, urgent && styles.cardUrgent, pressed && styles.pressed]}
+        style={({ pressed }) => [styles.row, pressed && styles.pressed]}
       >
-        <View style={styles.left}>
+        <View style={styles.lead}>
           {live ? (
-            <View style={styles.liveCircle}>
-              <PulseDot color={colors.brand} size={12} />
+            <View style={[styles.circle, { backgroundColor: colors.brandSoft }]}>
+              <PulseDot color={colors.brand} size={10} />
             </View>
           ) : analysis ? (
             <RiskBadge score={analysis.riskScore} />
           ) : (
-            <View style={styles.iconCircle}>
-              <Ionicons name="call-outline" size={24} color={colors.textSubtle} />
+            <View style={[styles.circle, { backgroundColor: colors.fill }]}>
+              <Ionicons name="call" size={22} color={colors.textSubtle} />
             </View>
           )}
         </View>
 
-        <View style={styles.body}>
+        <View style={[styles.body, !last && styles.separator]}>
           <View style={styles.titleRow}>
-            <AppText variant="large" weight="semibold" numberOfLines={1} style={styles.title}>
+            <AppText variant="body" weight="semibold" numberOfLines={1} style={styles.title}>
               {title}
             </AppText>
             {urgent && <UrgentTag />}
+            <AppText variant="small" color={colors.textSubtle} numberOfLines={1} style={styles.time}>
+              {when}
+            </AppText>
+            <Ionicons name="chevron-forward" size={16} color={colors.textFaint} />
           </View>
 
           {live ? (
-            <AppText variant="small" weight="medium" color={colors.brandPressed} numberOfLines={1}>
+            <AppText variant="small" color={colors.brand} numberOfLines={1}>
               {call.status === "screening" ? "AI กำลังคุยกับผู้โทร…" : "AI กำลังสรุปบทสนทนา…"}
             </AppText>
           ) : subtitle ? (
-            <AppText variant="small" color={colors.textMuted} numberOfLines={2}>
+            <AppText variant="small" color={colors.textSubtle} numberOfLines={2}>
               {subtitle}
             </AppText>
           ) : null}
@@ -91,7 +103,7 @@ export function CallCard({ call, onPress }: CallCardProps) {
                 <RedFlagChip key={f} flag={f} />
               ))}
               {extraFlags > 0 && (
-                <AppText variant="caption" weight="medium" color={colors.danger} style={styles.more}>
+                <AppText variant="caption" weight="medium" color={colors.danger}>
                   +{extraFlags}
                 </AppText>
               )}
@@ -100,58 +112,32 @@ export function CallCard({ call, onPress }: CallCardProps) {
 
           <View style={styles.footer}>
             <StatusPill status={call.status} ownerResponse={call.ownerResponse} />
-            <AppText variant="caption" color={colors.textSubtle} numberOfLines={1} style={styles.time}>
-              {when}
-            </AppText>
           </View>
         </View>
-
-        <Ionicons name="chevron-forward" size={20} color={colors.divider} style={styles.chevron} />
       </Pressable>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    ...cardStyle,
+  shell: { backgroundColor: colors.card, overflow: "hidden" },
+  first: { borderTopLeftRadius: radii.lg, borderTopRightRadius: radii.lg },
+  last: { borderBottomLeftRadius: radii.lg, borderBottomRightRadius: radii.lg },
+  row: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: spacing.md,
-    padding: spacing.lg,
+    paddingLeft: spacing.lg,
     minHeight: TAP + spacing.xl,
   },
-  cardUrgent: { borderColor: colors.danger, borderWidth: 1.5 },
-  pressed: { backgroundColor: "#F2F0ED", transform: [{ scale: 0.985 }] },
-  left: { paddingTop: 2 },
-  liveCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: radii.md,
-    backgroundColor: colors.brandSoft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: radii.md,
-    backgroundColor: colors.bubbleAssistant,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  body: { flex: 1, minWidth: 0, gap: spacing.xs },
-  titleRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  pressed: { backgroundColor: colors.fillPressed },
+  lead: { paddingTop: spacing.md },
+  circle: { width: LEAD, height: LEAD, borderRadius: LEAD / 2, alignItems: "center", justifyContent: "center" },
+  body: { flex: 1, minWidth: 0, gap: 3, paddingVertical: spacing.md, paddingRight: spacing.md },
+  separator: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.separator },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   title: { flexShrink: 1 },
-  flags: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: spacing.xs + 2, marginTop: 2 },
-  more: { marginLeft: 2 },
-  footer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  time: { flexShrink: 0 },
-  chevron: { alignSelf: "center", marginRight: -spacing.xs },
+  time: { marginLeft: "auto", flexShrink: 0 },
+  flags: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 2 },
+  footer: { flexDirection: "row", marginTop: 3 },
 });

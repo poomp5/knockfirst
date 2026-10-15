@@ -1,22 +1,25 @@
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
-  FlatList,
   KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   TextInput,
   View,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, { SlideInDown } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useWhitelist } from "@/lib/hooks";
 import { addToWhitelist, removeFromWhitelist } from "@/lib/actions";
 import { formatCallerKey, toCallerKey, type WhitelistEntry } from "@/lib/contract";
-import { AppText, Banner, Card, EmptyState, PrimaryButton, Skeleton } from "@/components";
-import { colors, fonts, fontSize, radii, spacing, TAP, cardStyle } from "@/theme";
+import { AppText, Banner, EmptyState, LargeTitle, ListRow, ListSection, Skeleton } from "@/components";
+import { colors, fonts, fontSize, radii, spacing, TAP } from "@/theme";
 
 const MIN_DIGITS = 9;
 
@@ -24,16 +27,32 @@ function digitCount(s: string): number {
   return (s.match(/\d/g) ?? []).length;
 }
 
-function Badge({ text, tone }: { text: string; tone: "neutral" | "success" }) {
-  const bg = tone === "success" ? colors.successSoft : colors.bubbleAssistant;
-  const fg = tone === "success" ? colors.success : colors.textMuted;
+/** First Thai consonant / Latin letter of a name, for the Contacts-style monogram (skips leading vowels เ แ โ ใ ไ). */
+function monogram(name: string): string {
+  const ch = name.replace(/^[\sเแโใไ]+/, "").charAt(0);
+  return /\d|\+/.test(ch) || !ch ? "" : ch.toUpperCase();
+}
+
+function Avatar({ name }: { name: string }) {
+  const m = monogram(name);
   return (
-    <View style={[styles.badge, { backgroundColor: bg }]}>
-      <AppText variant="caption" weight="medium" color={fg}>
-        {text}
-      </AppText>
+    <View style={styles.avatar}>
+      {m ? (
+        <AppText variant="body" weight="semibold" color={colors.white}>
+          {m}
+        </AppText>
+      ) : (
+        <Ionicons name="person" size={20} color={colors.white} />
+      )}
     </View>
   );
+}
+
+function sourceLabel(entry: WhitelistEntry): string | null {
+  if (entry.addedBy === "seed") return "ค่าเริ่มต้น";
+  if (entry.addedBy === "contacts") return "จากรายชื่อติดต่อ";
+  if (entry.addedBy === "guardian" && entry.sourceCallId) return "จากสายที่อนุญาต";
+  return null;
 }
 
 function EntryRow({
@@ -45,50 +64,35 @@ function EntryRow({
   removing: boolean;
   onRemove: (e: WhitelistEntry) => void;
 }) {
-  const fromCall = entry.addedBy === "guardian" && !!entry.sourceCallId;
+  const name = entry.displayName || formatCallerKey(entry.callerKey);
+  const source = sourceLabel(entry);
   return (
-    <Pressable
+    <ListRow
+      leading={<Avatar name={entry.displayName ?? ""} />}
+      title={name}
+      subtitle={[formatCallerKey(entry.callerKey), source].filter(Boolean).join(" · ")}
       onLongPress={() => onRemove(entry)}
-      delayLongPress={400}
       disabled={removing}
-      style={({ pressed }) => [styles.row, pressed && styles.rowPressed, removing && styles.rowDisabled]}
-      accessibilityRole="button"
       accessibilityHint="กดค้างเพื่อลบออกจากรายชื่อ"
-    >
-      <View style={styles.avatar}>
-        <Ionicons name="person" size={22} color={colors.brand} />
-      </View>
-      <View style={styles.rowBody}>
-        <AppText variant="large" weight="semibold" numberOfLines={1}>
-          {entry.displayName || formatCallerKey(entry.callerKey)}
-        </AppText>
-        <AppText variant="small" color={colors.textMuted} numberOfLines={1}>
-          {formatCallerKey(entry.callerKey)}
-        </AppText>
-        {(entry.addedBy === "seed" || fromCall || entry.addedBy === "contacts") && (
-          <View style={styles.badgeRow}>
-            {entry.addedBy === "seed" && <Badge text="ค่าเริ่มต้น" tone="neutral" />}
-            {fromCall && <Badge text="จากสายที่อนุญาต" tone="success" />}
-            {entry.addedBy === "contacts" && <Badge text="จากรายชื่อติดต่อ" tone="neutral" />}
-          </View>
-        )}
-      </View>
-      <Pressable
-        onPress={() => onRemove(entry)}
-        disabled={removing}
-        hitSlop={8}
-        style={({ pressed }) => [styles.trash, pressed && { backgroundColor: colors.dangerSoft }]}
-        accessibilityRole="button"
-        accessibilityLabel={`ลบ ${entry.displayName} ออกจากรายชื่อ`}
-      >
-        <Ionicons name="trash-outline" size={22} color={removing ? colors.textSubtle : colors.danger} />
-      </Pressable>
-    </Pressable>
+      trailing={
+        <Pressable
+          onPress={() => onRemove(entry)}
+          disabled={removing}
+          hitSlop={8}
+          style={({ pressed }) => [styles.trash, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={`ลบ ${name} ออกจากรายชื่อ`}
+        >
+          <Ionicons name="remove-circle" size={24} color={removing ? colors.textFaint : colors.danger} />
+        </Pressable>
+      }
+    />
   );
 }
 
 export default function WhitelistScreen() {
   const { entries, loading, error } = useWhitelist();
+  const insets = useSafeAreaInsets();
   const [modalOpen, setModalOpen] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -155,127 +159,141 @@ export default function WhitelistScreen() {
     );
   }
 
-  const header = (
-    <View style={styles.header}>
-      <AppText variant="body" color={colors.textMuted}>
-        เบอร์ในรายชื่อนี้จะต่อสายถึงผู้สูงอายุทันที ไม่ต้องผ่าน AI
-      </AppText>
-      <PrimaryButton title="+ เพิ่มเบอร์" onPress={openModal} />
-      {notice && <Banner tone="success" text={notice} actionLabel="ปิด" onAction={() => setNotice(null)} />}
-      {error && <Banner tone="error" text="โหลดรายชื่อไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่" />}
-    </View>
-  );
-
-  const footer = (
-    <Pressable
-      onPress={() => router.push("/blocked")}
-      style={({ pressed }) => [styles.footerLink, pressed && styles.rowPressed]}
-      accessibilityRole="link"
-    >
-      <Ionicons name="ban-outline" size={20} color={colors.textMuted} />
-      <AppText variant="body" weight="medium" color={colors.textMuted} style={styles.footerText}>
-        ดูเบอร์ที่ถูกบล็อก
-      </AppText>
-      <Ionicons name="chevron-forward" size={20} color={colors.textSubtle} />
-    </Pressable>
-  );
-
   return (
     <View style={styles.screen}>
-      {loading && entries.length === 0 ? (
-        <View style={styles.list}>
-          {header}
-          <Card style={styles.skeletonCard}>
-            <Skeleton height={56} />
-            <Skeleton height={56} />
-            <Skeleton height={56} />
-          </Card>
-        </View>
-      ) : (
-        <FlatList
-          data={entries}
-          keyExtractor={(e) => e.callerKey}
-          contentContainerStyle={styles.list}
-          ListHeaderComponent={header}
-          ListFooterComponent={footer}
-          ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
-          ListEmptyComponent={
-            error ? null : (
-              <EmptyState
-                title="ยังไม่มีเบอร์ที่อนุญาต"
-                subtitle="เพิ่มเบอร์ลูกหลานหรือคนที่ไว้ใจ เพื่อให้โทรถึงได้ทันที"
-              />
-            )
+      <ScrollView contentContainerStyle={[styles.list, { paddingTop: insets.top, paddingBottom: spacing.xxl + insets.bottom }]}>
+        <LargeTitle
+          title="รายชื่อที่อนุญาต"
+          right={
+            <Pressable
+              onPress={openModal}
+              hitSlop={8}
+              style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel="เพิ่มเบอร์"
+            >
+              <Ionicons name="add" size={24} color={colors.white} />
+            </Pressable>
           }
-          renderItem={({ item }) => (
-            <EntryRow entry={item} removing={removingKey === item.callerKey} onRemove={confirmRemove} />
-          )}
         />
-      )}
+
+        {notice && <Banner tone="success" text={notice} actionLabel="ปิด" onAction={() => setNotice(null)} />}
+        {error && <Banner tone="error" text="โหลดรายชื่อไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่" />}
+
+        {loading && entries.length === 0 ? (
+          <View style={styles.skeletons}>
+            <Skeleton height={60} />
+            <Skeleton height={60} />
+            <Skeleton height={60} />
+          </View>
+        ) : entries.length === 0 ? (
+          error ? null : (
+            <EmptyState
+              icon="people"
+              title="ยังไม่มีเบอร์ที่อนุญาต"
+              subtitle="เพิ่มเบอร์ลูกหลานหรือคนที่ไว้ใจ เพื่อให้โทรถึงได้ทันที"
+            />
+          )
+        ) : (
+          <ListSection
+            header={`${entries.length} รายชื่อ`}
+            footer="เบอร์ในรายชื่อนี้จะต่อสายถึงผู้สูงอายุทันที ไม่ต้องผ่าน AI"
+            separatorInset={spacing.lg + 40 + spacing.md}
+          >
+            {entries.map((item) => (
+              <EntryRow
+                key={item.callerKey}
+                entry={item}
+                removing={removingKey === item.callerKey}
+                onRemove={confirmRemove}
+              />
+            ))}
+          </ListSection>
+        )}
+
+        <ListSection>
+          <ListRow
+            icon="hand-left"
+            iconColor={colors.danger}
+            title="เบอร์ที่ถูกบล็อก"
+            onPress={() => router.push("/blocked")}
+          />
+        </ListSection>
+      </ScrollView>
 
       <Modal visible={modalOpen} transparent animationType="fade" onRequestClose={closeModal}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.backdrop}
-        >
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.backdrop}>
           <Pressable style={StyleSheet.absoluteFill} onPress={closeModal} accessibilityLabel="ปิด" />
-          <View style={styles.sheet}>
-            <AppText variant="title" weight="bold">
-              เพิ่มเบอร์ที่อนุญาต
-            </AppText>
-
-            <View style={styles.field}>
-              <AppText variant="small" weight="medium" color={colors.textMuted}>
-                ชื่อ
-              </AppText>
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder="เช่น ลูกสาว, หลานชาย"
-                placeholderTextColor={colors.textSubtle}
-                style={styles.input}
-                returnKeyType="next"
-                editable={!saving}
-                maxLength={60}
-              />
-            </View>
-
-            <View style={styles.field}>
-              <AppText variant="small" weight="medium" color={colors.textMuted}>
-                เบอร์โทร
-              </AppText>
-              <TextInput
-                value={phone}
-                onChangeText={(t) => {
-                  setPhone(t);
-                  if (formError) setFormError(null);
-                }}
-                placeholder="08x-xxx-xxxx"
-                placeholderTextColor={colors.textSubtle}
-                keyboardType="phone-pad"
-                textContentType="telephoneNumber"
-                autoComplete="tel"
-                style={[styles.input, formError && styles.inputError]}
-                editable={!saving}
-                maxLength={20}
-                onSubmitEditing={submit}
-              />
-              {formError && (
-                <AppText variant="small" color={colors.danger}>
-                  {formError}
+          <Animated.View
+            entering={SlideInDown.duration(300)}
+            style={[styles.sheet, { paddingBottom: spacing.xl + insets.bottom }]}
+          >
+            <View style={styles.grabber} />
+            <View style={styles.sheetBar}>
+              <Pressable onPress={closeModal} disabled={saving} hitSlop={8} style={styles.barButton} accessibilityRole="button">
+                <AppText variant="body" color={colors.brand}>
+                  ยกเลิก
                 </AppText>
-              )}
+              </Pressable>
+              <AppText variant="body" weight="semibold" style={styles.sheetTitle} numberOfLines={1}>
+                เพิ่มเบอร์ที่อนุญาต
+              </AppText>
+              <Pressable
+                onPress={submit}
+                disabled={saving}
+                hitSlop={8}
+                style={[styles.barButton, styles.barButtonRight]}
+                accessibilityRole="button"
+              >
+                {saving ? (
+                  <ActivityIndicator color={colors.brand} />
+                ) : (
+                  <AppText variant="body" weight="semibold" color={colors.brand}>
+                    เพิ่ม
+                  </AppText>
+                )}
+              </Pressable>
             </View>
 
-            <View style={styles.sheetActions}>
-              <View style={styles.flex1}>
-                <PrimaryButton title="ยกเลิก" variant="ghost" onPress={closeModal} disabled={saving} />
+            <ListSection footer={formError ?? "โทรเข้ามาครั้งหน้าจะต่อสายถึงทันที ไม่ต้องผ่าน AI"}>
+              <View style={styles.inputRow}>
+                <AppText variant="body" style={styles.inputLabel}>
+                  ชื่อ
+                </AppText>
+                <TextInput
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="เช่น ลูกสาว, หลานชาย"
+                  placeholderTextColor={colors.textFaint}
+                  style={styles.input}
+                  returnKeyType="next"
+                  editable={!saving}
+                  maxLength={60}
+                />
               </View>
-              <View style={styles.flex1}>
-                <PrimaryButton title="บันทึก" onPress={submit} loading={saving} disabled={saving} />
+              <View style={styles.inputRow}>
+                <AppText variant="body" style={styles.inputLabel} color={formError ? colors.danger : colors.text}>
+                  เบอร์โทร
+                </AppText>
+                <TextInput
+                  value={phone}
+                  onChangeText={(t) => {
+                    setPhone(t);
+                    if (formError) setFormError(null);
+                  }}
+                  placeholder="08x-xxx-xxxx"
+                  placeholderTextColor={colors.textFaint}
+                  keyboardType="phone-pad"
+                  textContentType="telephoneNumber"
+                  autoComplete="tel"
+                  style={styles.input}
+                  editable={!saving}
+                  maxLength={20}
+                  onSubmitEditing={submit}
+                />
               </View>
-            </View>
-          </View>
+            </ListSection>
+          </Animated.View>
         </KeyboardAvoidingView>
       </Modal>
     </View>
@@ -284,73 +302,61 @@ export default function WhitelistScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  list: { padding: spacing.lg, paddingBottom: spacing.xxl, flexGrow: 1 },
-  header: { gap: spacing.md, marginBottom: spacing.lg },
-  skeletonCard: { padding: spacing.lg, gap: spacing.md },
-  row: {
-    ...cardStyle,
-    flexDirection: "row",
+  list: { paddingHorizontal: spacing.lg, gap: spacing.xl, flexGrow: 1 },
+  skeletons: { gap: spacing.sm },
+  pressed: { opacity: 0.5 },
+  addButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.brand,
     alignItems: "center",
-    padding: spacing.md,
-    paddingLeft: spacing.lg,
-    gap: spacing.md,
-    minHeight: 72,
+    justifyContent: "center",
   },
-  rowPressed: { opacity: 0.7 },
-  rowDisabled: { opacity: 0.5 },
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: radii.pill,
-    backgroundColor: colors.brandSoft,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.gray,
     alignItems: "center",
     justifyContent: "center",
   },
-  rowBody: { flex: 1, gap: 2 },
-  badgeRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs, marginTop: spacing.xs },
-  badge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radii.pill },
-  trash: {
-    width: TAP,
-    height: TAP,
-    borderRadius: radii.md,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  footerLink: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    minHeight: TAP,
-    marginTop: spacing.xl,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radii.md,
-  },
-  footerText: { flex: 1 },
-  backdrop: {
-    flex: 1,
-    backgroundColor: "rgba(17,17,17,0.45)",
-    justifyContent: "center",
-    padding: spacing.lg,
-  },
+  trash: { width: TAP, height: TAP, alignItems: "center", justifyContent: "center", marginRight: -spacing.sm },
+  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)", justifyContent: "flex-end" },
   sheet: {
-    backgroundColor: colors.card,
-    borderRadius: radii.lg,
-    padding: spacing.xl,
+    backgroundColor: colors.bg,
+    borderTopLeftRadius: radii.xxl,
+    borderTopRightRadius: radii.xxl,
+    paddingHorizontal: spacing.lg,
     gap: spacing.lg,
   },
-  field: { gap: spacing.xs },
-  input: {
-    minHeight: TAP,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-    fontFamily: fonts.regular,
-    fontSize: fontSize.large,
-    color: colors.text,
-    backgroundColor: colors.bg,
+  grabber: {
+    alignSelf: "center",
+    width: 36,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: colors.textFaint,
+    marginTop: spacing.sm,
   },
-  inputError: { borderColor: colors.danger },
-  sheetActions: { flexDirection: "row", gap: spacing.md },
-  flex1: { flex: 1 },
+  sheetBar: { flexDirection: "row", alignItems: "center", minHeight: TAP },
+  sheetTitle: { flex: 1, textAlign: "center" },
+  barButton: { minWidth: 72, minHeight: TAP, justifyContent: "center" },
+  barButtonRight: { alignItems: "flex-end" },
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    minHeight: TAP + 4,
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
+    backgroundColor: colors.card,
+  },
+  inputLabel: { width: 72 },
+  input: {
+    flex: 1,
+    minHeight: TAP,
+    fontFamily: fonts.regular,
+    fontSize: fontSize.body,
+    color: colors.text,
+  },
 });

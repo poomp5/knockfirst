@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef } from "react";
-import { Pressable, SectionList, StyleSheet, View } from "react-native";
+import { SectionList, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
-import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
+import { format } from "date-fns";
+import { th } from "date-fns/locale";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
 
 import { useCalls, useFamily } from "@/lib/hooks";
 import { isToday, tsToDate } from "@/lib/time";
@@ -16,11 +16,14 @@ import {
   Banner,
   CallCard,
   EmptyState,
+  IconTile,
+  LargeTitle,
+  PrimaryButton,
   PulseDot,
   SectionHeader,
   Skeleton,
 } from "@/components";
-import { colors, radii, spacing, TAP } from "@/theme";
+import { cardStyle, colors, spacing } from "@/theme";
 
 type SectionKey = "live" | "review" | "history";
 type InboxSection = { key: SectionKey; title: string; data: CallDoc[] };
@@ -94,41 +97,45 @@ export default function InboxScreen() {
 
   const header = (
     <View style={styles.header}>
-      <View style={styles.titleRow}>
-        <Image
-          source={require("../../../assets/shield.png")}
-          style={styles.shield}
-          contentFit="contain"
-          accessibilityIgnoresInvertColors
-        />
-        <View style={styles.titleText}>
-          <AppText variant="small" color={colors.textMuted}>
-            KnockFirst กำลังทำงาน
-          </AppText>
-          <AppText variant="title" weight="bold" numberOfLines={2}>
-            ปกป้อง {ownerName} อยู่
-          </AppText>
-        </View>
-      </View>
+      <LargeTitle title="สายเข้า" eyebrow={todayLabel()} />
 
-      <View style={styles.statRow}>
-        <Stat icon="shield-checkmark-outline" label="กรองแล้ว" value={stats.screened} color={colors.brand} />
-        <Stat icon="ban-outline" label="บล็อก" value={stats.blocked} color={colors.danger} />
-        <Stat icon="today-outline" label="วันนี้" value={stats.today} color={colors.textMuted} />
+      <View style={styles.summary} accessible accessibilityLabel={`KnockFirst กำลังปกป้อง ${ownerName}`}>
+        <View style={styles.summaryTop}>
+          <IconTile name="shield-checkmark" color={colors.brand} size={40} />
+          <View style={styles.flex}>
+            <AppText variant="body" weight="semibold" numberOfLines={2}>
+              กำลังปกป้อง {ownerName}
+            </AppText>
+            <AppText variant="small" color={colors.textSubtle}>
+              KnockFirst ทำงานอยู่
+            </AppText>
+          </View>
+          <PulseDot color={colors.switchOn} size={8} />
+        </View>
+        <View style={styles.statRow}>
+          <Stat label="กรองแล้ว" value={stats.screened} color={colors.brand} />
+          <View style={styles.statDivider} />
+          <Stat label="บล็อก" value={stats.blocked} color={colors.danger} />
+          <View style={styles.statDivider} />
+          <Stat label="วันนี้" value={stats.today} color={colors.ink} />
+        </View>
       </View>
 
       {error ? (
-        <View style={styles.banner}>
-          <Banner
-            tone="error"
-            text="โหลดรายการสายไม่สำเร็จ ตรวจสอบอินเทอร์เน็ต"
-            actionLabel="ลองใหม่"
-            onAction={retry}
-          />
-        </View>
+        <Banner tone="error" text="โหลดรายการสายไม่สำเร็จ ตรวจสอบอินเทอร์เน็ต" actionLabel="ลองใหม่" onAction={retry} />
       ) : null}
 
-      {USE_MOCKS ? <MockSimulateButton /> : null}
+      {USE_MOCKS ? (
+        <PrimaryButton
+          title="จำลองสายเข้า (โหมดทดสอบ)"
+          variant="secondary"
+          icon="flask"
+          onPress={() => {
+            mockSimulateIncomingCall();
+            Haptics.selectionAsync().catch(() => {});
+          }}
+        />
+      ) : null}
     </View>
   );
 
@@ -143,7 +150,7 @@ export default function InboxScreen() {
         renderSectionHeader={({ section }) =>
           section.key === "live" ? (
             <View style={styles.liveHeader}>
-              <PulseDot color={colors.brand} size={10} />
+              <PulseDot color={colors.brand} size={8} />
               <View style={styles.flex}>
                 <SectionHeader title={section.title} count={section.data.length} />
               </View>
@@ -152,23 +159,26 @@ export default function InboxScreen() {
             <SectionHeader title={section.title} count={section.data.length} />
           )
         }
-        renderItem={({ item }) => (
-          <View style={styles.cardWrap}>
-            <CallCard call={item} onPress={() => openCall(item.id)} />
-          </View>
+        renderItem={({ item, index, section }) => (
+          <CallCard
+            call={item}
+            first={index === 0}
+            last={index === section.data.length - 1}
+            onPress={() => openCall(item.id)}
+          />
         )}
         ListEmptyComponent={
           loading ? (
             <View style={styles.skeletons}>
-              <Skeleton height={96} />
-              <Skeleton height={96} />
-              <Skeleton height={96} />
+              <Skeleton height={88} />
+              <Skeleton height={88} />
+              <Skeleton height={88} />
             </View>
           ) : error ? null : (
             <EmptyState
-              title="ยังไม่มีสายแปลก ทุกอย่างปกติดี"
+              icon="shield-checkmark"
+              title="ยังไม่มีสายแปลก"
               subtitle="เมื่อมีเบอร์ที่ไม่รู้จักโทรเข้า AI จะรับสายแทนและสรุปให้คุณที่นี่"
-              image={require("../../../assets/empty-inbox.png")}
             />
           )
         }
@@ -179,48 +189,22 @@ export default function InboxScreen() {
   );
 }
 
-function Stat({
-  icon,
-  label,
-  value,
-  color,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value: number;
-  color: string;
-}) {
-  return (
-    <View style={styles.stat} accessible accessibilityLabel={`${label} ${value} สาย`}>
-      <Ionicons name={icon} size={16} color={color} />
-      <AppText variant="small" color={colors.textMuted}>
-        {label}{" "}
-        <AppText variant="small" weight="bold" color={colors.ink}>
-          {value}
-        </AppText>{" "}
-        สาย
-      </AppText>
-    </View>
-  );
+/** "วันพฤหัสบดี 15 ตุลาคม" (Apple News-style eyebrow above the large title). */
+function todayLabel(): string {
+  const d = new Date();
+  return `วัน${format(d, "EEEE", { locale: th })} ${format(d, "d MMMM", { locale: th })}`;
 }
 
-/** Dev-only helper in mock mode so the "new call arrives" moment can be rehearsed offline. */
-function MockSimulateButton() {
+function Stat({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <Pressable
-      onPress={() => {
-        mockSimulateIncomingCall();
-        Haptics.selectionAsync().catch(() => {});
-      }}
-      style={({ pressed }) => [styles.mockButton, pressed && styles.mockButtonPressed]}
-      accessibilityRole="button"
-      accessibilityLabel="จำลองสายเข้า (โหมดทดสอบ)"
-    >
-      <Ionicons name="flask-outline" size={18} color={colors.brandPressed} />
-      <AppText variant="small" weight="semibold" color={colors.brandPressed}>
-        จำลองสายเข้า (โหมดทดสอบ)
+    <View style={styles.stat} accessible accessibilityLabel={`${label} ${value} สาย`}>
+      <AppText variant="h1" weight="bold" color={color} style={styles.statValue}>
+        {value}
       </AppText>
-    </Pressable>
+      <AppText variant="caption" weight="medium" color={colors.textSubtle}>
+        {label}
+      </AppText>
+    </View>
   );
 }
 
@@ -228,41 +212,13 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: spacing.lg },
   flex: { flex: 1 },
-  header: { paddingTop: spacing.lg, paddingBottom: spacing.sm, gap: spacing.md },
-  titleRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  shield: { width: 56, height: 56 },
-  titleText: { flex: 1 },
-  statRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  stat: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 2,
-  },
-  banner: { marginTop: spacing.xs },
-  liveHeader: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  cardWrap: { marginBottom: spacing.md },
+  header: { paddingTop: spacing.sm, paddingBottom: spacing.xs, gap: spacing.md },
+  summary: { ...cardStyle, padding: spacing.lg, gap: spacing.lg },
+  summaryTop: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  statRow: { flexDirection: "row", alignItems: "stretch" },
+  stat: { flex: 1, alignItems: "center" },
+  statValue: { fontSize: 28, lineHeight: 36 },
+  statDivider: { width: StyleSheet.hairlineWidth, backgroundColor: colors.separator, marginVertical: spacing.xs },
+  liveHeader: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingLeft: spacing.xs },
   skeletons: { gap: spacing.md, marginTop: spacing.lg },
-  mockButton: {
-    minHeight: TAP,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.sm,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: colors.brand,
-    backgroundColor: colors.brandSoft,
-  },
-  mockButtonPressed: { opacity: 0.7 },
 });

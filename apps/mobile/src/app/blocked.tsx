@@ -1,13 +1,12 @@
 import { useState } from "react";
-import { Alert, FlatList, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
 import { useBlocked } from "@/lib/hooks";
 import { unblockNumber } from "@/lib/actions";
 import { timeAgo } from "@/lib/time";
 import { formatCallerKey, type BlockedEntry } from "@/lib/contract";
-import { AppText, Banner, Card, EmptyState, PrimaryButton, Skeleton } from "@/components";
-import { colors, radii, spacing, cardStyle } from "@/theme";
+import { AppText, Banner, EmptyState, ListRow, ListSection, Skeleton } from "@/components";
+import { colors, radii, SEPARATOR_INSET, spacing } from "@/theme";
 
 const REASON_LABEL: Record<BlockedEntry["reason"], string> = {
   auto: "บล็อกอัตโนมัติ",
@@ -31,43 +30,39 @@ function BlockedRow({
 }) {
   const isAuto = entry.reason === "auto";
   const title = entryTitle(entry);
-  const showNumber = !!entry.displayName;
+  const meta = [
+    entry.displayName ? formatCallerKey(entry.callerKey) : null,
+    REASON_LABEL[entry.reason] ?? "บล็อกแล้ว",
+    timeAgo(entry.addedAt),
+  ]
+    .filter(Boolean)
+    .join(" · ");
   return (
-    <View style={styles.row}>
-      <View style={styles.rowTop}>
-        <View style={[styles.icon, { backgroundColor: isAuto ? colors.dangerSoft : colors.bubbleAssistant }]}>
-          <Ionicons name={isAuto ? "shield-checkmark" : "ban"} size={22} color={isAuto ? colors.danger : colors.textMuted} />
-        </View>
-        <View style={styles.rowBody}>
-          <AppText variant="large" weight="semibold" numberOfLines={1}>
-            {title}
-          </AppText>
-          {showNumber && (
-            <AppText variant="small" color={colors.textMuted} numberOfLines={1}>
-              {formatCallerKey(entry.callerKey)}
+    <ListRow
+      icon={isAuto ? "shield-checkmark" : "hand-left"}
+      iconColor={isAuto ? colors.danger : colors.gray}
+      title={title}
+      subtitle={meta}
+      trailing={
+        // App Store-style capsule action
+        <Pressable
+          onPress={() => onUnblock(entry)}
+          disabled={disabled}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`ปลดบล็อก ${title}`}
+          style={({ pressed }) => [styles.capsule, pressed && styles.pressed, disabled && !busy && styles.dim]}
+        >
+          {busy ? (
+            <ActivityIndicator size="small" color={colors.brand} />
+          ) : (
+            <AppText variant="small" weight="semibold" color={colors.brand}>
+              ปลดบล็อก
             </AppText>
           )}
-          <View style={styles.metaRow}>
-            <View style={[styles.badge, { backgroundColor: isAuto ? colors.dangerSoft : colors.bubbleAssistant }]}>
-              <AppText variant="caption" weight="medium" color={isAuto ? colors.danger : colors.textMuted}>
-                {REASON_LABEL[entry.reason] ?? "บล็อกแล้ว"}
-              </AppText>
-            </View>
-            <AppText variant="caption" color={colors.textSubtle}>
-              {timeAgo(entry.addedAt)}
-            </AppText>
-          </View>
-        </View>
-      </View>
-      <PrimaryButton
-        title="ปลดบล็อก"
-        variant="secondary"
-        icon="lock-open-outline"
-        onPress={() => onUnblock(entry)}
-        loading={busy}
-        disabled={disabled}
-      />
-    </View>
+        </Pressable>
+      }
+    />
   );
 }
 
@@ -101,70 +96,58 @@ export default function BlockedScreen() {
     );
   }
 
-  const header = (
-    <View style={styles.header}>
-      <AppText variant="body" color={colors.textMuted}>
-        เบอร์เหล่านี้จะถูกตัดสายทันที ไม่ถึงผู้สูงอายุ
-      </AppText>
+  return (
+    <ScrollView style={styles.screen} contentContainerStyle={[styles.list, { paddingBottom: spacing.xxl + insets.bottom }]}>
       {notice && <Banner tone="success" text={notice} actionLabel="ปิด" onAction={() => setNotice(null)} />}
       {error && <Banner tone="error" text="โหลดรายการเบอร์ที่บล็อกไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่" />}
-    </View>
-  );
 
-  const contentStyle = [styles.list, { paddingBottom: spacing.xxl + insets.bottom }];
-
-  if (loading && entries.length === 0) {
-    return (
-      <View style={[styles.screen, ...contentStyle]}>
-        {header}
-        <Card style={styles.skeletonCard}>
+      {loading && entries.length === 0 ? (
+        <View style={styles.skeletons}>
           <Skeleton height={64} />
           <Skeleton height={64} />
-        </Card>
-      </View>
-    );
-  }
-
-  return (
-    <FlatList
-      style={styles.screen}
-      data={entries}
-      keyExtractor={(e) => e.callerKey}
-      contentContainerStyle={contentStyle}
-      ListHeaderComponent={header}
-      ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
-      ListEmptyComponent={
+        </View>
+      ) : entries.length === 0 ? (
         error ? null : (
-          <EmptyState title="ยังไม่มีเบอร์ที่ถูกบล็อก" subtitle="เมื่อคุณบล็อกสายแปลก หรือ AI บล็อกสายเสี่ยงสูง จะแสดงที่นี่" />
+          <EmptyState
+            icon="hand-left"
+            title="ยังไม่มีเบอร์ที่ถูกบล็อก"
+            subtitle="เมื่อคุณบล็อกสายแปลก หรือ AI บล็อกสายเสี่ยงสูง จะแสดงที่นี่"
+          />
         )
-      }
-      renderItem={({ item }) => (
-        <BlockedRow
-          entry={item}
-          busy={busyKey === item.callerKey}
-          disabled={busyKey !== null}
-          onUnblock={confirmUnblock}
-        />
+      ) : (
+        <ListSection
+          header={`${entries.length} เบอร์`}
+          footer="เบอร์เหล่านี้จะถูกตัดสายทันที ไม่ถึงผู้สูงอายุ"
+          separatorInset={SEPARATOR_INSET}
+        >
+          {entries.map((item) => (
+            <BlockedRow
+              key={item.callerKey}
+              entry={item}
+              busy={busyKey === item.callerKey}
+              disabled={busyKey !== null}
+              onUnblock={confirmUnblock}
+            />
+          ))}
+        </ListSection>
       )}
-    />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  list: { padding: spacing.lg, flexGrow: 1 },
-  header: { gap: spacing.md, marginBottom: spacing.lg },
-  skeletonCard: { padding: spacing.lg, gap: spacing.md },
-  row: { ...cardStyle, padding: spacing.lg, gap: spacing.md },
-  rowTop: { flexDirection: "row", gap: spacing.md, alignItems: "flex-start" },
-  icon: {
-    width: 44,
-    height: 44,
+  list: { padding: spacing.lg, gap: spacing.lg, flexGrow: 1 },
+  skeletons: { gap: spacing.sm },
+  capsule: {
+    minWidth: 84,
+    minHeight: 32,
+    paddingHorizontal: spacing.md,
     borderRadius: radii.pill,
+    backgroundColor: colors.fill,
     alignItems: "center",
     justifyContent: "center",
   },
-  rowBody: { flex: 1, gap: 2 },
-  metaRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: spacing.xs, flexWrap: "wrap" },
-  badge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radii.pill },
+  pressed: { opacity: 0.5 },
+  dim: { opacity: 0.4 },
 });

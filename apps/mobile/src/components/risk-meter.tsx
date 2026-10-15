@@ -11,11 +11,11 @@ const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 export interface RiskMeterProps {
   score: number;
-  /** Optional extra (not in spec): gauge width in px. Default 240. */
+  /** Optional extra (not in spec): gauge width in px. Default 232. */
   width?: number;
 }
 
-const STROKE = 20;
+const STROKE = 16;
 
 /** Point on the semicircle for a value 0–100 (0 = left, 100 = right). */
 function pointAt(v: number, cx: number, cy: number, r: number) {
@@ -29,8 +29,8 @@ function arc(from: number, to: number, cx: number, cy: number, r: number) {
   return `M ${p0.x} ${p0.y} A ${r} ${r} 0 0 1 ${p1.x} ${p1.y}`;
 }
 
-/** Big semicircle gauge: soft risk zones as the track, colored arc for the score, score number + Thai label. */
-export function RiskMeter({ score, width = 240 }: RiskMeterProps) {
+/** Semicircle gauge (Apple Watch style): grey track, rounded colored arc, big score + Thai level capsule. */
+export function RiskMeter({ score, width = 232 }: RiskMeterProps) {
   const s = clampScore(score);
   const level = riskLevelFromScore(s);
   const color = RISK_COLOR[level];
@@ -39,14 +39,12 @@ export function RiskMeter({ score, width = 240 }: RiskMeterProps) {
   const r = (width - STROKE) / 2;
   const cx = width / 2;
   const cy = r + STROKE / 2;
-  const height = cy + 2;
+  const height = cy + STROKE / 2;
   const len = Math.PI * r;
 
   const progress = useSharedValue(reduceMotion ? s : 0);
   useEffect(() => {
-    progress.value = reduceMotion
-      ? s
-      : withTiming(s, { duration: 900, easing: Easing.out(Easing.cubic) });
+    progress.value = reduceMotion ? s : withTiming(s, { duration: 900, easing: Easing.out(Easing.cubic) });
   }, [s, reduceMotion, progress]);
 
   const animatedProps = useAnimatedProps(() => ({
@@ -62,15 +60,13 @@ export function RiskMeter({ score, width = 240 }: RiskMeterProps) {
     >
       <View style={{ width, height }}>
         <Svg width={width} height={height}>
-          {/* track: three soft zones matching riskLevelFromScore thresholds */}
-          <Path d={arc(0, 40, cx, cy, r)} stroke={RISK_SOFT.low} strokeWidth={STROKE} fill="none" />
-          <Path d={arc(40, 70, cx, cy, r)} stroke={RISK_SOFT.medium} strokeWidth={STROKE} fill="none" />
-          <Path d={arc(70, 100, cx, cy, r)} stroke={RISK_SOFT.high} strokeWidth={STROKE} fill="none" />
+          <Path d={arc(0, 100, cx, cy, r)} stroke={colors.fill} strokeWidth={STROKE} strokeLinecap="round" fill="none" />
           {s > 0 && (
             <AnimatedPath
               d={arc(0, 100, cx, cy, r)}
               stroke={color}
               strokeWidth={STROKE}
+              strokeLinecap="round"
               fill="none"
               strokeDasharray={`${len} ${len}`}
               animatedProps={animatedProps}
@@ -78,17 +74,17 @@ export function RiskMeter({ score, width = 240 }: RiskMeterProps) {
           )}
         </Svg>
         <View style={styles.center} pointerEvents="none">
-          <AppText variant="display" weight="bold" color={color} style={styles.score}>
+          <AppText variant="display" weight="bold" color={colors.ink} style={styles.score}>
             {s}
           </AppText>
-          <AppText variant="caption" color={colors.textSubtle}>
-            คะแนนความเสี่ยง / 100
+          <AppText variant="caption" weight="medium" color={colors.textSubtle}>
+            คะแนนความเสี่ยง
           </AppText>
         </View>
       </View>
       <View style={[styles.label, { backgroundColor: RISK_SOFT[level] }]}>
         <View style={[styles.labelDot, { backgroundColor: color }]} />
-        <AppText variant="large" weight="bold" color={color}>
+        <AppText variant="small" weight="semibold" color={color}>
           {RISK_LABEL_TH[level]}
         </AppText>
       </View>
@@ -105,15 +101,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: "center",
   },
-  score: { fontSize: 56, lineHeight: 64 },
+  score: { fontSize: 60, lineHeight: 68, letterSpacing: -1.5 },
   label: {
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xs + 2,
+    gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
     borderRadius: radii.pill,
   },
-  labelDot: { width: 10, height: 10, borderRadius: 5 },
+  labelDot: { width: 8, height: 8, borderRadius: 4 },
 });

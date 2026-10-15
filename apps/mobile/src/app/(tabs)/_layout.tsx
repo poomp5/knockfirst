@@ -1,15 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
+import { StyleSheet } from "react-native";
 // SDK 57: `Tabs` from "expo-router" is deprecated in favour of "expo-router/js-tabs".
 import { Tabs } from "expo-router/js-tabs";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useCalls } from "@/lib/hooks";
-import { colors, fonts, fontSize } from "@/theme";
+import { colors, fonts } from "@/theme";
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
-function tabIcon(active: IconName, inactive: IconName) {
-  function TabIcon({ focused, color, size }: { focused: boolean; color: unknown; size: number }) {
-    return <Ionicons name={focused ? active : inactive} size={size} color={color as string} />;
+// iOS tab bars use filled glyphs in both states; the tint color marks the selected tab.
+function tabIcon(name: IconName) {
+  function TabIcon({ color }: { focused: boolean; color: unknown; size: number }) {
+    return <Ionicons name={name} size={25} color={color as string} />;
   }
   return TabIcon;
 }
@@ -17,18 +20,24 @@ function tabIcon(active: IconName, inactive: IconName) {
 export default function TabsLayout() {
   const { calls } = useCalls();
   const pending = calls.filter((c) => c.status === "needs_review").length;
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
       screenOptions={{
+        headerShown: false, // every tab draws its own iOS large title
         tabBarActiveTintColor: colors.brand,
-        tabBarInactiveTintColor: colors.textSubtle,
-        tabBarLabelStyle: { fontFamily: fonts.medium, fontSize: fontSize.caption },
-        tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.border },
-        headerStyle: { backgroundColor: colors.bg },
-        headerShadowVisible: false,
-        headerTintColor: colors.ink,
-        headerTitleStyle: { fontFamily: fonts.semibold, fontSize: fontSize.large },
+        tabBarInactiveTintColor: colors.gray,
+        tabBarLabelStyle: { fontFamily: fonts.medium, fontSize: 10, lineHeight: 16 },
+        tabBarStyle: {
+          backgroundColor: colors.bar,
+          borderTopColor: colors.separator,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          elevation: 0,
+          // a little taller than the default so Thai marks below the line (ญ ุ ู) aren't clipped
+          height: 58 + insets.bottom,
+          paddingTop: 4,
+        },
         sceneStyle: { backgroundColor: colors.bg },
       }}
     >
@@ -36,24 +45,23 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: "สายเข้า",
-          headerShown: false, // Inbox draws its own "ปกป้อง…" header
-          tabBarIcon: tabIcon("call", "call-outline"),
+          tabBarIcon: tabIcon("call"),
           tabBarBadge: pending > 0 ? pending : undefined,
-          tabBarBadgeStyle: { backgroundColor: colors.danger, fontFamily: fonts.semibold },
+          tabBarBadgeStyle: { backgroundColor: colors.danger, fontFamily: fonts.semibold, fontSize: 11 },
         }}
       />
       <Tabs.Screen
         name="whitelist"
         options={{
           title: "รายชื่อที่อนุญาต",
-          tabBarIcon: tabIcon("people", "people-outline"),
+          tabBarIcon: tabIcon("people"),
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: "ตั้งค่า",
-          tabBarIcon: tabIcon("settings", "settings-outline"),
+          tabBarIcon: tabIcon("settings"),
         }}
       />
     </Tabs>

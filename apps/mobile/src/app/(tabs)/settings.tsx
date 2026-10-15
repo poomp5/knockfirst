@@ -5,7 +5,6 @@ import {
   KeyboardAvoidingView,
   Linking,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Switch,
@@ -15,7 +14,7 @@ import {
 } from "react-native";
 import Constants from "expo-constants";
 import * as Clipboard from "expo-clipboard";
-import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFamily } from "@/lib/hooks";
 import { updateFamily } from "@/lib/actions";
 import { FAMILY_ID, USE_MOCKS } from "@/lib/firebase";
@@ -26,8 +25,8 @@ import {
   requestPushPermission,
   scheduleTestNotification,
 } from "@/lib/push";
-import { AppText, Banner, Card, PrimaryButton, SectionHeader, Skeleton } from "@/components";
-import { colors, fonts, fontSize, radii, spacing, TAP } from "@/theme";
+import { AppText, Banner, LargeTitle, ListRow, ListSection, PrimaryButton, Skeleton } from "@/components";
+import { colors, fonts, fontSize, SEPARATOR_INSET, spacing, TAP } from "@/theme";
 
 type FormKey = "ownerName" | "ownerPhone" | "ownerLabelForCallers" | "guardianName";
 type Draft = Partial<Record<FormKey, string>>;
@@ -44,6 +43,7 @@ const PERM_LABEL: Record<PermStatus, string> = {
   undetermined: "ยังไม่ได้ขออนุญาต",
 };
 
+/** Grouped-list text field: small grey label above a borderless input (Contacts edit style). */
 function Field({
   label,
   helper,
@@ -51,10 +51,10 @@ function Field({
 }: { label: string; helper?: string } & TextInputProps) {
   return (
     <View style={styles.field}>
-      <AppText variant="small" weight="medium" color={colors.textMuted}>
+      <AppText variant="caption" weight="medium" color={colors.textSubtle}>
         {label}
       </AppText>
-      <TextInput placeholderTextColor={colors.textSubtle} style={styles.input} {...input} />
+      <TextInput placeholderTextColor={colors.textFaint} style={styles.input} {...input} />
       {helper && (
         <AppText variant="caption" color={colors.textSubtle}>
           {helper}
@@ -64,29 +64,13 @@ function Field({
   );
 }
 
-function LinkRow({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.linkRow, pressed && styles.pressed]}
-      accessibilityRole="link"
-    >
-      <Ionicons name={icon} size={22} color={colors.brand} />
-      <AppText variant="body" weight="medium" style={styles.flex1}>
-        {label}
-      </AppText>
-      <Ionicons name="open-outline" size={18} color={colors.textSubtle} />
-    </Pressable>
-  );
-}
-
 function DevRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.devRow}>
       <AppText variant="caption" color={colors.textSubtle}>
         {label}
       </AppText>
-      <AppText variant="small" style={styles.mono} numberOfLines={3}>
+      <AppText variant="small" style={styles.mono} numberOfLines={3} selectable>
         {value || "—"}
       </AppText>
     </View>
@@ -104,6 +88,7 @@ async function openUrl(url: string) {
 
 export default function SettingsScreen() {
   const { family, loading, error } = useFamily();
+  const insets = useSafeAreaInsets();
 
   // Form: drafts override the live family doc; untouched fields always show the latest value.
   const [draft, setDraft] = useState<Draft>({});
@@ -268,24 +253,24 @@ export default function SettingsScreen() {
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top }]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
+        <LargeTitle title="ตั้งค่า" />
         {notice && <Banner tone={notice.tone} text={notice.text} />}
 
         {/* ---------- Family info ---------- */}
-        <SectionHeader title="ข้อมูลผู้สูงอายุ" />
         {error && <Banner tone="error" text="โหลดข้อมูลครอบครัวไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่" />}
         {loading && !family ? (
-          <Card style={styles.card}>
-            <Skeleton height={TAP} />
-            <Skeleton height={TAP} />
-            <Skeleton height={TAP} />
-          </Card>
+          <View style={styles.skeletons}>
+            <Skeleton height={TAP + 20} />
+            <Skeleton height={TAP + 20} />
+            <Skeleton height={TAP + 20} />
+          </View>
         ) : (
           <>
-            <Card style={styles.card}>
+            <ListSection header="ข้อมูลผู้สูงอายุ">
               <Field
                 label="ชื่อผู้สูงอายุ"
                 value={value("ownerName")}
@@ -306,17 +291,16 @@ export default function SettingsScreen() {
               />
               <Field
                 label="ชื่อที่ AI ใช้เรียกตอนรับสาย"
-                helper="AI จะเรียกชื่อนี้ตอนรับสาย ค่าเริ่มต้น 'เจ้าของเบอร์นี้' เพื่อไม่ให้คนแปลกหน้ารู้ชื่อจริง"
+                helper="ค่าเริ่มต้น 'เจ้าของเบอร์นี้' เพื่อไม่ให้คนแปลกหน้ารู้ชื่อจริง"
                 value={value("ownerLabelForCallers")}
                 onChangeText={setField("ownerLabelForCallers")}
                 placeholder="เจ้าของเบอร์นี้"
                 editable={!saving && !!family}
                 maxLength={60}
               />
-            </Card>
+            </ListSection>
 
-            <SectionHeader title="ผู้ดูแล" />
-            <Card style={styles.card}>
+            <ListSection header="ผู้ดูแล">
               <Field
                 label="ชื่อผู้ดูแล"
                 value={value("guardianName")}
@@ -325,11 +309,10 @@ export default function SettingsScreen() {
                 editable={!saving && !!family}
                 maxLength={60}
               />
-            </Card>
+            </ListSection>
 
             <PrimaryButton
               title={dirty ? "บันทึกการเปลี่ยนแปลง" : "บันทึกแล้ว"}
-              icon="save-outline"
               onPress={save}
               loading={saving}
               disabled={!dirty || saving}
@@ -338,145 +321,118 @@ export default function SettingsScreen() {
         )}
 
         {/* ---------- Notifications ---------- */}
-        <SectionHeader title="การแจ้งเตือน" />
-        <Card style={styles.card}>
-          <View style={styles.statusRow}>
-            <Ionicons
-              name={perm === "granted" ? "notifications" : "notifications-off-outline"}
-              size={22}
-              color={perm === "granted" ? colors.success : colors.warning}
-            />
-            <AppText variant="body" style={styles.flex1}>
-              สถานะการแจ้งเตือน
-            </AppText>
-            <AppText
-              variant="body"
-              weight="semibold"
-              color={perm === "granted" ? colors.success : perm ? colors.warning : colors.textSubtle}
-            >
-              {perm ? PERM_LABEL[perm] : "กำลังตรวจสอบ…"}
-            </AppText>
-          </View>
-          <View style={styles.statusRow}>
-            <Ionicons name="call-outline" size={22} color={colors.brand} />
-            <View style={styles.flex1}>
-              <AppText variant="body">แจ้งเตือนทันทีเมื่อมีสายแปลกโทรเข้า</AppText>
-              <AppText variant="caption" color={colors.textSubtle}>
-                เด้งเตือนระหว่างที่ AI กำลังรับสาย แล้วเปลี่ยนเป็นสรุปเมื่อวางสาย
-              </AppText>
-            </View>
-            <Switch
-              value={notifyLive}
-              onValueChange={toggleLive}
-              disabled={liveBusy || !family}
-              trackColor={{ true: colors.brand, false: colors.divider }}
-              thumbColor={colors.white}
-              accessibilityLabel="แจ้งเตือนทันทีเมื่อมีสายแปลกโทรเข้า"
-            />
-          </View>
-          {perm && perm !== "granted" && (
-            <PrimaryButton
-              title="ขออนุญาตแจ้งเตือน"
+        <ListSection
+          header="การแจ้งเตือน"
+          footer="การแจ้งเตือนจริงจากเซิร์ฟเวอร์ใช้ได้ในแอปที่ติดตั้งจาก APK เท่านั้น (ไม่ใช่ Expo Go)"
+          separatorInset={SEPARATOR_INSET}
+        >
+          <ListRow
+            icon="notifications"
+            iconColor={colors.danger}
+            title="สถานะการแจ้งเตือน"
+            value={perm ? PERM_LABEL[perm] : "กำลังตรวจสอบ…"}
+            valueColor={perm === "granted" ? colors.success : perm ? colors.warning : colors.textSubtle}
+          />
+          <ListRow
+            icon="call"
+            iconColor={colors.switchOn}
+            title="แจ้งเตือนทันทีเมื่อมีสายแปลก"
+            subtitle="เด้งเตือนระหว่างที่ AI รับสาย แล้วเปลี่ยนเป็นสรุปเมื่อวางสาย"
+            trailing={
+              <Switch
+                value={notifyLive}
+                onValueChange={toggleLive}
+                disabled={liveBusy || !family}
+                trackColor={{ true: colors.switchOn, false: colors.fill }}
+                thumbColor={colors.white}
+                ios_backgroundColor={colors.fill}
+                accessibilityLabel="แจ้งเตือนทันทีเมื่อมีสายแปลกโทรเข้า"
+              />
+            }
+          />
+          {perm && perm !== "granted" ? (
+            <ListRow
               icon="notifications-outline"
+              iconColor={colors.brand}
+              title={permBusy ? "กำลังขออนุญาต…" : "ขออนุญาตแจ้งเตือน"}
+              titleColor={colors.brand}
               onPress={askPermission}
-              loading={permBusy}
               disabled={permBusy}
+              chevron={false}
             />
-          )}
-          <PrimaryButton
-            title="ทดสอบการแจ้งเตือน"
-            variant="secondary"
-            icon="paper-plane-outline"
+          ) : null}
+          <ListRow
+            icon="paper-plane"
+            iconColor={colors.blue}
+            title={testBusy ? "กำลังส่ง…" : "ทดสอบการแจ้งเตือน"}
             onPress={testNotification}
-            loading={testBusy}
             disabled={testBusy}
           />
-          <AppText variant="caption" color={colors.textSubtle}>
-            การแจ้งเตือนจริงจากเซิร์ฟเวอร์ใช้ได้ในแอปที่ติดตั้งจาก APK เท่านั้น (ไม่ใช่ Expo Go)
-          </AppText>
-        </Card>
+        </ListSection>
 
         {/* ---------- Device role (update 05) ---------- */}
-        <SectionHeader title="โหมดของเครื่องนี้" />
-        <Card style={styles.card}>
-          <View style={styles.statusRow}>
-            <Ionicons name="phone-portrait-outline" size={22} color={colors.brand} />
-            <AppText variant="body" style={styles.flex1}>
-              เครื่องนี้เป็นของ
-            </AppText>
-            <AppText variant="body" weight="semibold">
-              {role === "grandma" ? "คุณยาย" : "ลูกหลาน (ผู้ดูแล)"}
-            </AppText>
-          </View>
-          <PrimaryButton
-            title="เปลี่ยนเป็นเครื่องของคุณยาย"
-            variant="secondary"
-            icon="swap-horizontal"
-            onPress={switchToGrandma}
+        <ListSection
+          header="โหมดของเครื่องนี้"
+          footer="เครื่องของคุณยายจะดังเมื่อคนในรายชื่อที่อนุญาตโทรมา ส่วนสายแปลก AI จะรับแทนและแจ้งเครื่องลูกหลาน"
+          separatorInset={SEPARATOR_INSET}
+        >
+          <ListRow
+            icon="phone-portrait"
+            iconColor={colors.indigo}
+            title="เครื่องนี้เป็นของ"
+            value={role === "grandma" ? "คุณยาย" : "ลูกหลาน (ผู้ดูแล)"}
           />
-          <AppText variant="caption" color={colors.textSubtle}>
-            เครื่องของคุณยายจะดังเมื่อคนในรายชื่อที่อนุญาตโทรมา ส่วนสายแปลก AI จะรับแทนและแจ้งเครื่องลูกหลาน
-          </AppText>
-        </Card>
+          <ListRow
+            icon="swap-horizontal"
+            iconColor={colors.brand}
+            title="เปลี่ยนเป็นเครื่องของคุณยาย"
+            titleColor={colors.brand}
+            onPress={switchToGrandma}
+            chevron={false}
+          />
+        </ListSection>
 
         {/* ---------- About ---------- */}
-        <SectionHeader title="เกี่ยวกับ" />
-        <Card style={styles.cardTight}>
-          <Pressable
+        <ListSection header="เกี่ยวกับ" separatorInset={SEPARATOR_INSET}>
+          <ListRow
+            icon="information"
+            iconColor={colors.gray}
+            title="เวอร์ชันแอป"
+            value={version}
             onPress={tapVersion}
-            style={styles.linkRow}
-            accessibilityRole="text"
+            chevron={false}
             accessibilityLabel={`เวอร์ชัน ${version}`}
-          >
-            <Ionicons name="information-circle-outline" size={22} color={colors.textMuted} />
-            <AppText variant="body" style={styles.flex1}>
-              เวอร์ชันแอป
-            </AppText>
-            <AppText variant="body" weight="medium" color={colors.textMuted}>
-              {version}
-            </AppText>
-          </Pressable>
-          {!!WEB_DEMO_URL && (
-            <>
-              <View style={styles.divider} />
-              <LinkRow icon="globe-outline" label="เปิดเว็บเดโม" onPress={() => openUrl(WEB_DEMO_URL)} />
-            </>
-          )}
-          <View style={styles.divider} />
-          <LinkRow icon="logo-github" label="ซอร์สโค้ดบน GitHub" onPress={() => openUrl(REPO_URL)} />
-        </Card>
+          />
+          {WEB_DEMO_URL ? (
+            <ListRow icon="globe" iconColor={colors.blue} title="เปิดเว็บเดโม" onPress={() => openUrl(WEB_DEMO_URL)} />
+          ) : null}
+          <ListRow icon="logo-github" iconColor={colors.ink} title="ซอร์สโค้ดบน GitHub" onPress={() => openUrl(REPO_URL)} />
+        </ListSection>
 
         {/* ---------- Hidden dev section ---------- */}
         {devOpen && (
-          <>
-            <SectionHeader title="สำหรับนักพัฒนา" />
-            <Card style={styles.card}>
-              <DevRow label="FAMILY_ID" value={FAMILY_ID} />
-              <DevRow label="USE_MOCKS" value={String(USE_MOCKS)} />
-              <DevRow label="EXPO_PUBLIC_SERVER_URL" value={SERVER_URL} />
-              <DevRow label="Push token (FCM)" value={token ?? "ยังไม่มี (Expo Go / ไม่ได้อนุญาต / ไม่ใช่ Android)"} />
-              <View style={styles.devActions}>
-                <View style={styles.flex1}>
-                  <PrimaryButton
-                    title="คัดลอก token"
-                    variant="secondary"
-                    icon="copy-outline"
-                    onPress={copyToken}
-                    disabled={!token}
-                  />
-                </View>
-                <View style={styles.flex1}>
-                  <PrimaryButton
-                    title="รีเฟรช"
-                    variant="ghost"
-                    icon="refresh"
-                    onPress={() => setToken(getLastPushToken())}
-                  />
-                </View>
-              </View>
-              <PrimaryButton title="ซ่อนส่วนนี้" variant="ghost" onPress={() => setVersionTaps(0)} />
-            </Card>
-          </>
+          <ListSection header="สำหรับนักพัฒนา" separatorInset={SEPARATOR_INSET}>
+            <DevRow label="FAMILY_ID" value={FAMILY_ID} />
+            <DevRow label="USE_MOCKS" value={String(USE_MOCKS)} />
+            <DevRow label="EXPO_PUBLIC_SERVER_URL" value={SERVER_URL} />
+            <DevRow label="Push token (FCM)" value={token ?? "ยังไม่มี (Expo Go / ไม่ได้อนุญาต / ไม่ใช่ Android)"} />
+            <ListRow
+              icon="copy"
+              iconColor={colors.blue}
+              title="คัดลอก token"
+              onPress={copyToken}
+              disabled={!token}
+              chevron={false}
+            />
+            <ListRow
+              icon="refresh"
+              iconColor={colors.gray}
+              title="รีเฟรช token"
+              onPress={() => setToken(getLastPushToken())}
+              chevron={false}
+            />
+            <ListRow title="ซ่อนส่วนนี้" titleColor={colors.brand} onPress={() => setVersionTaps(0)} chevron={false} />
+          </ListSection>
         )}
       </ScrollView>
     </KeyboardAvoidingView>
@@ -485,27 +441,17 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, paddingBottom: spacing.xxl * 2, gap: spacing.md },
-  card: { padding: spacing.lg, gap: spacing.lg },
-  cardTight: { paddingVertical: spacing.xs, paddingHorizontal: spacing.lg },
-  field: { gap: spacing.xs },
+  content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl * 2, gap: spacing.xl },
+  skeletons: { gap: spacing.sm },
+  field: { paddingHorizontal: spacing.lg, paddingTop: 10, paddingBottom: spacing.sm, backgroundColor: colors.card },
   input: {
-    minHeight: TAP,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
+    minHeight: 36,
+    paddingVertical: 4,
+    paddingHorizontal: 0,
     fontFamily: fonts.regular,
     fontSize: fontSize.body,
     color: colors.text,
-    backgroundColor: colors.bg,
   },
-  statusRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, minHeight: TAP },
-  linkRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, minHeight: TAP + 4 },
-  pressed: { opacity: 0.6 },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.divider },
-  devRow: { gap: 2 },
+  devRow: { gap: 2, paddingHorizontal: spacing.lg, paddingVertical: 10, backgroundColor: colors.card },
   mono: { fontFamily: Platform.select({ ios: "Menlo", android: "monospace", default: "monospace" }) },
-  devActions: { flexDirection: "row", gap: spacing.md },
-  flex1: { flex: 1 },
 });

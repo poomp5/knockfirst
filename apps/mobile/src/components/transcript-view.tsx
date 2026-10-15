@@ -10,7 +10,7 @@ export interface TranscriptViewProps {
   collapsedCount?: number;
 }
 
-/** Chat bubbles: AI assistant on the left (neutral), caller on the right (brand-soft). */
+/** iMessage-style thread: the AI (our side) on the right in the tint color, the caller on the left in grey. */
 export function TranscriptView({ turns, collapsedCount = 4 }: TranscriptViewProps) {
   const [expanded, setExpanded] = useState(false);
   const list = (Array.isArray(turns) ? turns : []).filter((t) => t && typeof t.text === "string" && t.text.trim());
@@ -30,20 +30,28 @@ export function TranscriptView({ turns, collapsedCount = 4 }: TranscriptViewProp
     <View style={styles.wrap}>
       {visible.map((turn, i) => {
         const isCaller = turn.role === "caller";
+        const prev = visible[i - 1];
+        const next = visible[i + 1];
+        const firstOfGroup = !prev || prev.role !== turn.role;
+        const lastOfGroup = !next || next.role !== turn.role;
         return (
-          <View key={`${i}-${turn.t}`} style={[styles.row, isCaller ? styles.rowRight : styles.rowLeft]}>
-            <View style={[styles.who, isCaller && styles.whoRight]}>
-              <Ionicons
-                name={isCaller ? "person" : "sparkles"}
-                size={12}
-                color={isCaller ? colors.brandPressed : colors.textSubtle}
-              />
-              <AppText variant="caption" weight="medium" color={isCaller ? colors.brandPressed : colors.textSubtle}>
+          <View
+            key={`${i}-${turn.t}`}
+            style={[styles.row, isCaller ? styles.rowLeft : styles.rowRight, firstOfGroup && i > 0 && styles.groupGap]}
+          >
+            {firstOfGroup && (
+              <AppText variant="caption" color={colors.textSubtle} style={styles.who}>
                 {isCaller ? "ผู้โทร" : "AI ผู้ช่วย"}
               </AppText>
-            </View>
-            <View style={[styles.bubble, isCaller ? styles.bubbleCaller : styles.bubbleAssistant]}>
-              <AppText variant="body" selectable>
+            )}
+            <View
+              style={[
+                styles.bubble,
+                isCaller ? styles.bubbleCaller : styles.bubbleAssistant,
+                lastOfGroup && (isCaller ? styles.tailLeft : styles.tailRight),
+              ]}
+            >
+              <AppText variant="body" color={isCaller ? colors.text : colors.white} selectable>
                 {turn.text.trim()}
               </AppText>
             </View>
@@ -58,10 +66,10 @@ export function TranscriptView({ turns, collapsedCount = 4 }: TranscriptViewProp
           accessibilityState={{ expanded }}
           style={({ pressed }) => [styles.toggle, pressed && styles.togglePressed]}
         >
-          <AppText variant="body" weight="semibold" color={colors.brand}>
-            {expanded ? "ย่อ" : `ดูทั้งหมด (${list.length})`}
+          <AppText variant="small" weight="semibold" color={colors.brand}>
+            {expanded ? "ย่อ" : `ดูทั้งหมด ${list.length} ข้อความ`}
           </AppText>
-          <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={colors.brand} />
+          <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={16} color={colors.brand} />
         </Pressable>
       )}
     </View>
@@ -69,22 +77,24 @@ export function TranscriptView({ turns, collapsedCount = 4 }: TranscriptViewProp
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: spacing.md },
-  row: { maxWidth: "85%", gap: 2 },
+  wrap: { gap: 3 },
+  row: { maxWidth: "80%", gap: 2 },
   rowLeft: { alignSelf: "flex-start" },
   rowRight: { alignSelf: "flex-end", alignItems: "flex-end" },
-  who: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: spacing.xs },
-  whoRight: { flexDirection: "row-reverse" },
-  bubble: { paddingHorizontal: spacing.md + 2, paddingVertical: spacing.sm + 2, borderRadius: radii.lg },
-  bubbleAssistant: { backgroundColor: colors.bubbleAssistant, borderTopLeftRadius: 4 },
-  bubbleCaller: { backgroundColor: colors.bubbleCaller, borderTopRightRadius: 4 },
+  groupGap: { marginTop: spacing.sm },
+  who: { paddingHorizontal: spacing.md, fontSize: 11, lineHeight: 15 },
+  bubble: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radii.xxl - 4 },
+  bubbleAssistant: { backgroundColor: colors.bubbleAssistant },
+  bubbleCaller: { backgroundColor: colors.bubbleCaller },
+  tailLeft: { borderBottomLeftRadius: 5 },
+  tailRight: { borderBottomRightRadius: 5 },
   toggle: {
     minHeight: TAP,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: spacing.xs,
-    borderRadius: radii.md,
+    marginTop: spacing.xs,
   },
-  togglePressed: { backgroundColor: colors.brandSoft },
+  togglePressed: { opacity: 0.4 },
 });
