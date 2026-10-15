@@ -6,8 +6,10 @@ const SR = 48000;
 const OUT = new URL("../public/audio/", import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
 
-const BEAT = 0.5;
-const DUR = 60;
+// SLOW=1.2 node scripts/make-audio.mjs → music-slow.wav only (100 BPM, 72 s) for the slowed voice-over cut.
+const SLOW = Number(process.env.SLOW || 1);
+const BEAT = 0.5 * SLOW;
+const DUR = 60 * SLOW;
 const N = SR * DUR;
 const L = new Float32Array(N);
 const R = new Float32Array(N);
@@ -291,7 +293,8 @@ for (let i = 0; i < 0.6 * SR; i++) {
   L[N - 1 - i] *= 1 - k;
   R[N - 1 - i] *= 1 - k;
 }
-writeWav(OUT + "music.wav", L, R);
+writeWav(OUT + (SLOW === 1 ? "music.wav" : "music-slow.wav"), L, R);
+if (SLOW !== 1) process.exit(0); // the sound effects are not tempo-bound, keep the originals
 
 // ---------- sound effects (short, separate files; mixed in Remotion) ----------
 function fx(name, seconds, fn) {

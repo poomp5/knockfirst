@@ -1,0 +1,98 @@
+[
+  {
+    "at": 50,
+    "frames": 49,
+    "file": "audio/vo/00.wav",
+    "text": "Who's calling Grandma?"
+  },
+  {
+    "at": 112,
+    "frames": 51,
+    "file": "audio/vo/01.wav",
+    "text": "A number she doesn't know."
+  },
+  {
+    "at": 216,
+    "frames": 53,
+    "file": "audio/vo/02.wav",
+    "text": "Scammers follow a script."
+  },
+  {
+    "at": 289,
+    "frames": 94,
+    "file": "audio/vo/03.wav",
+    "text": "And it always ends the same way: don't tell your family."
+  },
+  {
+    "at": 384,
+    "frames": 69,
+    "file": "audio/vo/04.wav",
+    "text": "What if strangers had to knock first?"
+  },
+  {
+    "at": 466,
+    "frames": 114,
+    "file": "audio/vo/05.wav",
+    "text": "Meet KnockFirst. An AI call screener for elderly parents."
+  },
+  {
+    "at": 672,
+    "frames": 87,
+    "file": "audio/vo/06.wav",
+    "text": "When a stranger calls, the AI answers first."
+  },
+  {
+    "at": 790,
+    "frames": 62,
+    "file": "audio/vo/07.wav",
+    "text": "It asks who's calling, and why."
+  },
+  {
+    "at": 905,
+    "frames": 104,
+    "file": "audio/vo/08.wav",
+    "text": "It scores the risk, and quotes every red flag from the call."
+  },
+  {
+    "at": 1022,
+    "frames": 107,
+    "file": "audio/vo/09.wav",
+    "text": "One tap from the family: block the scammer, let the nurse through."
+  },
+  {
+    "at": 1146,
+    "frames": 67,
+    "file": "audio/vo/10.wav",
+    "text": "You know the moment a stranger calls."
+  },
+  {
+    "at": 1258,
+    "frames": 60,
+    "file": "audio/vo/11.wav",
+    "text": "Allow. Block. You decide."
+  },
+  {
+    "at": 1374,
+    "frames": 147,
+    "file": "audio/vo/12.wav",
+    "text": "Grandma mode keeps it simple: big text, calm screen, and family rings straight through."
+  },
+  {
+    "at": 1521,
+    "frames": 107,
+    "file": "audio/vo/13.wav",
+    "text": "Strangers talk to the AI. Grandma talks to family."
+  },
+  {
+    "at": 1656,
+    "frames": 44,
+    "file": "audio/vo/14.wav",
+    "text": "KnockFirst."
+  },
+  {
+    "at": 1704,
+    "frames": 94,
+    "file": "audio/vo/15.wav",
+    "text": "Strangers knock first. Family opens the door."
+  }
+]

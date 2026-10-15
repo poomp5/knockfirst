@@ -7,6 +7,7 @@ import { S5Features } from "./scenes/S5Features";
 import { S6Payoff } from "./scenes/S6Payoff";
 import { S7Final } from "./scenes/S7Final";
 import { T } from "./theme";
+import VO from "./vo.json";
 
 const len = (s: readonly [number, number]) => s[1] - s[0];
 
@@ -66,7 +67,14 @@ const SFX: Sfx[] = [
   { at: 1742, name: "chime", vol: 0.45 },
 ];
 
-export function Film() {
+/** Music level under the narration: dips while a line plays, eased over 6 frames on each side. */
+function ducked(f: number) {
+  const near = Math.min(...VO.map((c) => (f < c.at ? c.at - f : f > c.at + c.frames ? f - c.at - c.frames : 0)));
+  return 0.15 + 0.37 * Math.min(1, near / 6);
+}
+
+/** KnockFirstFilm: the original 60 s cut. KnockFirstFilmVO: same frames at 25 fps (1.2× slower) + narration. */
+export function Film({ voiceover = false }: { voiceover?: boolean }) {
   return (
     <AbsoluteFill style={{ background: "#FFF7EE" }}>
       <Series>
@@ -93,12 +101,19 @@ export function Film() {
         </Series.Sequence>
       </Series>
 
-      <Audio src={staticFile("audio/music.wav")} volume={0.8} />
+      {voiceover ? <Audio src={staticFile("audio/music-slow.wav")} volume={ducked} /> : <Audio src={staticFile("audio/music.wav")} volume={0.8} />}
       {SFX.map((s, i) => (
         <Sequence key={i} from={s.at} durationInFrames={s.dur ?? 75} layout="none">
-          <Audio src={staticFile(`audio/${s.name.includes(".") ? s.name : `${s.name}.wav`}`)} volume={s.vol ?? 0.4} />
+          <Audio src={staticFile(`audio/${s.name.includes(".") ? s.name : `${s.name}.wav`}`)} volume={(s.vol ?? 0.4) * (voiceover ? 0.7 : 1)} />
         </Sequence>
       ))}
+      {voiceover
+        ? VO.map((c) => (
+            <Sequence key={c.file} from={c.at} durationInFrames={c.frames + 10} layout="none">
+              <Audio src={staticFile(c.file)} volume={1} />
+            </Sequence>
+          ))
+        : null}
     </AbsoluteFill>
   );
 }

@@ -6,6 +6,8 @@
   "scripts": {
     "studio": "remotion studio src/index.ts",
     "render": "remotion render src/index.ts KnockFirstFilm out/knockfirst-launch-film.mp4",
+    "render:vo": "remotion render src/index.ts KnockFirstFilmVO out/knockfirst-launch-film-vo.mp4",
+    "voiceover": "node scripts/make-voiceover.mjs",
     "shots": "node scripts/capture-shots.mjs",
     "audio": "node scripts/make-audio.mjs"
   },
@@ -19,6 +21,7 @@
   },
   "devDependencies": {
     "@types/react": "19.2.2",
+    "kokoro-js": "^1.2.1",
     "playwright": "1.56.1",
     "typescript": "5.9.3"
   }
