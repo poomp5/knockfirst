@@ -12,14 +12,14 @@
 | B0.6 | Railway project (root `apps/server`) | ❌ | |
 | B0.7 | `DEMO_ADMIN_TOKEN` | ❌ | |
 | B1 | Repo skeleton (README placeholder, CLAUDE.md, .gitignore, docs/tasks) | ✅ | Task files copied byte-for-byte. |
-| B2 | Server scaffold | 🟡 | Done: package.json (all scripts), tsconfig, .env.example, env.ts, contract.ts, firebase.ts, ai/index.ts stub. Typecheck passes. Left: routes/*, services/*, scripts/*. Adapted: TS 7 removed `moduleResolution: node`; firebase-admin v14 → modular API. |
-| B3 | `src/index.ts` router mounting | 🟡 | Only `/health` so far. |
-| B4 | Services (families, calls, policy, push, pipeline) | ❌ | |
-| B5 | Twilio routing | ❌ | |
-| B6 | ElevenLabs post-call webhook + signature | ❌ | |
-| B7 | Browser-call token `/voice/token` | ❌ | |
-| B8 | Dev/demo endpoints, seed, reset | ❌ | |
-| B9 | APK release workflow | ❌ | |
+| B2 | Server scaffold | ✅ | All files from the B2 layout. Adapted: TS 7 removed `moduleResolution: node`; firebase-admin v14 → modular API. |
+| B3 | `src/index.ts` router mounting | ✅ | elevenlabs (raw) → urlencoded + twilio → json + voiceToken/dev → /health. |
+| B4 | Services (families, calls, policy, push, pipeline) | ✅ | Pipeline also creates the inbox fields if the webhook arrives without a call doc. |
+| B5 | Twilio routing | ✅ | Emulator-tested: whitelist → `<Dial>` owner, blocked → `<Reject>`, unknown → screening. Real call + caller-ID check happen in B10. |
+| B6 | ElevenLabs post-call webhook + signature | ✅ | Emulator-tested with signed payload (bad sig → 401). After the first real call, compare `debug/elevenlabs_last` with the mapping. |
+| B7 | Browser-call token `/voice/token` | ✅ | Returns 503 until the 4 Twilio values are set. |
+| B8 | Dev/demo endpoints, seed, reset | ✅ | Emulator-tested: simulate (needs_review / no_message / auto_blocked), /demo/reset, `npm run seed`, `npm run reset`. |
+| B9 | APK release workflow | 🟡 | Workflow committed. Needs Actions secrets (B0.1) and Poom's `apps/mobile` + `package-lock.json` before the first `v0.1.0` tag. |
 | B10 | Deploy + end-to-end test matrix | ❌ | |
 | B11 | README for judges | ❌ | |
 | B12 | Extras (U-Bot, signature validation, /stats) | ❌ | Only after M2. |
