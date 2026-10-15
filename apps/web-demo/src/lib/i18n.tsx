@@ -1,0 +1,222 @@
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+
+export type Lang = "th" | "en";
+
+const STR = {
+  th: {
+    tagline: "คนแปลกหน้าต้องเคาะประตูก่อน ลูกหลานเป็นคนเปิด",
+    heroLead: "เบอร์ที่ไม่รู้จักโทรหาคุณยาย ผู้ช่วย AI จะรับสายแทน ถามว่าเป็นใครและต้องการอะไร แล้วส่งสรุปให้ลูกหลานตัดสินใจ",
+    getApp: "ดาวน์โหลดแอป Android",
+    tryCall: "ลองโทรเลย",
+    callerSide: "คุณคือคนแปลกหน้า",
+    callerSideSub: "โทรหาเบอร์ของคุณยายจากเบราว์เซอร์นี้ ผู้ช่วย AI จะรับสาย พูดไทยหรืออังกฤษก็ได้",
+    familySide: "ฝั่งลูกหลาน",
+    familySideSub: "สายที่ AI รับไว้จะขึ้นที่นี่ทันที เหมือนในแอปของลูกหลาน",
+    yourId: "หมายเลขผู้โทรของคุณ",
+    pickRole: "เลือกบทที่จะเล่น",
+    callGrandma: "โทรหาคุณยาย",
+    hangUp: "วางสาย",
+    st_idle: "พร้อมโทร",
+    st_fetching: "กำลังเตรียมสาย…",
+    st_connecting: "กำลังต่อสาย…",
+    st_talking: "กำลังคุยกับผู้ช่วย AI",
+    st_ended: "วางสายแล้ว",
+    afterCall: "ดูผลในกล่องของลูกหลาน",
+    guardianAlertedNow: "ตอนนี้มือถือของลูกหลานได้รับแจ้งเตือนแล้ว",
+    micDenied: "เบราว์เซอร์ไม่อนุญาตให้ใช้ไมค์ กดรูปแม่กุญแจที่แถบที่อยู่ เปิดสิทธิ์ไมโครโฟน แล้วลองใหม่",
+    micMissing: "ไม่พบไมโครโฟน เสียบหูฟังหรือไมค์ แล้วลองใหม่",
+    callUnavailable: "ระบบโทรไม่พร้อม ลองใช้ปุ่มด้านล่างแทน",
+    callUnavailableHint: "หรือดาวน์โหลดแอปแล้วดูการ์ดตัวอย่างในกล่องข้อความ",
+    callFailed: "สายหลุด ลองโทรใหม่อีกครั้ง",
+    scenario_rider: "เป็นไรเดอร์ส่งของ",
+    scenario_rider_say: "“สวัสดีครับ ไรเดอร์ Flash มาส่งพัสดุ อยู่หน้าบ้านแล้วครับ”",
+    scenario_police: "เป็นตำรวจปลอม",
+    scenario_police_say: "“ผมเป็นตำรวจ บัญชีคุณเกี่ยวกับคดีฟอกเงิน ต้องโอนเงินมาตรวจสอบด่วน”",
+    scenario_clinic: "โทรจากคลินิก",
+    scenario_clinic_say: "“ดิฉันโทรจากคลินิกทันตกรรม โทรมาเตือนนัดวันพฤหัสค่ะ”",
+    sayThis: "ลองพูดว่า",
+    inboxEmpty: "ยังไม่มีสาย ลองโทรหาคุณยายดูสิ",
+    inboxLoading: "กำลังโหลดกล่องข้อความ…",
+    inboxError: "เชื่อมต่อกล่องข้อความไม่ได้",
+    inboxErrorHint: "ลองรีเฟรชหน้านี้ ถ้ายังไม่ได้ อาจเป็นเพราะเครือข่ายบล็อก Firebase",
+    previewNote: "ตัวอย่างการ์ด: เว็บนี้ยังไม่ได้เชื่อมกับ Firebase",
+    yourCall: "สายของคุณ",
+    guardianAlerted: "แจ้งเตือนลูกหลานแล้วระหว่างสาย",
+    aiTalking: "AI กำลังคุยกับผู้โทร…",
+    summary: "สรุป",
+    evidence: "หลักฐานจากคำพูดของผู้โทร",
+    transcript: "บทสนทนา",
+    assistant: "ผู้ช่วย AI",
+    caller: "ผู้โทร",
+    accept: "อนุญาตเบอร์นี้",
+    block: "บล็อกเบอร์นี้",
+    acceptHint: "ครั้งหน้าเบอร์นี้จะโทรเข้าเครื่องคุณยายได้เลย",
+    blockHint: "บล็อกสำหรับครอบครัวนี้ และรายงานเข้าบัญชีบล็อกกลาง",
+    acceptedNext: "อนุญาตแล้ว ลองโทรอีกครั้ง คราวนี้มือถือของคุณยายจะดัง",
+    blockedDone: "บล็อกแล้ว ถ้าเบอร์นี้โทรมาอีก ระบบจะตัดสายทันที",
+    decisionFailed: "บันทึกไม่สำเร็จ ลองอีกครั้ง",
+    decideWhenDone: "ตัดสินใจได้เมื่อ AI วางสายและสรุปเสร็จ",
+    close: "ปิด",
+    callback: "เบอร์ติดต่อกลับ",
+    duration: "ความยาวสาย",
+    sec: "วินาที",
+    risk: "ความเสี่ยง",
+    howTitle: "เกิดอะไรขึ้นเมื่อมีสายโทรเข้า",
+    how1: "มีคนโทรหาเบอร์ของคุณยาย",
+    how1b: "ระบบเช็กเบอร์กับรายชื่อคนรู้จักและบัญชีบล็อก",
+    how2: "คนรู้จักโทรเข้าเครื่องคุณยายตามปกติ",
+    how2b: "เบอร์ที่ถูกบล็อกจะถูกตัดสายทันที",
+    how3: "เบอร์แปลกคุยกับผู้ช่วย AI ก่อน",
+    how3b: "AI ถามชื่อ จะติดต่อใคร เรื่องอะไร และไม่บอกข้อมูลของคุณยาย",
+    how4: "AI สรุปและให้คะแนนความเสี่ยง",
+    how4b: "พร้อมหลักฐานจากคำพูดจริงของผู้โทร สายเสี่ยงสูงถูกบล็อกอัตโนมัติ",
+    how5: "ลูกหลานกดอนุญาตหรือบล็อก",
+    how5b: "อนุญาตแล้วครั้งหน้าโทรเข้าได้เลย บล็อกแล้วช่วยเตือนครอบครัวอื่นด้วย",
+    builtWith: "สร้างด้วย",
+    resultsTitle: "ผลการทดสอบ",
+    resultsSub: "ทดสอบกับบทสนทนาจริงแบบมีเฉลย ทั้งมิจฉาชีพและสายปกติ",
+    detect: "จับมิจฉาชีพได้",
+    falseAlarm: "แจ้งเตือนผิด (สายปกติ)",
+    precision: "ความแม่นของการบล็อกอัตโนมัติ",
+    liveTitle: "สายในระบบตอนนี้",
+    screened: "สายที่ AI รับแทน",
+    autoBlocked: "บล็อกอัตโนมัติ",
+    accepted: "ลูกหลานอนุญาต",
+    appTitle: "แอปของลูกหลาน",
+    appSub: "รับแจ้งเตือนทันทีที่มีเบอร์แปลกโทรหาคุณยาย อ่านสรุป แล้วกดอนุญาตหรือบล็อก",
+    step1: "ดาวน์โหลดไฟล์ APK",
+    step2: "อนุญาตให้ติดตั้งแอปจากแหล่งที่ไม่รู้จัก",
+    step3: "เปิดแอป KnockFirst แล้วอนุญาตการแจ้งเตือน",
+    scanQr: "สแกนด้วยมือถือ Android",
+    download: "ดาวน์โหลด APK",
+    team: "ทีม",
+    source: "ซอร์สโค้ดบน GitHub",
+    justNow: "เมื่อสักครู่",
+  },
+  en: {
+    tagline: "Strangers knock first. Family opens the door.",
+    heroLead: "When an unknown number calls grandma, an AI assistant answers. It asks who's calling and why, then sends the family a summary to decide on.",
+    getApp: "Download the Android app",
+    tryCall: "Try a call",
+    callerSide: "You're the stranger",
+    callerSideSub: "Call grandma's number from this browser. The AI assistant answers in Thai or English.",
+    familySide: "The family's side",
+    familySideSub: "Calls the AI answered show up here live, exactly as in the family's app.",
+    yourId: "Your caller ID",
+    pickRole: "Pick a role to play",
+    callGrandma: "Call grandma",
+    hangUp: "Hang up",
+    st_idle: "Ready to call",
+    st_fetching: "Getting the line ready…",
+    st_connecting: "Connecting…",
+    st_talking: "Talking to the AI assistant",
+    st_ended: "Call ended",
+    afterCall: "See the result in the family's inbox",
+    guardianAlertedNow: "The guardian's phone has just been alerted",
+    micDenied: "The browser blocked the microphone. Click the lock icon in the address bar, allow the microphone, and try again.",
+    micMissing: "No microphone found. Plug in a headset or mic and try again.",
+    callUnavailable: "Calling isn't available right now.",
+    callUnavailableHint: "You can still explore the inbox below, or install the app.",
+    callFailed: "The call dropped. Try calling again.",
+    scenario_rider: "Be a delivery rider",
+    scenario_rider_say: "“Hi, I'm a Flash rider with a parcel. I'm at the gate.”",
+    scenario_police: "Be a fake police officer",
+    scenario_police_say: "“This is the police. Your account is linked to money laundering. Transfer money now to verify it.”",
+    scenario_clinic: "Call from a clinic",
+    scenario_clinic_say: "“I'm calling from the dental clinic to remind you about Thursday's appointment.”",
+    sayThis: "Try saying",
+    inboxEmpty: "No calls yet. Call grandma to see one arrive.",
+    inboxLoading: "Loading the inbox…",
+    inboxError: "Couldn't connect to the inbox",
+    inboxErrorHint: "Refresh the page. If it still fails, the network may be blocking Firebase.",
+    previewNote: "Sample cards: this build isn't connected to Firebase.",
+    yourCall: "Your call",
+    guardianAlerted: "Guardian alerted during the call",
+    aiTalking: "AI is talking to the caller…",
+    summary: "Summary",
+    evidence: "Evidence from what the caller said",
+    transcript: "Transcript",
+    assistant: "AI assistant",
+    caller: "Caller",
+    accept: "Accept this number",
+    block: "Block this number",
+    acceptHint: "Next time, this number rings grandma directly.",
+    blockHint: "Blocks it for this family and reports it to the shared blocklist.",
+    acceptedNext: "Accepted. Call again: this time grandma's phone will ring.",
+    blockedDone: "Blocked. If this number calls again, it's rejected straight away.",
+    decisionFailed: "Couldn't save that. Try again.",
+    decideWhenDone: "You can decide once the AI hangs up and finishes the summary.",
+    close: "Close",
+    callback: "Callback number",
+    duration: "Call length",
+    sec: "s",
+    risk: "Risk",
+    howTitle: "What happens when someone calls",
+    how1: "Someone calls grandma's number",
+    how1b: "The number is checked against the family's contacts and the blocklist.",
+    how2: "Known callers ring grandma as usual",
+    how2b: "Blocked numbers are rejected immediately.",
+    how3: "Unknown callers talk to the AI first",
+    how3b: "It asks their name, who they want and why, and never reveals anything about grandma.",
+    how4: "The AI summarizes and scores the risk",
+    how4b: "With evidence quoted from the caller. Obvious scams are blocked automatically.",
+    how5: "The family taps Accept or Block",
+    how5b: "Accepted numbers ring through next time. Blocking also warns other families.",
+    builtWith: "Built with",
+    resultsTitle: "Test results",
+    resultsSub: "Measured on labeled transcripts of real scam scripts and everyday calls.",
+    detect: "Scams caught",
+    falseAlarm: "False alarms on normal calls",
+    precision: "Auto-block precision",
+    liveTitle: "Calls in the system right now",
+    screened: "Answered by the AI",
+    autoBlocked: "Auto-blocked",
+    accepted: "Accepted by family",
+    appTitle: "The family's app",
+    appSub: "Get an alert the moment an unknown number calls grandma, read the summary, then accept or block.",
+    step1: "Download the APK",
+    step2: "Allow installing apps from unknown sources",
+    step3: "Open KnockFirst and allow notifications",
+    scanQr: "Scan with an Android phone",
+    download: "Download APK",
+    team: "Team",
+    source: "Source code on GitHub",
+    justNow: "just now",
+  },
+} as const;
+
+export type StrKey = keyof typeof STR.th;
+
+const LangCtx = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({ lang: "th", setLang: () => {} });
+
+function readLang(): Lang {
+  try { return localStorage.getItem("kf-lang") === "en" ? "en" : "th"; } catch { return "th"; }
+}
+
+export function LangProvider({ children }: { children: ReactNode }) {
+  const [lang, setLangState] = useState<Lang>(readLang);
+  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
+  const setLang = (l: Lang) => {
+    setLangState(l);
+    try { localStorage.setItem("kf-lang", l); } catch { /* private mode: keep in memory only */ }
+  };
+  return <LangCtx.Provider value={{ lang, setLang }}>{children}</LangCtx.Provider>;
+}
+
+export function useLang() {
+  const { lang, setLang } = useContext(LangCtx);
+  const t = (k: StrKey) => STR[lang][k];
+  return { lang, setLang, t };
+}
+
+export function timeAgo(d: Date | null, lang: Lang): string {
+  if (!d) return STR[lang].justNow;
+  const s = Math.round((d.getTime() - Date.now()) / 1000);
+  if (Math.abs(s) < 45) return STR[lang].justNow;
+  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
+  const m = Math.round(s / 60);
+  if (Math.abs(m) < 60) return rtf.format(m, "minute");
+  const h = Math.round(m / 60);
+  if (Math.abs(h) < 24) return rtf.format(h, "hour");
+  return rtf.format(Math.round(h / 24), "day");
+}
