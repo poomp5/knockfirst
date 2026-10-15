@@ -21,12 +21,28 @@ const isDecision = (d: unknown): d is "accepted" | "blocked" => d === "accepted"
 /** Shared by the ElevenLabs post-call webhook and /dev/simulate-call. */
 export async function processCompletedCall(p: CompletedCall): Promise<{ status: CallStatus; analysis: CallAnalysis | null }> {
   const t0 = Date.now();
-  const { familyId, callId, callerKey, transcript } = p;
+  const { familyId, callId, transcript } = p;
   const ref = db.doc(paths.call(familyId, callId));
+
+  // 0. Claim the call so the webhook, its retries and the GET-conversation fallback process it once.
+  //    `pipelineStartedAt` is a server-internal field (not in the contract; clients ignore it).
+  const claim = await db.runTransaction(async tx => {
+    const s = await tx.get(ref);
+    if (s.exists && s.get("pipelineStartedAt")) return null;
+    tx.set(ref, { pipelineStartedAt: FieldValue.serverTimestamp() }, { merge: true });
+    return s;
+  });
+  if (!claim) {
+    const s = await ref.get();
+    console.log(`call ${callId} already processed (${s.get("status")}), skipping`);
+    return { status: s.get("status"), analysis: s.get("analysis") ?? null };
+  }
+  const snap = claim;
+  // Trust the call doc's callerKey (browser conversations carry no caller id of their own).
+  const callerKey: string = (snap.exists && snap.get("callerKey")) || p.callerKey;
 
   // 1. Save the transcript and mark analyzing. If /call/start never created the doc (e.g. no call_id),
   //    create the fields the inbox needs. Never overwrite a guardian decision's status.
-  const snap = await ref.get();
   await updateCall(familyId, callId, {
     ...(snap.exists ? {} : {
       id: callId, familyId, callerKey, from: callerKey, to: "", route: "screened",
