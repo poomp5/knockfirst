@@ -6,6 +6,7 @@ import { paths, toCallerKey } from "../contract";
 import { db, FieldValue } from "../firebase";
 import { findFamilyIdByTwilioNumber, getFamily, isBlocked, isWhitelisted } from "../services/families";
 import { createCall } from "../services/calls";
+import { notifyIncoming } from "../services/push";
 
 const elevenlabs = new ElevenLabsClient({ apiKey: env.ELEVENLABS_API_KEY });
 export const twilioRouter = Router();
@@ -49,6 +50,8 @@ twilioRouter.post("/twilio/voice", verifyTwilio, async (req, res) => {
 
     // unknown → AI assistant
     await createCall({ ...base, route: "screened", status: "screening" });
+    // Not awaited: Twilio times out after 15 s and the call must never wait for FCM.
+    void notifyIncoming(familyId, base.id, callerKey).catch(e => console.warn("incoming push failed", e));
     const twiml = await elevenlabs.conversationalAi.twilio.registerCall({
       agentId: env.ELEVENLABS_AGENT_ID,
       fromNumber: From.startsWith("client:") ? env.TWILIO_PHONE_NUMBER : From, // browser callers have no phone number
