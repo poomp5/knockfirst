@@ -71,7 +71,7 @@ async function main() {
   if (only) return;
 
   const md = [
-    `# LukLan analyzer eval${rulesOnly ? " (rules only)" : ""}`,
+    `# KnockFirst analyzer eval${rulesOnly ? " (rules only)" : ""}`,
     "",
     `Run ${new Date().toISOString()} · ${rows.length} labeled transcripts (${scams.length} scam, ${legit.length} legit) from \`cases.ts\`.`,
     `Regenerate: \`cd apps/server && npm run eval${rulesOnly ? " -- --rules" : ""}\`.`,

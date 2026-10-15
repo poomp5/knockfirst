@@ -1,0 +1,92 @@
+rules_version = '2';
+// KnockFirst Firestore rules (owner: Sky). Clients = guardian app + web demo, signed in anonymously.
+// The server uses the Admin SDK and bypasses these rules. Client writes must match the A6 recipes exactly.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function data() { return request.resource.data; }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function isStr(v, max) { return v is string && v.size() <= max; }
+    function strOrNull(m, k, max) { return !(k in m) || m[k] == null || isStr(m[k], max); }
+    function isNow(v) { return v == request.time; } // serverTimestamp() resolves to request.time
+    // Doc IDs from toCallerKey(): E.164 or a web-demo browser identity.
+    function validCallerKey(k) { return k.matches('^([+][0-9]{6,15}|client:[A-Za-z0-9_-]{1,64})$'); }
+    function familyExists(f) { return exists(/databases/$(database)/documents/families/$(f)); }
+
+    match /families/{familyId} {
+      allow read: if signedIn();
+      // Settings edits + push token registration. Only touched fields are validated, so a seed doc
+      // missing an optional field still accepts edits to the others.
+      allow update: if signedIn()
+        && changed().hasOnly(['ownerName', 'ownerLabelForCallers', 'ownerPhone', 'guardianName', 'pushTokens', 'notifyOnIncoming'])
+        && (!changed().hasAny(['ownerName']) || isStr(data().ownerName, 80))
+        && (!changed().hasAny(['ownerLabelForCallers']) || isStr(data().ownerLabelForCallers, 80))
+        && (!changed().hasAny(['guardianName']) || isStr(data().guardianName, 80))
+        && (!changed().hasAny(['ownerPhone']) || data().ownerPhone.matches('^[+][0-9]{8,15}$'))
+        && (!changed().hasAny(['pushTokens']) || (data().pushTokens is list && data().pushTokens.size() <= 50))
+        && (!changed().hasAny(['notifyOnIncoming']) || data().notifyOnIncoming is bool);
+
+      // Server creates calls and writes analysis. Clients may only record the guardian's decision.
+      match /calls/{callId} {
+        allow read: if signedIn();
+        allow update: if signedIn()
+          && changed().hasOnly(['decision', 'decidedAt', 'status'])
+          && data().decision in ['accepted', 'blocked']
+          && data().status == data().decision
+          && isNow(data().decidedAt);
+      }
+
+      match /whitelist/{key} {
+        allow read, delete: if signedIn();
+        allow create, update: if signedIn()
+          && validCallerKey(key)
+          && data().keys().hasOnly(['callerKey', 'displayName', 'note', 'addedBy', 'addedAt', 'sourceCallId'])
+          && data().callerKey == key
+          && isStr(data().displayName, 100)
+          && data().addedBy in ['guardian', 'contacts'] // 'seed' is server-only
+          && isNow(data().addedAt)
+          && strOrNull(data(), 'note', 200)
+          && strOrNull(data(), 'sourceCallId', 100);
+      }
+
+      match /blocked/{key} {
+        allow read, delete: if signedIn();
+        allow create, update: if signedIn()
+          && validCallerKey(key)
+          && data().keys().hasOnly(['callerKey', 'displayName', 'reason', 'addedAt', 'sourceCallId'])
+          && data().callerKey == key
+          && data().reason == 'guardian' // 'auto' is server-only
+          && isNow(data().addedAt)
+          && strOrNull(data(), 'displayName', 100)
+          && strOrNull(data(), 'sourceCallId', 100);
+      }
+    }
+
+    // Shared blocklist. A number is blocked for everyone at GLOBAL_BLOCK_THRESHOLD reports, so a single
+    // client may add or remove at most ONE family per write, and only a family that really exists.
+    // Without this, one anonymous user could write reportedBy: ["a","b","c"] and block any number globally.
+    match /blocklist/{key} {
+      function okShape() {
+        return validCallerKey(key)
+          && data().keys().hasOnly(['callerKey', 'reportedBy', 'lastReason', 'updatedAt'])
+          && data().callerKey == key
+          && data().reportedBy is list
+          && data().reportedBy.toSet().size() == data().reportedBy.size() // no duplicates
+          && strOrNull(data(), 'lastReason', 200)
+          && isNow(data().updatedAt);
+      }
+      allow read: if signedIn();
+      allow create: if signedIn() && okShape()
+        && data().reportedBy.size() <= 1
+        && (data().reportedBy.size() == 0 || familyExists(data().reportedBy[0]));
+      allow update: if signedIn() && okShape()
+        && data().reportedBy.removeAll(resource.data.reportedBy).size()
+           + resource.data.reportedBy.removeAll(data().reportedBy).size() <= 1
+        && (data().reportedBy.removeAll(resource.data.reportedBy).size() == 0
+            || familyExists(data().reportedBy.removeAll(resource.data.reportedBy)[0]));
+    }
+
+    match /debug/{doc=**} { allow read, write: if false; }
+    // Everything else is denied by default.
+  }
+}
