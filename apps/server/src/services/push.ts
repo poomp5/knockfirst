@@ -32,7 +32,7 @@ export async function sendToGuardians(familyId: string, p: GuardianPush, fam?: F
   return res.successCount > 0;
 }
 
-/** "Someone is calling grandma right now" — sent the moment an unknown call reaches /twilio/voice. */
+/** "Someone is calling grandma right now" — sent the moment an unknown call reaches /call/start. */
 export async function notifyIncoming(familyId: string, callId: string, callerKey: string): Promise<boolean> {
   const [fam, g] = await Promise.all([getFamily(familyId), db.doc(paths.globalBlock(callerKey)).get()]);
   if (!fam || fam.notifyOnIncoming === false) return false;

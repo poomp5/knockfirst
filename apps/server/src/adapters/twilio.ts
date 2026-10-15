@@ -1,3 +1,7 @@
+// Production phone adapter (not deployed). Update 05 removed Twilio from the hackathon build; this is the
+// Twilio route as it worked before, kept for the pitch's "phone-line adapters" box. It is excluded in
+// tsconfig and not mounted. To revive: npm i twilio @elevenlabs/elevenlabs-js, restore the TWILIO_* env vars,
+// and mount twilioRouter behind express.urlencoded() before the JSON parser.
 import { Router, RequestHandler } from "express";
 import twilio from "twilio";
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";

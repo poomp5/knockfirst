@@ -32,7 +32,7 @@ devRouter.post("/dev/simulate-call", requireAdmin, async (req, res, next) => {
     const familyId = parsed.data.familyId ?? env.DEFAULT_FAMILY_ID;
     const callId = "sim_" + Date.now().toString(36);
     const callerKey = toCallerKey(from);
-    await createCall({ id: callId, familyId, callerKey, from, to: env.TWILIO_PHONE_NUMBER, route: "screened", status: "analyzing", simulated: true });
+    await createCall({ id: callId, familyId, callerKey, from, to: "", route: "screened", status: "analyzing", simulated: true });
     const durationSec = transcript.length ? Math.round(transcript[transcript.length - 1].t) : 0;
     const { status, analysis } = await processCompletedCall({ familyId, callId, callerKey, transcript, durationSec });
     res.json({ callId, status, analysis });

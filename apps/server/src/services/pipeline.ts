@@ -24,7 +24,7 @@ export async function processCompletedCall(p: CompletedCall): Promise<{ status: 
   const { familyId, callId, callerKey, transcript } = p;
   const ref = db.doc(paths.call(familyId, callId));
 
-  // 1. Save the transcript and mark analyzing. If /twilio/voice never created the doc (e.g. no call_sid),
+  // 1. Save the transcript and mark analyzing. If /call/start never created the doc (e.g. no call_id),
   //    create the fields the inbox needs. Never overwrite a guardian decision's status.
   const snap = await ref.get();
   await updateCall(familyId, callId, {

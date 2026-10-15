@@ -15,7 +15,7 @@ async function main() {
     guardianName: "ลูกหลาน",
     // Empty env values don't overwrite what's already stored.
     ...(env.DEMO_OWNER_PHONE || isNew ? { ownerPhone: env.DEMO_OWNER_PHONE ? toCallerKey(env.DEMO_OWNER_PHONE) : "" } : {}),
-    ...(env.TWILIO_PHONE_NUMBER || isNew ? { twilioNumber: env.TWILIO_PHONE_NUMBER } : {}),
+    ...(isNew ? { twilioNumber: "" } : {}), // no Twilio since update 05; field kept for the contract
     ...(isNew ? { pushTokens: [], createdAt: FieldValue.serverTimestamp() } : {}),
   }, { merge: true });
 
