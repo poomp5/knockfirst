@@ -5,8 +5,9 @@ import { FAMILY_ID, SERVER_URL } from "../lib/env";
 import { useCalls } from "../lib/useCalls";
 
 // Team-only page at #admin: reset the demo family and load the 5 stage-demo calls before going on stage.
-// Uses the server's existing admin endpoints (/demo/reset, /dev/simulate-call). The token is typed in here and kept
-// only in this tab's sessionStorage; it is never part of the public bundle.
+// Uses the server's existing admin endpoints (/demo/reset, /dev/simulate-call) with DEMO_ADMIN_TOKEN from the server env.
+// The token is never part of the public bundle: it's typed in once (or opened as #admin/<token>, which is removed from
+// the address bar right away) and remembered in this browser's localStorage after the server accepts it.
 const TOKEN_KEY = "kf-admin-token";
 const CASES = demoCases as { id: string; title: string; from: string; transcript: TranscriptTurn[] }[];
 
@@ -14,10 +15,15 @@ type Health = { kind: "checking" } | { kind: "ok"; version: number } | { kind: "
 type Row = { id: string; title: string; state: "waiting" | "sending" | "done" | "failed"; detail?: string };
 
 function readToken() {
-  try { return sessionStorage.getItem(TOKEN_KEY) ?? ""; } catch { return ""; }
+  const fromLink = window.location.hash.match(/^#admin\/(.+)$/);
+  if (fromLink) {
+    history.replaceState(null, "", `${window.location.pathname}${window.location.search}#admin`);
+    try { return decodeURIComponent(fromLink[1]).trim(); } catch { return ""; }
+  }
+  try { return localStorage.getItem(TOKEN_KEY) ?? ""; } catch { return ""; }
 }
 function saveToken(v: string) {
-  try { if (v) sessionStorage.setItem(TOKEN_KEY, v); else sessionStorage.removeItem(TOKEN_KEY); } catch { /* private mode */ }
+  try { if (v) localStorage.setItem(TOKEN_KEY, v); else localStorage.removeItem(TOKEN_KEY); } catch { /* private mode */ }
 }
 
 async function post(path: string, token: string, body: unknown) {
@@ -39,6 +45,7 @@ export function AdminPanel() {
   const [armed, setArmed] = useState<string | null>(null); // a reset needs a second click on the same button
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
+  const [copied, setCopied] = useState(false);
   const inbox = useCalls();
   const armTimer = useRef<number | undefined>(undefined);
 
@@ -49,7 +56,10 @@ export function AdminPanel() {
       .then(r => r.json())
       .then(j => setHealth(j.ok ? { kind: "ok", version: j.contractVersion } : { kind: "down", detail: "health check failed" }))
       .catch(e => setHealth({ kind: "down", detail: e instanceof Error ? e.message : String(e) }));
-    return () => window.clearTimeout(armTimer.current);
+    // A sign-in link opened in a tab that already shows the admin page.
+    const onHash = () => { if (window.location.hash.startsWith("#admin/")) setToken(readToken()); };
+    window.addEventListener("hashchange", onHash);
+    return () => { window.clearTimeout(armTimer.current); window.removeEventListener("hashchange", onHash); };
   }, []);
 
   const ready = health.kind === "ok" && token.length >= 16 && !busy;
@@ -131,7 +141,21 @@ export function AdminPanel() {
         <span>Admin token (DEMO_ADMIN_TOKEN, ask Tete)</span>
         <input type="password" autoComplete="off" spellCheck={false} value={token} onChange={e => setToken(e.target.value.trim())} />
       </label>
-      <p className="admin-hint">Kept in this tab only and cleared when you close it.</p>
+      <p className="admin-hint">
+        Remembered on this device once the server accepts it.{" "}
+        {token && (
+          <>
+            <button type="button" className="link-btn" onClick={() => {
+              void navigator.clipboard?.writeText(`${window.location.origin}/#admin/${encodeURIComponent(token)}`).then(() => {
+                setCopied(true); window.setTimeout(() => setCopied(false), 2500);
+              });
+            }}>{copied ? "Link copied" : "Copy sign-in link"}</button>
+            {"  "}
+            <button type="button" className="link-btn" onClick={() => { saveToken(""); setToken(""); setMessage(null); }}>Forget token</button>
+          </>
+        )}
+      </p>
+      <p className="admin-hint">The sign-in link contains the token: send it only in private chat, never in the group or on slides.</p>
 
       <div className="admin-actions">
         <button className="btn btn--primary" disabled={!ready} onClick={() => run(["reset", "load"])}>
