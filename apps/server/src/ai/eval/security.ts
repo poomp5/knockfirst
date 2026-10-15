@@ -1,13 +1,12 @@
 // OWNER: Sky. B6 live security checks against the deployed server. Non-destructive by default:
 // every probe either should be rejected, or is a no-op event the pipeline ignores.
 //   npx tsx src/ai/eval/security.ts                 (uses SERVER_URL / PUBLIC_BASE_URL from .env)
-//   npx tsx src/ai/eval/security.ts --twilio        also POSTs an unsigned /twilio/voice (creates a call + push if
-//                                                   signature validation is OFF, so only run it before a reset)
+// Update 05: Twilio is gone; the web phone line is POST /call/start + /call/end. The probes below only send
+// invalid bodies, so they never create calls or spend ElevenLabs credits.
 import "dotenv/config";
 import crypto from "crypto";
 
 const base = (process.env.SERVER_URL ?? process.env.PUBLIC_BASE_URL ?? "").replace(/\/+$/, "");
-const withTwilio = process.argv.includes("--twilio");
 type Result = "PASS" | "FAIL" | "WARN" | "SKIP";
 const rows: { name: string; result: Result; detail: string }[] = [];
 const record = (name: string, result: Result, detail: string) => rows.push({ name, result, detail });
@@ -59,30 +58,27 @@ async function main() {
   const acao = cors.headers.get("access-control-allow-origin");
   record("CORS unknown origin", !acao || (acao !== "*" && acao !== "https://evil.example") ? "PASS" : "FAIL", `ACAO=${acao ?? "(none)"}`);
 
-  // Voice token rate limit (10/min/IP). With `trust proxy: true`, a spoofed X-Forwarded-For may bypass it.
-  const tok = await req("/voice/token?identity=security-probe");
-  if (tok.status === 503) record("voice token rate limit", "SKIP", "twilio not configured");
-  else {
-    let limited = false;
-    for (let i = 0; i < 12 && !limited; i++) limited = (await req("/voice/token?identity=security-probe")).status === 429;
+  // Web phone line (update 05). Invalid bodies are rejected before any call or ElevenLabs token is created.
+  const bad = await req("/call/start", json({ callerNumber: "12" }));
+  record("/call/start short number", bad.status === 400 ? "PASS" : "FAIL", String(bad.status));
+  const endBad = await req("/call/end", json({ callId: "../families/x" }));
+  record("/call/end invalid call id", endBad.status === 400 ? "PASS" : "FAIL", String(endBad.status));
+  const endUnknown = await req("/call/end", json({ callId: "web_securityprobe" }));
+  record("/call/end unknown call", endUnknown.status === 404 ? "PASS" : "FAIL", String(endUnknown.status));
+
+  // Rate limit (10/min/IP) on /call/start. The limiter runs before validation, so invalid bodies count too.
+  let limited = false;
+  for (let i = 0; i < 12 && !limited; i++) limited = (await req("/call/start", json({ callerNumber: "12" }))).status === 429;
+  record("/call/start rate limit", limited ? "PASS" : "FAIL", limited ? "429 after burst" : "no 429 after 12 requests");
+  if (limited) {
     let spoofOk = 0;
     for (let i = 0; i < 3; i++) {
-      const r = await req("/voice/token?identity=security-probe", { headers: { "x-forwarded-for": `203.0.113.${10 + i}` } });
-      if (r.status === 200) spoofOk++;
+      const r = await req("/call/start", json({ callerNumber: "12" }, { "x-forwarded-for": `203.0.113.${10 + i}` }));
+      if (r.status !== 429) spoofOk++;
     }
-    record("voice token rate limit", limited ? "PASS" : "FAIL", limited ? "429 after burst" : "no 429 after 13 requests");
-    if (limited) record("rate limit vs spoofed X-Forwarded-For", spoofOk ? "WARN" : "PASS",
-      spoofOk ? `${spoofOk}/3 spoofed requests got tokens while limited (set app "trust proxy" to 1)` : "still limited");
+    record("rate limit vs spoofed X-Forwarded-For", spoofOk ? "WARN" : "PASS",
+      spoofOk ? `${spoofOk}/3 spoofed requests got past the limit (server trusts any X-Forwarded-For)` : "still limited");
   }
-
-  if (withTwilio) {
-    const tw = await req("/twilio/voice", {
-      method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ From: "+66900009999", To: "+6620000000", CallSid: "CAsecurityprobe" + now }).toString(),
-    });
-    record("twilio webhook unsigned", tw.status === 403 || tw.status === 401 ? "PASS" : "WARN",
-      tw.status === 200 ? "200: VALIDATE_TWILIO_SIGNATURE is off, forged calls are accepted" : String(tw.status));
-  } else record("twilio webhook unsigned", "SKIP", "run with --twilio (creates a call if validation is off)");
 
   const w = Math.max(...rows.map(r => r.name.length));
   for (const r of rows) console.log(`${r.result.padEnd(5)} ${r.name.padEnd(w)}  ${r.detail}`);
