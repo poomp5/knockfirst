@@ -8,7 +8,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     defaults:
       run:
         working-directory: apps/mobile
@@ -45,9 +45,12 @@ jobs:
           EOF
       - name: Generate native Android project
         run: npx expo prebuild --platform android --clean --no-install
+      # Caches ~/.gradle between runs (android/ only exists after prebuild, so this goes here).
+      - uses: gradle/actions/setup-gradle@v4
+      # arm64-v8a only: every Android 10+ phone uses it, and building all 4 ABIs took over 45 minutes.
       - name: Build release APK
         working-directory: apps/mobile/android
-        run: ./gradlew assembleRelease --no-daemon
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
       - name: Rename APK
         run: cp android/app/build/outputs/apk/release/app-release.apk knockfirst.apk
       - uses: actions/upload-artifact@v4
