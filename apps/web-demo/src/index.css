@@ -298,7 +298,7 @@ html[lang="th"] .hero h1 { font-family: var(--font); font-size: clamp(1.9rem, 4.
 }
 
 /* ---------- Caller page as a phone (update 05) ---------- */
-.callas { display: grid; grid-template-columns: 1fr auto; gap: 10px 12px; align-items: end; margin: 0 0 22px; }
+.callas { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 0 0 22px; }
 .field { display: grid; gap: 4px; min-width: 0; }
 .field span { color: var(--slate); font-size: 0.9rem; }
 .field input {
@@ -307,7 +307,6 @@ html[lang="th"] .hero h1 { font-family: var(--font); font-size: clamp(1.9rem, 4.
 }
 .field input:focus { border-color: var(--orange); outline: none; }
 .field input:disabled { background: var(--mist); color: var(--slate); }
-.field--name { grid-column: 1 / -1; }
 .field--name input { font-weight: 400; font-size: 1rem; }
 .callas-btns { display: flex; flex-wrap: wrap; gap: 6px; }
 .btn--sm { padding: 6px 12px; font-size: 0.9rem; min-height: 0; }
@@ -322,5 +321,4 @@ html[lang="th"] .hero h1 { font-family: var(--font); font-size: clamp(1.9rem, 4.
 .cap-who { font-weight: 700; margin-right: 4px; }
 .cap--assistant .cap-who { color: var(--orange-ink); }
 .tip { margin: 16px 0 0; color: var(--slate); font-size: 0.9rem; }
-@media (max-width: 520px) { .callas { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .dial-state--ringing { animation: none; } }
