@@ -10,8 +10,20 @@ import { addMyKey, loadMyKeys } from "./lib/callerNumber";
 import { usePhoneCall } from "./lib/usePhoneCall";
 import { Icon } from "./components/Icon";
 import { useCalls } from "./lib/useCalls";
+import { AdminPanel } from "./components/AdminPanel";
 
+// Team-only admin page at #admin (see AdminPanel). Not linked from the public page.
 export default function App() {
+  const [hash, setHash] = useState(() => window.location.hash);
+  useEffect(() => {
+    const on = () => setHash(window.location.hash);
+    window.addEventListener("hashchange", on);
+    return () => window.removeEventListener("hashchange", on);
+  }, []);
+  return hash === "#admin" ? <AdminPanel /> : <Demo />;
+}
+
+function Demo() {
   const { lang, setLang, t } = useLang();
   const [myKeys, setMyKeys] = useState(loadMyKeys);
   const { state, start, hangUp } = usePhoneCall();
