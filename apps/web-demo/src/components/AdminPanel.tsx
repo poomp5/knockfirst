@@ -120,7 +120,7 @@ export function AdminPanel() {
     <main className="admin">
       <header className="admin-head">
         <img src="/brand/logo-wordmark.png" alt="KnockFirst" height="26" />
-        <a href="#" onClick={() => { window.location.hash = ""; }}>Back to the demo</a>
+        <a href="/">Back to the demo</a>
       </header>
 
       <h1>Demo admin</h1>

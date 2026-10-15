@@ -12,7 +12,7 @@ import { Icon } from "./components/Icon";
 import { useCalls } from "./lib/useCalls";
 import { AdminPanel } from "./components/AdminPanel";
 
-// Team-only admin page at #admin or #admin/<token> (see AdminPanel). Not linked from the public page.
+// Team-only admin page at /admin, #admin or #admin/<token> (see AdminPanel). Not linked from the public page.
 export default function App() {
   const [hash, setHash] = useState(() => window.location.hash);
   useEffect(() => {
@@ -20,7 +20,8 @@ export default function App() {
     window.addEventListener("hashchange", on);
     return () => window.removeEventListener("hashchange", on);
   }, []);
-  return hash === "#admin" || hash.startsWith("#admin/") ? <AdminPanel /> : <Demo />;
+  const admin = window.location.pathname.replace(/\/+$/, "") === "/admin" || hash === "#admin" || hash.startsWith("#admin/");
+  return admin ? <AdminPanel /> : <Demo />;
 }
 
 function Demo() {
