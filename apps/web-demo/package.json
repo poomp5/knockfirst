@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@elevenlabs/client": "^1.28.0",
+    "expo": "^57.0.30",
     "firebase": "^13.0.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.8",
