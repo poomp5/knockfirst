@@ -67,6 +67,63 @@ const SFX: Sfx[] = [
   { at: 1742, name: "chime", vol: 0.45 },
 ];
 
+/** Voice-over cut: its own effect palette (scripts/make-sfx.mjs), one variant per cue, same frame grid as SFX. */
+const SFX_VO: Sfx[] = [
+  // hook
+  { at: 0, name: "ring.mp3", vol: 0.5, dur: 44 },
+  { at: 0, name: "sfx/boom-open", vol: 0.4 },
+  { at: 7, name: "sfx/pop-1", vol: 0.3 },
+  { at: 14, name: "sfx/pop-3", vol: 0.3 },
+  { at: 46, name: "sfx/whoosh-hook", vol: 0.45 },
+  { at: 60, name: "sfx/boom-who", vol: 0.45 },
+  { at: 104, name: "sfx/swish-1", vol: 0.4 },
+  { at: 108, name: "sfx/pop-5", vol: 0.32 },
+  { at: 186, name: "sfx/whoosh-big", vol: 0.5 },
+  // problem: six stamps climbing a semitone each, a slam on "Don't tell your family"
+  ...[214, 226, 238, 250, 262, 274].map((at, i) => ({ at, name: `sfx/phrase-${i + 1}`, vol: 0.3 + i * 0.03 })),
+  { at: 288, name: "sfx/slam", vol: 0.55 },
+  { at: 326, name: "sfx/whoosh-down", vol: 0.45 },
+  { at: 378, name: "sfx/knock-two", vol: 0.9 },
+  // meet
+  { at: 452, name: "sfx/pop-4", vol: 0.35 },
+  { at: 462, name: "sfx/bell-brand", vol: 0.45, dur: 90 },
+  { at: 494, name: "sfx/whoosh-up", vol: 0.4 },
+  { at: 574, name: "sfx/whoosh-soft", vol: 0.4 },
+  { at: 626, name: "sfx/tap-1", vol: 0.5 },
+  // app in action
+  { at: 674, name: "sfx/notify-1", vol: 0.45 },
+  { at: 720, name: "sfx/swish-2", vol: 0.35 },
+  { at: 778, name: "sfx/whoosh-wipe", vol: 0.4 },
+  { at: 798, name: "sfx/pop-2", vol: 0.3 },
+  { at: 802, name: "sfx/typing", vol: 0.3 },
+  { at: 848, name: "sfx/pop-6", vol: 0.3 },
+  { at: 900, name: "sfx/whoosh-down", vol: 0.4 },
+  { at: 906, name: "sfx/score-rise", vol: 0.25 },
+  { at: 940, name: "sfx/alert", vol: 0.35 },
+  { at: 962, name: "sfx/swish-1", vol: 0.35 },
+  ...[0, 1, 2, 3, 4, 5].map((i) => ({ at: 976 + i * 3, name: `sfx/flag-${i + 1}`, vol: 0.28 })),
+  { at: 1044, name: "sfx/tap-2", vol: 0.55 },
+  { at: 1050, name: "sfx/stamp", vol: 0.5 },
+  { at: 1080, name: "sfx/whoosh-up", vol: 0.4 },
+  { at: 1102, name: "sfx/tap-3", vol: 0.55 },
+  { at: 1108, name: "sfx/success", vol: 0.4 },
+  // features
+  { at: 1140, name: "sfx/whoosh-wipe", vol: 0.45 },
+  ...[1158, 1172, 1186].map((at, i) => ({ at, name: `sfx/notify-${i + 1}`, vol: 0.38 })),
+  { at: 1252, name: "sfx/whoosh-big", vol: 0.4 },
+  ...[1260, 1264, 1268].map((at, i) => ({ at, name: `sfx/land-${i + 1}`, vol: 0.35 })),
+  { at: 1290, name: "sfx/word-1", vol: 0.4 },
+  { at: 1320, name: "sfx/word-2", vol: 0.4 },
+  { at: 1372, name: "sfx/whoosh-wipe", vol: 0.45 },
+  { at: 1404, name: "sfx/word-3", vol: 0.4 },
+  { at: 1438, name: "ring.mp3", vol: 0.45, dur: 58 },
+  // final
+  { at: 1650, name: "sfx/boom-end", vol: 0.45, dur: 90 },
+  { at: 1656, name: "sfx/pop-8", vol: 0.35 },
+  { at: 1740, name: "sfx/knock-three", vol: 0.8 },
+  { at: 1742, name: "sfx/bell-end", vol: 0.45, dur: 58 },
+];
+
 /** Music level under the narration: dips while a line plays, eased over 6 frames on each side. */
 function ducked(f: number) {
   const near = Math.min(...VO.map((c) => (f < c.at ? c.at - f : f > c.at + c.frames ? f - c.at - c.frames : 0)));
@@ -102,9 +159,9 @@ export function Film({ voiceover = false }: { voiceover?: boolean }) {
       </Series>
 
       {voiceover ? <Audio src={staticFile("audio/music-slow.wav")} volume={ducked} /> : <Audio src={staticFile("audio/music.wav")} volume={0.8} />}
-      {SFX.map((s, i) => (
+      {(voiceover ? SFX_VO : SFX).map((s, i) => (
         <Sequence key={i} from={s.at} durationInFrames={s.dur ?? 75} layout="none">
-          <Audio src={staticFile(`audio/${s.name.includes(".") ? s.name : `${s.name}.wav`}`)} volume={(s.vol ?? 0.4) * (voiceover ? 0.7 : 1)} />
+          <Audio src={staticFile(`audio/${s.name.includes(".") ? s.name : `${s.name}.wav`}`)} volume={s.vol ?? 0.4} />
         </Sequence>
       ))}
       {voiceover
