@@ -13,17 +13,17 @@ jobs:
       run:
         working-directory: apps/mobile
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: apps/mobile/package-lock.json
-      - uses: actions/setup-java@v4
+      # No `cache: gradle`: android/ (and its Gradle files) only exists after `expo prebuild`, so the cache step fails.
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
-          cache: gradle
       - run: npm ci
       - name: Write google-services.json
         run: echo "$GSJ" | base64 -d > google-services.json
