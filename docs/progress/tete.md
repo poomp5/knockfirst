@@ -4,7 +4,7 @@
 
 | ID | Task | Status | Notes |
 |---|---|---|---|
-| B0.1 | GitHub repo + collaborators | ✅ | Using `poomp5/u-hackathon` (not `teterw/luklan`); teterw, poomp5, Skysosmart, mil3rd already have access. Repo is **private**: must go public before submission. Actions secrets still to add (B9). |
+| B0.1 | GitHub repo + collaborators | ✅ | Using `poomp5/u-hackathon` (the planned separate repo was never created); teterw, poomp5, Skysosmart, mil3rd already have access. Repo is **private**: must go public before submission. Actions secrets still to add (B9). |
 | B0.2 | Firebase project, Firestore, Anonymous Auth, Android + Web apps, service account | ❌ | |
 | B0.3 | Twilio upgrade, US number, Geo permissions, API key, TwiML App | ❌ | |
 | B0.4 | ElevenLabs API key + agent id from Sky | ❌ | |

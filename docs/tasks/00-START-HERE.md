@@ -1,6 +1,15 @@
-# LukLan (ลูกหลาน): START HERE (everyone reads this first, about 5 minutes)
+# KnockFirst: START HERE (everyone reads this first, about 5 minutes)
 
-**What we're building:** an AI call screener for elderly parents. Calls from trusted numbers ring grandma as normal. Unknown callers get a polite Thai AI assistant (ElevenLabs) that asks who they are and why. The family gets a summary plus a scam-risk score in the **LukLan Android app** and taps **Accept** (whitelist; next time it rings grandma) or **Block** (blocked and reported).
+> ## ⚠️ IMPORTANT NOTICE: project renamed LukLan → **KnockFirst** (Thu 15 Oct, Poom)
+> **เปลี่ยนชื่อโปรเจกต์จาก LukLan เป็น KnockFirst แล้ว ห้ามใช้ชื่อเก่าในโค้ด UI เอกสาร หรือ pitch**
+>
+> - The project and app are now called **KnockFirst**. Don't use "LukLan" anywhere in code, UI, docs or the deck.
+> - **Contract (Part A) changed:** `ANDROID_PACKAGE = "com.knockfirst.guardian"`, `APK_ASSET_NAME = "knockfirst-guardian.apk"`. Register the Firebase Android app with the **new** package (Tete).
+> - Other renames: server package `knockfirst-server`, Railway example `knockfirst-server.up.railway.app`, Firebase project id e.g. `knockfirst-hackathon`, Expo slug/scheme `knockfirst`, ElevenLabs agent "KnockFirst Screener". Repo links now point at the real repo `github.com/poomp5/u-hackathon`.
+> - Logo, app icons, OG image, colors (brand orange `#F2611C`, ink `#111111`): see `brand/` and `brand/colors.md`.
+> - Have local work that still says LukLan? `git pull --rebase origin main`, then `grep -rni luklan .` and rename what's left.
+
+**What we're building:** an AI call screener for elderly parents. Calls from trusted numbers ring grandma as normal. Unknown callers get a polite Thai AI assistant (ElevenLabs) that asks who they are and why. The family gets a summary plus a scam-risk score in the **KnockFirst Android app** and taps **Accept** (whitelist; next time it rings grandma) or **Block** (blocked and reported).
 
 **Deadline:** submit by **Fri 16 Oct, 13:30**. The hub closes at 14:00, and we don't cut it close. Judges open the **public repo**, the **demo website**, and the **pitch deck**.
 
@@ -23,7 +32,7 @@ All three task files share an identical **Part A: Shared contract** (data model,
 
 ## 1. Locked decisions (change NOW or never)
 
-- App name **LukLan**, Android package **`com.luklan.guardian`**, repo **`github.com/teterw/luklan`** (public). The Firebase Android app is registered with this package name, so renaming later costs time.
+- App name **KnockFirst**, Android package **`com.knockfirst.guardian`**, repo **`github.com/poomp5/u-hackathon`** (public). The Firebase Android app is registered with this package name, so renaming later costs time.
 - Stack:
   - Expo + React Native → **Android APK**.
   - Node/Express server on **Railway**.
@@ -46,7 +55,7 @@ All three task files share an identical **Part A: Shared contract** (data model,
 ## 3. The first 30 minutes (run in parallel)
 
 **Tete (unblocks everyone, go first):**
-1–2. Paste the prompt from **`STARTER-PROMPT.md`** into Claude Code. It creates the public repo `teterw/luklan`, adds `poomp5` and `Skysosmart`, copies all task files plus `CLAUDE.md`, pushes the server skeleton with the AI stub, and tells you what to post. Then post **"skeleton is up"**.
+1–2. Paste the prompt from **`STARTER-PROMPT.md`** into Claude Code. It creates the public repo `poomp5/u-hackathon`, adds `poomp5` and `Skysosmart`, copies all task files plus `CLAUDE.md`, pushes the server skeleton with the AI stub, and tells you what to post. Then post **"skeleton is up"**.
 3. Firebase project → send the **web config** to Poom and Sky, and **`google-services.json`** to Poom.
 4. Twilio: upgrade, buy a US voice number, enable Thailand in Geo permissions.
 5. **Register the team on hub.team1.network** if not done yet. Organisers must approve the team before we can submit.
@@ -61,15 +70,15 @@ All three task files share an identical **Part A: Shared contract** (data model,
 3. After "skeleton is up": clone, branch `sky/ai`, start Claude Code with your file.
 
 **PM:**
-1. Make the private chat's pinned **"LukLan secrets"** note (Tete fills it in).
+1. Make the private chat's pinned **"KnockFirst secrets"** note (Tete fills it in).
 2. Start **validation interviews** at the venue now (section 6).
 3. Book a mentor slot (mentors are available until 18:00). Ask a **u-topia** mentor: *"How do we integrate U-Bot? Is there an API or embeddable widget?"* That's worth 5%.
 
 ## 4. How each dev starts Claude Code
 
 ```bash
-git clone https://github.com/teterw/luklan.git
-cd luklan
+git clone https://github.com/poomp5/u-hackathon.git
+cd u-hackathon
 git checkout -b <yourname>/<topic>        # tete/server · poom/app · sky/ai
 claude
 ```
@@ -134,7 +143,7 @@ Thu **18:00** (hall closes, move home and keep the voice call open) · **20:30**
 
 - [ ] Repo **public**; README has the pitch, links, architecture, eval numbers, team, and how to run
 - [ ] **Demo website** URL works in an incognito window, on desktop and phone
-- [ ] **APK** downloads from `https://github.com/teterw/luklan/releases/latest/download/luklan-guardian.apk` and installs
+- [ ] **APK** downloads from `https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst-guardian.apk` and installs
 - [ ] Pitch deck link set to **"Anyone with the link can view"**
 - [ ] `/demo/reset` run, then `npm run simulate -- --demo`, so judges see clean, realistic cards
 - [ ] Submitted on **hub.team1.network** by **13:30**

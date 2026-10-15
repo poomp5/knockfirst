@@ -5,5 +5,5 @@
 - [ ] Remaining Part B tasks (see `docs/tasks/02-poom-mobile.md`)
 
 ## Waiting on others
-- Tete: rename LukLan → KnockFirst in contract/README/CLAUDE.md/task files; decide whether `ANDROID_PACKAGE` and `APK_ASSET_NAME` change
+- Tete: review the LukLan → KnockFirst rename commit (contract: `ANDROID_PACKAGE = com.knockfirst.guardian`, `APK_ASSET_NAME = knockfirst-guardian.apk`); register Firebase Android app with the new package
 - Sky: use `brand/` assets + name in web demo

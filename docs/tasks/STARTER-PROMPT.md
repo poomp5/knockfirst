@@ -9,12 +9,12 @@
 ## Paste this into Claude Code
 
 ```
-I'm Tete (GitHub: teterw). Bootstrap our hackathon project "LukLan".
+I'm Tete (GitHub: teterw). Bootstrap our hackathon project "KnockFirst".
 
 1. Find the folder in my Downloads whose name contains "hackathon" (e.g. "U-hackathon prompt") and that contains 00-START-HERE.md. Read 00-START-HERE.md, 01-tete-backend.md and CLAUDE.md from it completely before doing anything else.
-2. Create the PUBLIC GitHub repo teterw/luklan and clone it here.
-   - If `gh` is installed and logged in: `gh repo create teterw/luklan --public --clone`, then add collaborators with
-     `gh api -X PUT repos/teterw/luklan/collaborators/poomp5 -f permission=push` and the same for Skysosmart.
+2. Create the PUBLIC GitHub repo poomp5/u-hackathon and clone it here.
+   - If `gh` is installed and logged in: `gh repo create poomp5/u-hackathon --public --clone`, then add collaborators with
+     `gh api -X PUT repos/poomp5/u-hackathon/collaborators/poomp5 -f permission=push` and the same for Skysosmart.
    - If not, tell me exactly what to click on github.com, wait for me, then clone.
 3. Copy into the repo:
    - CLAUDE.md → repo root (CLAUDE.md)
@@ -32,7 +32,7 @@ I'm Tete (GitHub: teterw). Bootstrap our hackathon project "LukLan".
 ## After it finishes, post this in the team chat
 
 > **Skeleton is up.**
-> `git clone https://github.com/teterw/luklan.git && cd luklan`
+> `git clone https://github.com/poomp5/u-hackathon.git && cd u-hackathon`
 > Make your branch (`poom/app` or `sky/ai`), run `claude`, and answer when it asks who you are. It will read your task file from `docs/tasks/` and tell you your first step.
 > Everyone: read `docs/tasks/00-START-HERE.md` (5 min).
 

@@ -1,4 +1,4 @@
-// LukLan shared contract — identical copy in server, mobile, web-demo.
+// KnockFirst shared contract — identical copy in server, mobile, web-demo.
 // Owner: Tete. Do not edit locally; ask Tete to bump the version.
 export const CONTRACT_VERSION = 1;
 
@@ -7,8 +7,8 @@ export const AUTO_BLOCK_SCORE = 85;          // server env AUTO_BLOCK_SCORE over
 export const GLOBAL_BLOCK_THRESHOLD = 3;     // server env GLOBAL_BLOCK_THRESHOLD overrides
 export const PUSH_CHANNEL_DEFAULT = "screened-calls";
 export const PUSH_CHANNEL_URGENT = "urgent-calls";
-export const APK_ASSET_NAME = "luklan-guardian.apk";
-export const ANDROID_PACKAGE = "com.luklan.guardian";
+export const APK_ASSET_NAME = "knockfirst-guardian.apk";
+export const ANDROID_PACKAGE = "com.knockfirst.guardian";
 
 /** Works for both firebase (client) and firebase-admin Timestamps. */
 export type Ts = { toDate(): Date };

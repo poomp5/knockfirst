@@ -1,6 +1,6 @@
-# LukLan: Task file for **Tete** (`teterw`): Backend, telephony, API keys, repo, APK release
+# KnockFirst: Task file for **Tete** (`teterw`): Backend, telephony, API keys, repo, APK release
 
-> **To Claude Code:** You are working with **Tete** on the U-Hackathon project **LukLan**. Read this **whole file** before writing any code. Part A is the shared contract, identical in all three teammates' files. Part B is **your** work. You may only create or edit files in Tete's owned paths (A2). Work through Part B **in order**. Commit after each task. After each milestone, give Tete a 3-line status: what works, what's next, what's blocked.
+> **To Claude Code:** You are working with **Tete** on the U-Hackathon project **KnockFirst**. Read this **whole file** before writing any code. Part A is the shared contract, identical in all three teammates' files. Part B is **your** work. You may only create or edit files in Tete's owned paths (A2). Work through Part B **in order**. Commit after each task. After each milestone, give Tete a 3-line status: what works, what's next, what's blocked.
 >
 > **To Tete:** run `STARTER-PROMPT.md` once. It creates the repo, copies these files, and pushes the skeleton (that's B1). After that, just open `claude` in the repo and answer **"Tete"** when asked. `CLAUDE.md` loads this file and resumes from `docs/progress/tete.md`.
 
@@ -13,12 +13,12 @@
 
 ## A1. The product in one paragraph
 
-**LukLan (ลูกหลาน)** is an AI call screener for elderly parents.
+**KnockFirst** is an AI call screener for elderly parents.
 
 - Calls from trusted numbers ring the elderly person ("grandma") as normal.
 - Calls from unknown numbers are answered by a polite Thai AI assistant (an ElevenLabs voice agent). It asks who is calling, who they want, and why, and never reveals anything about grandma.
 - When the call ends, an LLM turns the transcript into a short summary plus a scam-risk score with evidence.
-- The guardian (an adult child) gets a push notification in the **LukLan Android app** and taps **Accept**, which whitelists the number so the next call rings grandma, or **Block**, which blocks the number for this family and reports it to a shared blocklist.
+- The guardian (an adult child) gets a push notification in the **KnockFirst Android app** and taps **Accept**, which whitelists the number so the next call rings grandma, or **Block**, which blocks the number for this family and reports it to a shared blocklist.
 - Obvious scams (risk ≥ 85) are blocked automatically, so the guardian isn't spammed.
 
 **Hackathon facts that drive decisions**
@@ -56,7 +56,7 @@
 ## A3. Repo layout
 
 ```
-luklan/                         public GitHub repo: github.com/teterw/luklan
+u-hackathon/                    public GitHub repo: github.com/poomp5/u-hackathon
 ├─ README.md                    Tete   (judge-facing: what it is, links, architecture, how to run)
 ├─ CLAUDE.md                    Tete   (auto-read by Claude Code: asks "who are you?" and routes to the task file)
 ├─ .gitignore                   Tete
@@ -102,7 +102,7 @@ Guardian (Poom's app, or Sky's web demo) — live Firestore listener shows the c
 ## A5. `contract.ts` (paste exactly; Tete owns changes)
 
 ```ts
-// LukLan shared contract — identical copy in server, mobile, web-demo.
+// KnockFirst shared contract — identical copy in server, mobile, web-demo.
 // Owner: Tete. Do not edit locally; ask Tete to bump the version.
 export const CONTRACT_VERSION = 1;
 
@@ -111,8 +111,8 @@ export const AUTO_BLOCK_SCORE = 85;          // server env AUTO_BLOCK_SCORE over
 export const GLOBAL_BLOCK_THRESHOLD = 3;     // server env GLOBAL_BLOCK_THRESHOLD overrides
 export const PUSH_CHANNEL_DEFAULT = "screened-calls";
 export const PUSH_CHANNEL_URGENT = "urgent-calls";
-export const APK_ASSET_NAME = "luklan-guardian.apk";
-export const ANDROID_PACKAGE = "com.luklan.guardian";
+export const APK_ASSET_NAME = "knockfirst-guardian.apk";
+export const ANDROID_PACKAGE = "com.knockfirst.guardian";
 
 /** Works for both firebase (client) and firebase-admin Timestamps. */
 export type Ts = { toDate(): Date };
@@ -375,7 +375,7 @@ Reading: list calls with `query(collection(db, paths.calls(f)), orderBy("started
 
 ## A7. Server HTTP API (Tete builds; others call)
 
-Base URL: `PUBLIC_BASE_URL` (Railway), e.g. `https://luklan-server.up.railway.app`. JSON unless noted.
+Base URL: `PUBLIC_BASE_URL` (Railway), e.g. `https://knockfirst-server.up.railway.app`. JSON unless noted.
 
 | Method | Path | Called by | Behavior |
 |---|---|---|---|
@@ -444,8 +444,8 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 VITE_FAMILY_ID=demo-family
 VITE_SERVER_URL=
-VITE_APK_URL=https://github.com/teterw/luklan/releases/latest/download/luklan-guardian.apk
-VITE_REPO_URL=https://github.com/teterw/luklan
+VITE_APK_URL=https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst-guardian.apk
+VITE_REPO_URL=https://github.com/poomp5/u-hackathon
 ```
 
 ## A9. Push notifications
@@ -501,17 +501,17 @@ VITE_REPO_URL=https://github.com/teterw/luklan
 
 ## B0. Accounts and keys (16:45–17:30, browser work; Claude gives Tete checklists, Tete clicks)
 
-Keep a private note called **"LukLan secrets"** and paste each value there as you get it. Share it with the team **only in the private chat**.
+Keep a private note called **"KnockFirst secrets"** and paste each value there as you get it. Share it with the team **only in the private chat**.
 
 ### B0.1 GitHub
-- [ ] Create **public** repo `teterw/luklan`, with no template. Add collaborators **poomp5** and **Skysosmart** (write access).
+- [ ] Create **public** repo `poomp5/u-hackathon`, with no template. Add collaborators **poomp5** and **Skysosmart** (write access).
 - [ ] Later, in Settings → Secrets and variables → Actions, add the secrets listed in B9.
 
-### B0.2 Firebase (project id e.g. `luklan-hackathon`)
+### B0.2 Firebase (project id e.g. `knockfirst-hackathon`)
 - [ ] Create the project. Analytics is not needed.
 - [ ] **Firestore**: create the database in **production mode**, location **`asia-southeast1` (Singapore)**. Sky deploys the rules.
 - [ ] **Authentication** → Sign-in method → enable **Anonymous**.
-- [ ] Project settings → **Add app → Android**, package **`com.luklan.guardian`** → download **`google-services.json`**.
+- [ ] Project settings → **Add app → Android**, package **`com.knockfirst.guardian`** → download **`google-services.json`**.
   - Send the file to Poom in private chat.
   - Base64 it for CI: `base64 -w0 google-services.json` (macOS: `base64 -i google-services.json`).
 - [ ] **Add app → Web** → copy the `firebaseConfig` six values and send them to Poom and Sky.
@@ -524,7 +524,7 @@ Keep a private note called **"LukLan secrets"** and paste each value there as yo
 - [ ] Buy a **US local number with Voice** → `TWILIO_PHONE_NUMBER` (E.164). Thai numbers need regulatory documents and won't be ready in time.
 - [ ] Voice → Settings → **Geo permissions** → enable **Thailand** for outbound calls. `<Dial>` to the owner's Thai phone fails without this.
 - [ ] Account → API keys → **Create API key** (Standard) → `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`.
-- [ ] Voice → **TwiML Apps** → create "LukLan Web Demo" with Voice Request URL `${PUBLIC_BASE_URL}/twilio/voice` (POST). Fill this in after the B10 deploy → `TWILIO_TWIML_APP_SID`.
+- [ ] Voice → **TwiML Apps** → create "KnockFirst Web Demo" with Voice Request URL `${PUBLIC_BASE_URL}/twilio/voice` (POST). Fill this in after the B10 deploy → `TWILIO_TWIML_APP_SID`.
 - [ ] Phone number config → "A call comes in" → Webhook `${PUBLIC_BASE_URL}/twilio/voice` (POST). Also set after deploy; use an ngrok URL for local testing.
 
 ### B0.4 ElevenLabs (Sky owns the agent; you need two values from him)
@@ -535,7 +535,7 @@ Keep a private note called **"LukLan secrets"** and paste each value there as yo
 - [ ] Get one key: Anthropic (`LLM_PROVIDER=anthropic`, `LLM_MODEL=claude-haiku-5-5`) **or** any OpenAI-compatible API (`LLM_PROVIDER=openai_compatible`, plus `LLM_BASE_URL`, `LLM_MODEL`). Ask organisers whether the participant AI credits cover a specific provider.
 
 ### B0.6 Railway (server hosting; no sleeping, so Twilio webhooks don't time out)
-- [ ] New project → Deploy from GitHub repo `teterw/luklan` → service **root directory `apps/server`**.
+- [ ] New project → Deploy from GitHub repo `poomp5/u-hackathon` → service **root directory `apps/server`**.
 - [ ] Build `npm ci && npm run build`, start `npm start`. Add all `apps/server/.env` vars.
 - [ ] Settings → Networking → **Generate domain** → `PUBLIC_BASE_URL`. Share it with Poom and Sky.
 - [ ] Do **not** use Render's free tier: it sleeps, and the first Twilio webhook after sleep times out.
@@ -742,7 +742,7 @@ app.use(devRouter);
 
 app.get("/health", (_req, res) => res.json({ ok: true, contractVersion: CONTRACT_VERSION }));
 app.use((err: any, _req: any, res: any, _next: any) => { console.error(err); res.status(500).json({ error: "internal" }); });
-app.listen(env.PORT, () => console.log(`LukLan server on :${env.PORT}`));
+app.listen(env.PORT, () => console.log(`KnockFirst server on :${env.PORT}`));
 ```
 
 ## B4. Services
@@ -1066,21 +1066,21 @@ jobs:
         working-directory: apps/mobile/android
         run: ./gradlew assembleRelease --no-daemon
       - name: Rename APK
-        run: cp android/app/build/outputs/apk/release/app-release.apk luklan-guardian.apk
+        run: cp android/app/build/outputs/apk/release/app-release.apk knockfirst-guardian.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: luklan-guardian
-          path: apps/mobile/luklan-guardian.apk
+          name: knockfirst-guardian
+          path: apps/mobile/knockfirst-guardian.apk
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: apps/mobile/luklan-guardian.apk
+          files: apps/mobile/knockfirst-guardian.apk
           generate_release_notes: true
 ```
 
 - The Expo prebuild template signs `release` with the debug keystore, so the APK installs on any phone with "install unknown apps" allowed. That's fine for a demo. Store publishing would need a real keystore, which we skip.
-- The stable download link is `https://github.com/teterw/luklan/releases/latest/download/luklan-guardian.apk`. The web demo and README point to it.
+- The stable download link is `https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst-guardian.apk`. The web demo and README point to it.
 - **Release cadence:** tag `v0.1.0` as soon as Poom's app opens (target Thu 22:00) to prove the pipeline works. Then tag again whenever Poom says "ready": `v0.2.x` tonight, **`v1.0.0` by Fri 11:00**. Only Tete pushes tags: `git tag v1.0.0 && git push origin v1.0.0`.
 - If the build fails, read the log. Common causes are a Java version mismatch (try 17, or whatever the Expo SDK docs say), a missing `google-services.json`, or Gradle running out of memory (add `org.gradle.jvmargs=-Xmx4g` through an Expo config plugin, which is Poom's area). If CI is still red at 23:30, Poom builds locally (fallback in A12) and you upload the APK to a GitHub Release by hand.
 
