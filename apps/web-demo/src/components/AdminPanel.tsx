@@ -1,14 +1,18 @@
 import { useEffect, useRef, useState } from "react";
+import { signInWithGoogle, signOutAdmin, useAdminUser } from "../lib/adminAuth";
 import type { TranscriptTurn } from "../lib/contract";
 import demoCases from "../lib/demoCases.json";
 import { FAMILY_ID, SERVER_URL } from "../lib/env";
 import { useCalls } from "../lib/useCalls";
 
 // Team-only page at #admin: reset the demo family and load the 5 stage-demo calls before going on stage.
-// Uses the server's existing admin endpoints (/demo/reset, /dev/simulate-call) with DEMO_ADMIN_TOKEN from the server env.
-// The token is never part of the public bundle: it's typed in once (or opened as #admin/<token>, which is removed from
-// the address bar right away) and remembered in this browser's localStorage after the server accepts it.
+// Uses the server's admin endpoints (/demo/reset, /dev/simulate-call). Two ways in:
+// - Google sign-in (main): the server lets the account in when its email is in ADMIN_EMAILS (server/src/ai/adminAuth.ts).
+// - DEMO_ADMIN_TOKEN (fallback): typed once or opened as #admin/<token> (removed from the address bar right away),
+//   remembered in localStorage after the server accepts it. Never part of the public bundle.
+// Auto-lock: Google sign-in forgets any saved token, and 15 minutes without use signs out and forgets the token.
 const TOKEN_KEY = "kf-admin-token";
+const LOCK_AFTER_MS = 15 * 60_000;
 const CASES = demoCases as { id: string; title: string; from: string; transcript: TranscriptTurn[] }[];
 
 type Health = { kind: "checking" } | { kind: "ok"; version: number } | { kind: "down"; detail: string };
@@ -26,14 +30,17 @@ function saveToken(v: string) {
   try { if (v) localStorage.setItem(TOKEN_KEY, v); else localStorage.removeItem(TOKEN_KEY); } catch { /* private mode */ }
 }
 
-async function post(path: string, token: string, body: unknown) {
+const DENIED_GOOGLE = "This Google account isn't allowed. Ask Tete to add it to ADMIN_EMAILS on Railway.";
+const DENIED_TOKEN = "Wrong admin token";
+
+async function post(path: string, auth: Record<string, string>, denied: string, body: unknown) {
   const res = await fetch(`${SERVER_URL}${path}`, {
     method: "POST",
-    headers: { "content-type": "application/json", "x-admin-token": token },
+    headers: { "content-type": "application/json", ...auth },
     body: JSON.stringify(body),
   });
   const text = await res.text();
-  if (res.status === 401) throw new Error("Wrong admin token");
+  if (res.status === 401) throw new Error(denied);
   if (!res.ok) throw new Error(`Server answered ${res.status}: ${text.slice(0, 120)}`);
   return JSON.parse(text);
 }
@@ -46,6 +53,8 @@ export function AdminPanel() {
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [copied, setCopied] = useState(false);
+  const [showToken, setShowToken] = useState(() => readToken() !== "");
+  const { user, ready: authReady } = useAdminUser();
   const inbox = useCalls();
   const armTimer = useRef<number | undefined>(undefined);
 
@@ -62,10 +71,35 @@ export function AdminPanel() {
     return () => { window.clearTimeout(armTimer.current); window.removeEventListener("hashchange", onHash); };
   }, []);
 
-  const ready = health.kind === "ok" && token.length >= 16 && !busy;
+  // Google sign-in replaces the token: forget any saved one.
+  useEffect(() => {
+    if (user) { saveToken(""); setToken(""); setShowToken(false); }
+  }, [user]);
+
+  // Auto-lock after 15 minutes without use.
+  useEffect(() => {
+    if (!user && !token) return;
+    let timer = window.setTimeout(lock, LOCK_AFTER_MS);
+    const poke = () => { window.clearTimeout(timer); timer = window.setTimeout(lock, LOCK_AFTER_MS); };
+    function lock() {
+      void signOutAdmin(); saveToken(""); setToken("");
+      setMessage({ ok: true, text: "Locked after 15 minutes without use. Sign in again to continue." });
+    }
+    const events = ["pointerdown", "keydown", "visibilitychange"] as const;
+    events.forEach(e => window.addEventListener(e, poke));
+    return () => { window.clearTimeout(timer); events.forEach(e => window.removeEventListener(e, poke)); };
+  }, [user, token]);
+
+  const signedIn = !!user || token.length >= 16;
+  const ready = health.kind === "ok" && signedIn && !busy;
+
+  async function call(path: string, body: unknown) {
+    if (user) return post(path, { authorization: `Bearer ${await user.getToken()}` }, DENIED_GOOGLE, body);
+    return post(path, { "x-admin-token": token }, DENIED_TOKEN, body);
+  }
 
   async function reset() {
-    const r = await post("/demo/reset", token, { familyId: FAMILY_ID });
+    const r = await call("/demo/reset", { familyId: FAMILY_ID });
     const d = r.deleted ?? {};
     return `Inbox cleared: ${d.calls ?? 0} calls, ${d.blocked ?? 0} blocked numbers, ${d.whitelist ?? 0} added known callers, ${d.globalReports ?? 0} blocklist reports. Seed callers kept.`;
   }
@@ -76,7 +110,7 @@ export function AdminPanel() {
     for (const c of CASES) {
       setRows(rs => rs.map(r => (r.id === c.id ? { ...r, state: "sending" } : r)));
       try {
-        const j = await post("/dev/simulate-call", token, { familyId: FAMILY_ID, from: c.from, transcript: c.transcript });
+        const j = await call("/dev/simulate-call", { familyId: FAMILY_ID, from: c.from, transcript: c.transcript });
         const score = j.analysis?.riskScore ?? "–";
         const status = String(j.status).replace("_", " ");
         setRows(rs => rs.map(r => (r.id === c.id ? { ...r, state: "done", detail: `${status}, risk ${score}` } : r)));
@@ -84,7 +118,7 @@ export function AdminPanel() {
         failed++;
         const detail = e instanceof Error ? e.message : String(e);
         setRows(rs => rs.map(r => (r.id === c.id ? { ...r, state: "failed", detail } : r)));
-        if (detail === "Wrong admin token") { setRows([]); throw e; }
+        if (detail === DENIED_TOKEN || detail === DENIED_GOOGLE) { setRows([]); throw e; }
       }
     }
     return failed ? `${CASES.length - failed} of ${CASES.length} demo calls loaded.` : `All ${CASES.length} demo calls loaded and analyzed.`;
@@ -105,7 +139,7 @@ export function AdminPanel() {
       const done: string[] = [];
       if (steps.includes("reset")) done.push(await reset());
       if (steps.includes("load")) done.push(await load());
-      saveToken(token); // only a token the server accepted is kept
+      if (!user) saveToken(token); // only a token the server accepted is kept
       setMessage({ ok: true, text: done.join(" ") });
     } catch (e) {
       setMessage({ ok: false, text: e instanceof Error ? e.message : String(e) });
@@ -137,25 +171,58 @@ export function AdminPanel() {
         </div>
       </dl>
 
-      <label className="field admin-token">
-        <span>Admin token (DEMO_ADMIN_TOKEN, ask Tete)</span>
-        <input type="password" autoComplete="off" spellCheck={false} value={token} onChange={e => setToken(e.target.value.trim())} />
-      </label>
-      <p className="admin-hint">
-        Remembered on this device once the server accepts it.{" "}
-        {token && (
+      <section className="admin-signin" aria-label="Sign in">
+        {user ? (
+          <p className="admin-who">
+            Signed in as <strong>{user.email}</strong>{" "}
+            <button type="button" className="link-btn" onClick={() => void signOutAdmin()}>Sign out</button>
+          </p>
+        ) : (
           <>
-            <button type="button" className="link-btn" onClick={() => {
-              void navigator.clipboard?.writeText(`${window.location.origin}/#admin/${encodeURIComponent(token)}`).then(() => {
-                setCopied(true); window.setTimeout(() => setCopied(false), 2500);
-              });
-            }}>{copied ? "Link copied" : "Copy sign-in link"}</button>
-            {"  "}
-            <button type="button" className="link-btn" onClick={() => { saveToken(""); setToken(""); setMessage(null); }}>Forget token</button>
+            <button type="button" className="btn btn--google" disabled={!authReady || busy} onClick={async () => {
+              setMessage(null);
+              const err = await signInWithGoogle();
+              if (err) setMessage({ ok: false, text: err });
+            }}>
+              <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+                <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.6 13.3l7.8 6C12.3 13.6 17.7 9.5 24 9.5z" />
+                <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17.5z" />
+                <path fill="#FBBC05" d="M10.4 28.7c-.5-1.4-.7-3-.7-4.7s.3-3.2.7-4.7l-7.8-6C.9 16.6 0 20.2 0 24s.9 7.4 2.6 10.7l7.8-6z" />
+                <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.3 0-11.7-4.1-13.6-9.8l-7.8 6C6.6 42.6 14.6 48 24 48z" />
+              </svg>
+              Sign in with Google
+            </button>
+            <p className="admin-hint">Team accounts only (ADMIN_EMAILS on the server).</p>
+
+            {!showToken ? (
+              <p className="admin-hint"><button type="button" className="link-btn" onClick={() => setShowToken(true)}>Use the admin token instead</button></p>
+            ) : (
+              <>
+                <label className="field admin-token">
+                  <span>Admin token (DEMO_ADMIN_TOKEN)</span>
+                  <input type="password" autoComplete="off" spellCheck={false} value={token} onChange={e => setToken(e.target.value.trim())} />
+                </label>
+                <p className="admin-hint">
+                  Remembered on this device once the server accepts it.{" "}
+                  {token && (
+                    <>
+                      <button type="button" className="link-btn" onClick={() => {
+                        void navigator.clipboard?.writeText(`${window.location.origin}/#admin/${encodeURIComponent(token)}`).then(() => {
+                          setCopied(true); window.setTimeout(() => setCopied(false), 2500);
+                        });
+                      }}>{copied ? "Link copied" : "Copy sign-in link"}</button>
+                      {"  "}
+                      <button type="button" className="link-btn" onClick={() => { saveToken(""); setToken(""); setMessage(null); }}>Forget token</button>
+                    </>
+                  )}
+                </p>
+                <p className="admin-hint">The sign-in link contains the token: send it only in private chat, never in the group or on slides.</p>
+              </>
+            )}
           </>
         )}
-      </p>
-      <p className="admin-hint">The sign-in link contains the token: send it only in private chat, never in the group or on slides.</p>
+        <p className="admin-hint">Locks itself after 15 minutes without use.</p>
+      </section>
 
       <div className="admin-actions">
         <button className="btn btn--primary" disabled={!ready} onClick={() => run(["reset", "load"])}>
