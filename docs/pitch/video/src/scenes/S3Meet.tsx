@@ -18,7 +18,7 @@ export function S3Meet() {
 
   // lockup → split
   const toLockup = p(f, 40, 26, expoInOut);
-  const wordOut = p(f, 46, 28, expoOut);
+  const wordOut = p(f, 60, 26, expoOut);
   const split = p(f, 124, 30, expoInOut);
   const phoneUp = sp(f, 132, { damping: 15, stiffness: 110 });
   const sub = p(f, 86, 18, expoOut) * (1 - p(f, 118, 10));
@@ -44,26 +44,6 @@ export function S3Meet() {
         ]}
       />
 
-      {/* phone rising behind the split wordmark */}
-      <div
-        style={{
-          position: "absolute",
-          left: 960 - 200,
-          top: mix(phoneUp, 1150, 130),
-          transform: `rotate(${(1 - phoneUp) * 8}deg)`,
-        }}
-      >
-        <Phone
-          width={400}
-          layers={[
-            { src: "welcome", x: push * -120, opacity: 1 - push * 0.3 },
-            { src: "inbox", x: (1 - push) * 393, opacity: f >= tapAt + 4 ? 1 : 0 },
-          ]}
-        >
-          <Tap x={g.x + g.w / 2 - 20} y={g.y + g.h / 2 + 14} t={f - tapAt} />
-        </Phone>
-      </div>
-
       {/* wordmark */}
       <div style={{ position: "absolute", left: 0, top: 0, width: 1920, height: 1080 }}>
         <div
@@ -80,10 +60,30 @@ export function S3Meet() {
           }}
         >
           <div style={{ display: "flex", transform: `translateX(${(1 - wordOut) * -1250}px)`, fontFamily: DISPLAY, fontWeight: 800, fontSize: 200, letterSpacing: -8, lineHeight: 1 }}>
-            <span style={{ display: "inline-block", color: C.ink, transform: `translate(${split * -330}px, ${split * -40}px) scale(${1 + split * 0.35}) rotate(${split * -6}deg)` }}>Knock</span>
-            <span style={{ display: "inline-block", color: C.orange, transform: `translate(${split * 200}px, ${split * 140}px) scale(${1 + split * 0.35}) rotate(${split * 6}deg)` }}>First</span>
+            <span style={{ display: "inline-block", color: C.ink, transform: `translate(${split * -450}px, ${split * -60}px) scale(${1 + split * 0.15}) rotate(${split * -6}deg)` }}>Knock</span>
+            <span style={{ display: "inline-block", color: C.orange, transform: `translate(${split * 110}px, ${split * 160}px) scale(${1 + split * 0.15}) rotate(${split * 6}deg)` }}>First</span>
           </div>
         </div>
+      </div>
+
+      {/* phone rising between the split wordmark */}
+      <div
+        style={{
+          position: "absolute",
+          left: 960 - 200,
+          top: mix(phoneUp, 1150, 130),
+          transform: `rotate(${(1 - phoneUp) * 8}deg)`,
+        }}
+      >
+        <Phone
+          width={400}
+          layers={[
+            { src: "welcome", x: push * -120, opacity: 1 - push * 0.3 },
+            { src: "inbox", x: (1 - push) * 393, opacity: f >= tapAt + 4 ? 1 : 0 },
+          ]}
+        >
+          <Tap x={g.x + g.w / 2} y={g.y + g.h / 2} t={f - tapAt} />
+        </Phone>
       </div>
 
       {/* the icon: the door the name slides out from */}

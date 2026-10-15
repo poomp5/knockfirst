@@ -42,7 +42,7 @@ const TANGLE = [
 export function S2Problem() {
   const f = useCurrentFrame();
   const collapse = p(f, 116, 26, expoIn);
-  const cleanIn = p(f, 128, 22, expoOut);
+  const cleanIn = p(f, 134, 20, expoOut);
   const stamp = f >= 78 ? shake(f, 78, 14, 0.18, 2.6) : 0;
   const pressure = 1 + p(f, 0, 116, (t) => t) * 0.12;
   return (
@@ -205,8 +205,8 @@ function Question({ f }: { f: number }) {
         </span>
       </div>
       <svg width={1920} height={1080} style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none" }}>
-        <KnockWaves x={1530} y={600} t={f - 28} color={C.orange} size={1.3} />
-        <KnockWaves x={1560} y={600} t={f - 33} color={C.ink} size={1.8} />
+        <KnockWaves x={1745} y={600} t={f - 28} color={C.orange} size={1.3} />
+        <KnockWaves x={1770} y={600} t={f - 33} color={C.ink} size={1.8} />
       </svg>
     </div>
   );

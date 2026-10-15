@@ -17,6 +17,10 @@ export type Layer = {
   y?: number;
   /** horizontal offset in points (iOS push transitions) */
   x?: number;
+  /** vertical offset in points (sheet-style transitions) */
+  ty?: number;
+  /** dark screen background (the incoming-call screen) */
+  dark?: boolean;
   opacity?: number;
   /** pin the bottom action bar of this (non-tall) capture over a scrolled tall capture */
   bar?: { src: string; top: number };
@@ -94,8 +98,8 @@ export function Phone({
                 position: "absolute",
                 inset: 0,
                 opacity: l.opacity ?? 1,
-                transform: `translateX(${l.x ?? 0}px)`,
-                background: dark ? "#1C1C1E" : C.iosBg,
+                transform: `translate(${l.x ?? 0}px, ${l.ty ?? 0}px)`,
+                background: l.dark ?? dark ? "#1C1C1E" : C.iosBg,
                 overflow: "hidden",
               }}
             >
@@ -106,7 +110,7 @@ export function Phone({
                 </div>
               ) : null}
               {/* status bar backdrop so scrolled content tucks under it */}
-              <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: STATUS_H, background: dark ? "#1C1C1E" : C.iosBg }} />
+              <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: STATUS_H, background: l.dark ?? dark ? "#1C1C1E" : C.iosBg }} />
             </div>
           ))}
           <StatusBar dark={dark} />
@@ -223,7 +227,7 @@ export function Notice({ title, body, width = 377, style }: { title: string; bod
           <div style={{ fontFamily: THAI, fontWeight: 700, fontSize: 15, color: "#000", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {title}
           </div>
-          <div style={{ fontFamily: THAI, fontSize: 13, color: "#8E8E93", marginLeft: 8 }}>ตอนนี้</div>
+          <div style={{ fontFamily: THAI, fontSize: 13, color: "#8E8E93", marginLeft: 8 }}>now</div>
         </div>
         <div style={{ fontFamily: THAI, fontSize: 15, color: "#1c1c1e", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {body}
