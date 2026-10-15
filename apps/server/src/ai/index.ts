@@ -1,6 +1,9 @@
-// OWNER: Sky. Tete wrote this stub so the server compiles. Do not edit after the first commit.
-import type { CallAnalysis, TranscriptTurn } from "../contract";
-import { riskLevelFromScore } from "../contract";
+// OWNER: Sky. analyzeCall(): LLM → validate → merge with rule floors → fallback to rules. Never throws.
+import { CallAnalysis, RedFlag, riskLevelFromScore, TranscriptTurn } from "../contract";
+import { callLLM, extractJson, llmModel } from "./llm";
+import { ANALYSIS_SYSTEM_PROMPT, buildUserMessage } from "./prompt";
+import { detectFlags, ruleBasedAnalysis } from "./rules";
+import { normalize } from "./schema";
 
 export interface AnalyzeInput {
   transcript: TranscriptTurn[];
@@ -10,15 +13,68 @@ export interface AnalyzeInput {
 }
 
 export async function analyzeCall(input: AnalyzeInput): Promise<CallAnalysis> {
-  const said = input.transcript.filter(t => t.role === "caller").map(t => t.text).join(" ");
-  const score = 50;
+  const t0 = Date.now();
+  let rules: CallAnalysis;
+  try {
+    rules = ruleBasedAnalysis(input);
+  } catch (e) {
+    // Should be impossible; keep the "never throws" promise even against a bad regex or odd input.
+    console.error("[ai] rules crashed", e);
+    rules = emptyAnalysis();
+  }
+
+  try {
+    const text = await callLLM(ANALYSIS_SYSTEM_PROMPT, buildUserMessage(input));
+    const llm = normalize(JSON.parse(extractJson(text)), input);
+    const { injection } = detectFlags(input);
+
+    // Safety floors: deterministic patterns can't be talked down by the LLM.
+    let score = llm.riskScore, adjusted = false;
+    const has = (f: RedFlag) => rules.redFlags.includes(f);
+    const floor = (min: number) => { if (score < min) { score = min; adjusted = true; } };
+    if (has("money_request") && (has("authority_claim") || has("accusation_threat"))) floor(85);
+    if (has("personal_info_request") && has("authority_claim")) floor(80);
+    if (injection) floor(70); // a caller instructing our AI is manipulation by definition
+
+    const redFlags = Array.from(new Set([...llm.redFlags, ...rules.redFlags]));
+    // Add rule evidence for flags the LLM didn't quote, so every chip has a quote behind it.
+    const quoted = new Set(llm.evidence.map(e => e.flag));
+    const evidence = [...llm.evidence, ...rules.evidence.filter(e => !quoted.has(e.flag))];
+
+    const result: CallAnalysis = {
+      ...llm,
+      reason: llm.reason || rules.reason,
+      summary: llm.summary || rules.summary,
+      callerName: llm.callerName ?? rules.callerName,
+      organization: llm.organization ?? rules.organization,
+      callbackNumber: llm.callbackNumber ?? rules.callbackNumber,
+      riskScore: score,
+      riskLevel: riskLevelFromScore(score),
+      redFlags,
+      evidence,
+      urgency: score >= 70 ? "normal" : llm.urgency,
+      recommendedAction: score >= 70 ? "block" : llm.recommendedAction,
+      source: adjusted || redFlags.length > llm.redFlags.length ? "llm+rules" : "llm",
+    };
+    log(result, t0);
+    return result;
+  } catch (e) {
+    console.warn("[ai] LLM failed, using rules:", e instanceof Error ? e.message : e);
+    log(rules, t0);
+    return rules;
+  }
+}
+
+function log(a: CallAnalysis, t0: number) {
+  console.log(`[ai] model=${a.source === "rules" ? "rules" : llmModel()} ms=${Date.now() - t0} score=${a.riskScore} flags=${a.redFlags.join(",") || "-"} source=${a.source}`);
+}
+
+function emptyAnalysis(): CallAnalysis {
   return {
     callerName: null, organization: null, targetPerson: null, knewOwner: null,
-    reason: said.slice(0, 80) || "ไม่ทราบ", reasonEn: null,
-    summary: said.slice(0, 200) || "ผู้โทรไม่ได้ให้ข้อมูล", summaryEn: null,
-    callbackNumber: null, urgency: "normal",
-    riskScore: score, riskLevel: riskLevelFromScore(score),
-    redFlags: [], evidence: [], recommendedAction: "review",
-    source: "rules", analyzedAt: new Date().toISOString(),
+    reason: "ไม่สามารถวิเคราะห์สายได้", reasonEn: "Could not analyze the call.",
+    summary: "ระบบวิเคราะห์ขัดข้อง กรุณาตรวจสอบบทสนทนาด้วยตนเอง", summaryEn: "Analysis failed; please read the transcript.",
+    callbackNumber: null, urgency: "normal", riskScore: 50, riskLevel: riskLevelFromScore(50),
+    redFlags: [], evidence: [], recommendedAction: "review", source: "rules", analyzedAt: new Date().toISOString(),
   };
 }
