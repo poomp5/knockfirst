@@ -551,3 +551,5 @@ button { font: inherit; color: inherit; }
 .admin-row--done .admin-row-state { color: var(--low); }
 .admin-row--failed .admin-row-state { color: var(--high); }
 @media (max-width: 520px) { .admin-row { flex-direction: column; gap: 2px; } }
+.link-btn { background: none; border: 0; padding: 0; color: var(--orange-ink); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.link-btn + .link-btn { margin-left: 14px; }
