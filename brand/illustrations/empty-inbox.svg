@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <!-- KnockFirst empty inbox: calm phone with a check, nothing suspicious -->
+  <!-- soft backdrop -->
+  <circle cx="400" cy="300" r="230" fill="#FDEDE4"/>
+  <!-- ground shadow -->
+  <ellipse cx="400" cy="490" rx="104" ry="12" fill="#F8D9C8"/>
+
+  <!-- phone -->
+  <g>
+    <rect x="305" y="118" width="190" height="370" rx="36" ry="36" fill="#111111"/>
+    <rect x="317" y="130" width="166" height="346" rx="26" ry="26" fill="#FFFFFF"/>
+    <rect x="370" y="142" width="60" height="12" rx="6" ry="6" fill="#111111"/>
+    <!-- check badge -->
+    <circle cx="400" cy="262" r="54" fill="#F2611C"/>
+    <!-- check drawn as filled shapes (no strokes: renders the same everywhere) -->
+    <path d="M378.6 258.4 L 397.6 277.4 L 388.4 286.6 L 369.4 267.6 Z" fill="#FFFFFF"/>
+    <path d="M388.28 277.53 L 423.28 240.53 L 432.72 249.47 L 397.72 286.47 Z" fill="#FFFFFF"/>
+    <circle cx="374" cy="263" r="6.5" fill="#FFFFFF"/>
+    <circle cx="393" cy="282" r="6.5" fill="#FFFFFF"/>
+    <circle cx="428" cy="245" r="6.5" fill="#FFFFFF"/>
+    <!-- text lines -->
+    <rect x="352" y="346" width="96" height="12" rx="6" ry="6" fill="#D9D9D9"/>
+    <rect x="368" y="370" width="64" height="12" rx="6" ry="6" fill="#EBEBEB"/>
+    <!-- home bar -->
+    <rect x="370" y="452" width="60" height="7" rx="3.5" ry="3.5" fill="#D9D9D9"/>
+  </g>
+
+  <!-- heart -->
+  <g transform="translate(556 170)">
+    <path d="M0 14 C -4 8 -26 -4 -26 -18 C -26 -30 -16 -36 -8 -36 C -3 -36 0 -33 0 -28 C 0 -33 3 -36 8 -36 C 16 -36 26 -30 26 -18 C 26 -4 4 8 0 14 Z" fill="#F2611C"/>
+  </g>
+
+  <!-- sparkles -->
+  <path d="M232 196 Q 236 214 254 218 Q 236 222 232 240 Q 228 222 210 218 Q 228 214 232 196 Z" fill="#F2611C"/>
+  <path d="M590 372 Q 593 385 606 388 Q 593 391 590 404 Q 587 391 574 388 Q 587 385 590 372 Z" fill="#F2611C" opacity="0.7"/>
+  <path d="M258 402 Q 260 410 268 412 Q 260 414 258 422 Q 256 414 248 412 Q 256 410 258 402 Z" fill="#4A4A4A" opacity="0.35"/>
+  <circle cx="602" cy="250" r="6" fill="#F2611C" opacity="0.45"/>
+  <circle cx="214" cy="320" r="5" fill="#F2611C" opacity="0.45"/>
+  <circle cx="500" cy="96" r="5" fill="#4A4A4A" opacity="0.25"/>
+</svg>
