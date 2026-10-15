@@ -35,11 +35,15 @@ const STALE_MS = 2 * 60_000;
 const RESULT_CLOSE_MS = 3_000;
 const MISSED_CLOSE_MS = 6_000;
 
-const BG = colors.ink;
+// iOS incoming-call palette (dark system grays, Apple call red/green).
+const BG = "#1C1C1E";
 const FG = colors.white;
-const FG_MUTED = "#B9B4AE";
-const AVATAR = 148;
-const ROUND_BTN = 88;
+const FG_MUTED = "#AEAEB2";
+const AVATAR_BG = "#636366";
+const CALL_RED = "#FF3B30";
+const CALL_GREEN = "#34C759";
+const AVATAR = 144;
+const ROUND_BTN = 84;
 
 function close() {
   if (router.canGoBack()) router.back();
@@ -114,7 +118,7 @@ export default function RingScreen() {
 
       {phase === "loading" ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.brand} />
+          <ActivityIndicator size="large" color={FG_MUTED} />
         </View>
       ) : phase === "notFound" ? (
         <NotFound />
@@ -133,12 +137,12 @@ function Ringing({ name, onAnswer, onDecline }: { name: string; onAnswer: () => 
   return (
     <View style={styles.fill}>
       <View style={styles.top}>
-        <AppText variant="h1" weight="semibold" color={colors.brand} style={styles.center_text}>
-          📞 กำลังโทรหาคุณ
+        <AppText variant="title" weight="medium" color={FG_MUTED} style={styles.center_text}>
+          สายเข้า · KnockFirst
         </AppText>
         <AppText
           variant="display"
-          weight="bold"
+          weight="semibold"
           color={FG}
           numberOfLines={2}
           adjustsFontSizeToFit
@@ -155,13 +159,13 @@ function Ringing({ name, onAnswer, onDecline }: { name: string; onAnswer: () => 
       <View style={styles.buttons}>
         <RoundButton
           label="ไม่รับ"
-          color={colors.danger}
+          color={CALL_RED}
           icon="call"
           iconRotate="135deg"
           onPress={onDecline}
           a11y={`ไม่รับสายจาก ${name}`}
         />
-        <RoundButton label="รับสาย" color={colors.success} icon="call" onPress={onAnswer} a11y={`รับสายจาก ${name}`} />
+        <RoundButton label="รับสาย" color={CALL_GREEN} icon="call" onPress={onAnswer} a11y={`รับสายจาก ${name}`} />
       </View>
     </View>
   );
@@ -200,7 +204,7 @@ function PulsingAvatar() {
       <Wave t={ringA} />
       <Wave t={ringB} />
       <Animated.View style={[styles.avatar, core]}>
-        <Ionicons name="person" size={76} color={FG} />
+        <Ionicons name="person" size={72} color={FG} />
       </Animated.View>
     </View>
   );
@@ -208,7 +212,7 @@ function PulsingAvatar() {
 
 function Wave({ t }: { t: SharedValue<number> }) {
   const style = useAnimatedStyle(() => ({
-    opacity: 0.5 * (1 - t.value),
+    opacity: 0.18 * (1 - t.value), // white ripple on the dark background
     transform: [{ scale: 1 + t.value * 0.75 }],
   }));
   return <Animated.View style={[styles.wave, style]} />;
@@ -238,9 +242,9 @@ function RoundButton({
         hitSlop={12}
         style={({ pressed }) => [styles.roundBtn, { backgroundColor: color }, pressed && styles.pressed]}
       >
-        <Ionicons name={icon} size={44} color={FG} style={iconRotate ? { transform: [{ rotate: iconRotate }] } : null} />
+        <Ionicons name={icon} size={40} color={FG} style={iconRotate ? { transform: [{ rotate: iconRotate }] } : null} />
       </Pressable>
-      <AppText variant="title" weight="bold" color={FG}>
+      <AppText variant="title" weight="medium" color={FG}>
         {label}
       </AppText>
     </View>
@@ -250,9 +254,9 @@ function RoundButton({
 // ---------- After the call ----------
 
 const RESULT: Record<"answered" | "declined" | "missed", { title: string; icon: keyof typeof Ionicons.glyphMap; color: string }> = {
-  answered: { title: "รับสายแล้ว", icon: "checkmark", color: colors.success },
-  declined: { title: "ไม่รับสาย", icon: "close", color: colors.danger },
-  missed: { title: "สายที่ไม่ได้รับ", icon: "call-outline", color: "#5A5550" },
+  answered: { title: "รับสายแล้ว", icon: "checkmark", color: CALL_GREEN },
+  declined: { title: "ไม่รับสาย", icon: "close", color: CALL_RED },
+  missed: { title: "สายที่ไม่ได้รับ", icon: "call", color: AVATAR_BG },
 };
 
 function Result({ phase, name }: { phase: "answered" | "declined" | "missed"; name: string }) {
@@ -284,7 +288,7 @@ function Result({ phase, name }: { phase: "answered" | "declined" | "missed"; na
 function NotFound() {
   return (
     <View style={[styles.fill, styles.centerCol]}>
-      <Ionicons name="call-outline" size={64} color={FG_MUTED} />
+      <Ionicons name="call" size={56} color={FG_MUTED} />
       <AppText variant="h1" weight="bold" color={FG} style={styles.center_text}>
         ไม่พบสายนี้
       </AppText>
@@ -304,7 +308,7 @@ function CloseButton() {
       accessibilityLabel="ปิด"
       style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}
     >
-      <AppText variant="title" weight="semibold" color={FG}>
+      <AppText variant="title" weight="medium" color={FG}>
         ปิด
       </AppText>
     </Pressable>
@@ -324,7 +328,7 @@ const styles = StyleSheet.create({
     width: AVATAR,
     height: AVATAR,
     borderRadius: AVATAR / 2,
-    backgroundColor: colors.brand,
+    backgroundColor: AVATAR_BG,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -333,7 +337,7 @@ const styles = StyleSheet.create({
     width: AVATAR,
     height: AVATAR,
     borderRadius: AVATAR / 2,
-    backgroundColor: colors.brand,
+    backgroundColor: FG,
   },
   buttons: { flexDirection: "row", justifyContent: "space-around", paddingBottom: spacing.xl },
   btnCol: { alignItems: "center", gap: spacing.md },
@@ -344,7 +348,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  pressed: { opacity: 0.75, transform: [{ scale: 0.96 }] },
+  pressed: { opacity: 0.7 },
   resultIcon: {
     width: 128,
     height: 128,
@@ -360,8 +364,7 @@ const styles = StyleSheet.create({
     minHeight: 64,
     paddingHorizontal: spacing.xxl,
     borderRadius: radii.pill,
-    borderWidth: 2,
-    borderColor: FG_MUTED,
+    backgroundColor: "#3A3A3C",
     alignItems: "center",
     justifyContent: "center",
   },

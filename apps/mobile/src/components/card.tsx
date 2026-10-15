@@ -7,7 +7,7 @@ export interface CardProps {
   style?: StyleProp<ViewStyle>;
 }
 
-/** White card, radius 16, subtle border (theme.cardStyle) with default padding. */
+/** White inset-grouped surface (theme.cardStyle) with default padding. */
 export function Card({ children, style }: CardProps) {
   return <View style={[styles.card, style]}>{children}</View>;
 }

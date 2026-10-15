@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { Alert, Linking, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -18,9 +18,11 @@ import {
 import {
   AppText,
   Banner,
-  Card,
   EmptyState,
   FactRow,
+  IconTile,
+  ListRow,
+  ListSection,
   PrimaryButton,
   PulseDot,
   RedFlagChip,
@@ -30,7 +32,7 @@ import {
   TranscriptView,
   UrgentTag,
 } from "@/components";
-import { colors, radii, spacing } from "@/theme";
+import { colors, SEPARATOR_INSET, spacing } from "@/theme";
 
 type Decision = "accepted" | "blocked";
 
@@ -38,9 +40,9 @@ const ACTIONABLE = new Set<CallStatus>(["needs_review", "auto_blocked", "no_mess
 const PENDING = new Set<CallStatus>(["screening", "analyzing"]);
 
 const RECOMMENDATION_TH: Record<CallAnalysis["recommendedAction"], { text: string; color: string; icon: keyof typeof Ionicons.glyphMap }> = {
-  accept: { text: "AI แนะนำ: รับสายได้", color: colors.success, icon: "checkmark-circle" },
-  review: { text: "AI แนะนำ: ตรวจสอบก่อนตัดสินใจ", color: colors.warning, icon: "help-circle" },
-  block: { text: "AI แนะนำ: ควรบล็อก", color: colors.danger, icon: "alert-circle" },
+  accept: { text: "AI แนะนำ: รับสายได้", color: colors.success, icon: "checkmark" },
+  review: { text: "AI แนะนำ: ตรวจสอบก่อนตัดสินใจ", color: colors.warning, icon: "help" },
+  block: { text: "AI แนะนำ: ควรบล็อก", color: colors.danger, icon: "hand-left" },
 };
 
 function decisionOf(call: CallDoc): Decision | null {
@@ -85,6 +87,7 @@ export default function CallDetailScreen() {
     return (
       <View style={styles.centerWrap}>
         <EmptyState
+          icon={error ? "cloud-offline" : "call"}
           title={error ? "โหลดข้อมูลสายไม่สำเร็จ" : "ไม่พบสายนี้"}
           subtitle={error ? "ตรวจสอบอินเทอร์เน็ต แล้วลองใหม่อีกครั้ง" : "สายนี้อาจถูกลบไปแล้ว หรือลิงก์ไม่ถูกต้อง"}
         />
@@ -92,7 +95,6 @@ export default function CallDetailScreen() {
           <PrimaryButton
             title="กลับไปหน้าสายเข้า"
             variant="secondary"
-            icon="arrow-back"
             onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
           />
         </View>
@@ -153,21 +155,29 @@ export default function CallDetailScreen() {
   // Measured height of the sticky bar (already includes the bottom inset) so content never hides under it.
   const actionBarSpace = showActionBar ? Math.max(barHeight, 140 + insets.bottom) + spacing.lg : spacing.xxl + insets.bottom;
 
+  const facts: { label: string; value?: string | null }[] = [
+    { label: "ผู้โทร", value: analysis?.callerName },
+    { label: "หน่วยงาน", value: analysis?.organization },
+    { label: "ต้องการติดต่อ", value: analysis?.targetPerson },
+    { label: "เรื่อง", value: analysis?.reason },
+    { label: "เบอร์ติดต่อกลับ", value: analysis?.callbackNumber ? formatCallerKey(analysis.callbackNumber) : null },
+    { label: "เบอร์ที่โทรมา", value: formatCallerKey(call.callerKey) },
+    { label: "เวลา", value: `${formatClock(call.startedAt)} · ${timeAgo(call.startedAt)}` },
+  ].filter((f) => typeof f.value === "string" && f.value.trim());
+
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: actionBarSpace }]}>
-        {/* ---------- Hero ---------- */}
-        <Card style={styles.hero}>
-          <View style={styles.heroTop}>
-            <View style={styles.flex}>
-              <AppText variant="title" weight="bold" numberOfLines={2}>
-                {title}
-              </AppText>
-              <AppText variant="small" color={colors.textMuted}>
-                {formatCallerKey(call.callerKey)} · {formatClock(call.startedAt)} ({timeAgo(call.startedAt)})
-              </AppText>
-            </View>
+        {/* ---------- Hero (Contacts-style, on the grouped background) ---------- */}
+        <View style={styles.hero}>
+          <AppText variant="h1" weight="bold" numberOfLines={2} style={styles.centerText}>
+            {title}
+          </AppText>
+          <View style={styles.heroMeta}>
             {analysis?.urgency === "urgent" ? <UrgentTag /> : null}
+            <AppText variant="small" color={colors.textSubtle} style={styles.centerText}>
+              {formatCallerKey(call.callerKey)} · {formatClock(call.startedAt)}
+            </AppText>
           </View>
 
           {analysis ? (
@@ -177,12 +187,12 @@ export default function CallDetailScreen() {
           ) : pending ? (
             <View style={styles.pendingHero}>
               <View style={styles.pendingRow}>
-                <PulseDot color={colors.brand} size={12} />
-                <AppText variant="large" weight="semibold" color={colors.brand}>
+                <PulseDot color={colors.brand} size={10} />
+                <AppText variant="body" weight="semibold" color={colors.brand}>
                   {call.status === "screening" ? "AI กำลังคุยกับผู้โทร…" : "กำลังสรุป…"}
                 </AppText>
               </View>
-              <Skeleton height={120} width="70%" />
+              <Skeleton height={110} width="65%" />
             </View>
           ) : (
             <StatusIcon status={call.status} />
@@ -191,131 +201,112 @@ export default function CallDetailScreen() {
           <View style={styles.statusRow}>
             <StatusPill status={call.status} ownerResponse={call.ownerResponse} />
             {duration ? (
-              <AppText variant="small" color={colors.textSubtle}>
+              <AppText variant="caption" color={colors.textSubtle}>
                 ความยาวสาย {duration}
               </AppText>
             ) : null}
           </View>
-        </Card>
+        </View>
 
         {/* ---------- Decision result ---------- */}
         {decision ? (
           <Banner
             tone={decision === "accepted" ? "success" : "danger"}
-            text={decision === "accepted" ? "อนุญาตแล้ว ✓ ครั้งหน้าจะโทรเข้าได้เลย" : "บล็อกแล้ว เบอร์นี้จะถูกตัดสายอัตโนมัติ"}
+            text={decision === "accepted" ? "อนุญาตแล้ว ครั้งหน้าจะโทรเข้าได้เลย" : "บล็อกแล้ว เบอร์นี้จะถูกตัดสายอัตโนมัติ"}
             actionLabel={busy ? undefined : "เปลี่ยนใจ"}
             onAction={busy ? undefined : decision === "accepted" ? askBlock : askAccept}
           />
         ) : null}
 
         {/* ---------- AI summary ---------- */}
-        <Section title="สรุปจาก AI" icon="sparkles-outline">
-          <Card style={styles.cardPad}>
-            {analysis ? (
-              <>
-                <AppText variant="large" style={styles.summary}>
-                  {analysis.summary || analysis.reason || "ไม่มีบทสรุป"}
-                </AppText>
-                <Recommendation action={analysis.recommendedAction} />
-              </>
-            ) : pending ? (
-              <View style={styles.skeletonStack}>
-                <AppText variant="small" color={colors.textMuted}>
-                  กำลังสรุป…
-                </AppText>
-                <Skeleton height={18} />
-                <Skeleton height={18} />
-                <Skeleton height={18} width="60%" />
-              </View>
-            ) : (
+        <ListSection header="สรุปจาก AI">
+          {analysis ? (
+            <View style={styles.cellPad}>
+              <AppText variant="body" style={styles.summary}>
+                {analysis.summary || analysis.reason || "ไม่มีบทสรุป"}
+              </AppText>
+            </View>
+          ) : pending ? (
+            <View style={[styles.cellPad, styles.skeletonStack]}>
+              <Skeleton height={18} />
+              <Skeleton height={18} />
+              <Skeleton height={18} width="60%" />
+            </View>
+          ) : (
+            <View style={styles.cellPad}>
               <AppText variant="body" color={colors.textMuted}>
                 {noAnalysisText(call.status)}
               </AppText>
-            )}
-          </Card>
-        </Section>
+            </View>
+          )}
+          {analysis ? <Recommendation action={analysis.recommendedAction} /> : null}
+        </ListSection>
 
         {/* ---------- Facts ---------- */}
-        <Section title="ข้อมูลผู้โทร" icon="person-circle-outline">
-          <Card style={styles.cardPad}>
-            <FactRow label="ผู้โทร" value={analysis?.callerName} />
-            <FactRow label="หน่วยงาน" value={analysis?.organization} />
-            <FactRow label="ต้องการติดต่อ" value={analysis?.targetPerson} />
-            <FactRow label="เรื่อง" value={analysis?.reason} />
-            <FactRow
-              label="เบอร์ติดต่อกลับ"
-              value={analysis?.callbackNumber ? formatCallerKey(analysis.callbackNumber) : null}
-            />
-            <FactRow label="เบอร์ที่โทรมา" value={formatCallerKey(call.callerKey)} />
-            <FactRow label="เวลา" value={`${formatClock(call.startedAt)} · ${timeAgo(call.startedAt)}`} />
-          </Card>
-        </Section>
+        <ListSection header="ข้อมูลผู้โทร">
+          {facts.map((f) => (
+            <FactRow key={f.label} label={f.label} value={f.value} />
+          ))}
+        </ListSection>
 
         {/* ---------- Red flags ---------- */}
         {analysis ? (
-          <Section title="สัญญาณอันตราย" icon="warning-outline">
-            <Card style={styles.cardPad}>
-              {noRedFlags ? (
-                <View style={styles.safeRow}>
-                  <Ionicons name="checkmark-circle" size={22} color={colors.success} />
-                  <AppText variant="body" weight="medium" color={colors.success}>
-                    ไม่พบสัญญาณอันตราย
+          <ListSection header="สัญญาณอันตราย" separatorInset={SEPARATOR_INSET - 4}>
+            {noRedFlags ? (
+              <ListRow
+                icon="checkmark"
+                iconColor={colors.success}
+                title="ไม่พบสัญญาณอันตราย"
+                titleColor={colors.success}
+              />
+            ) : null}
+            {evidence.map((e, i) => (
+              <View key={`${e.flag}-${i}`} style={styles.evidenceRow}>
+                <IconTile name="alert" color={colors.danger} size={26} />
+                <View style={styles.flex}>
+                  <AppText variant="body" weight="semibold" color={colors.danger}>
+                    {RED_FLAG_LABEL_TH[e.flag] ?? "สัญญาณผิดปกติ"}
                   </AppText>
-                </View>
-              ) : (
-                <View style={styles.evidenceList}>
-                  {evidence.map((e, i) => (
-                    <View key={`${e.flag}-${i}`} style={styles.evidenceRow}>
-                      <View style={styles.evidenceHead}>
-                        <Ionicons name="alert-circle" size={18} color={colors.danger} />
-                        <AppText variant="body" weight="semibold" color={colors.danger} style={styles.flex}>
-                          {RED_FLAG_LABEL_TH[e.flag] ?? "สัญญาณผิดปกติ"}
-                        </AppText>
-                      </View>
-                      {e.quote ? (
-                        <AppText variant="body" color={colors.textMuted} style={styles.quote}>
-                          “{e.quote}”
-                        </AppText>
-                      ) : null}
-                    </View>
-                  ))}
-                  {flagsWithoutQuote.length > 0 ? (
-                    <View style={styles.chips}>
-                      {flagsWithoutQuote.map((f) => (
-                        <RedFlagChip key={f} flag={f} />
-                      ))}
-                    </View>
+                  {e.quote ? (
+                    <AppText variant="small" color={colors.textMuted} style={styles.quote}>
+                      “{e.quote}”
+                    </AppText>
                   ) : null}
                 </View>
-              )}
-            </Card>
-          </Section>
+              </View>
+            ))}
+            {flagsWithoutQuote.length > 0 ? (
+              <View style={[styles.cellPad, styles.chips]}>
+                {flagsWithoutQuote.map((f) => (
+                  <RedFlagChip key={f} flag={f} />
+                ))}
+              </View>
+            ) : null}
+          </ListSection>
         ) : null}
 
         {/* ---------- Transcript ---------- */}
-        <Section title="บทสนทนา" icon="chatbubbles-outline">
-          {transcript.length > 0 ? (
-            <TranscriptView turns={transcript} collapsedCount={4} />
-          ) : (
-            <Card style={styles.cardPad}>
-              {call.status === "screening" ? (
-                <View style={styles.pendingRow}>
-                  <PulseDot color={colors.brand} size={10} />
-                  <AppText variant="body" color={colors.textMuted}>
-                    AI กำลังคุยกับผู้โทร บทสนทนาจะแสดงเมื่อวางสาย
-                  </AppText>
-                </View>
-              ) : (
-                <AppText variant="body" color={colors.textMuted}>
-                  ไม่มีบทสนทนาสำหรับสายนี้
+        <ListSection header="บทสนทนา">
+          <View style={styles.cellPad}>
+            {transcript.length > 0 ? (
+              <TranscriptView turns={transcript} collapsedCount={4} />
+            ) : call.status === "screening" ? (
+              <View style={styles.pendingRow}>
+                <PulseDot color={colors.brand} size={8} />
+                <AppText variant="body" color={colors.textMuted} style={styles.flex}>
+                  AI กำลังคุยกับผู้โทร บทสนทนาจะแสดงเมื่อวางสาย
                 </AppText>
-              )}
-            </Card>
-          )}
-        </Section>
+              </View>
+            ) : (
+              <AppText variant="body" color={colors.textMuted}>
+                ไม่มีบทสนทนาสำหรับสายนี้
+              </AppText>
+            )}
+          </View>
+        </ListSection>
       </ScrollView>
 
-      {/* ---------- Sticky action bar ---------- */}
+      {/* ---------- Sticky action bar (iOS toolbar material) ---------- */}
       {showActionBar ? (
         <View
           style={[styles.actionBar, { paddingBottom: spacing.md + insets.bottom }]}
@@ -323,7 +314,7 @@ export default function CallDetailScreen() {
         >
           <PrimaryButton
             title={risky ? "บล็อกและรายงาน" : "อนุญาตเบอร์นี้"}
-            icon={risky ? "ban" : "checkmark-circle"}
+            icon={risky ? "hand-left" : "checkmark"}
             variant={risky ? "danger" : "primary"}
             onPress={risky ? askBlock : askAccept}
             loading={busy === (risky ? "blocked" : "accepted")}
@@ -332,9 +323,8 @@ export default function CallDetailScreen() {
           <View style={styles.actionRow}>
             <View style={styles.flex}>
               <PrimaryButton
-                title={risky ? "อนุญาตเบอร์นี้" : "บล็อกและรายงาน"}
-                icon={risky ? "checkmark-circle-outline" : "ban"}
-                variant={risky ? "secondary" : "danger"}
+                title={risky ? "อนุญาต" : "บล็อก"}
+                variant={risky ? "secondary" : "dangerTinted"}
                 onPress={risky ? askAccept : askBlock}
                 loading={busy === (risky ? "accepted" : "blocked")}
                 disabled={busy !== null}
@@ -344,8 +334,8 @@ export default function CallDetailScreen() {
               <View style={styles.flex}>
                 <PrimaryButton
                   title="โทรกลับ"
-                  icon="call-outline"
-                  variant="ghost"
+                  icon="call"
+                  variant="secondary"
                   onPress={callBack}
                   disabled={busy !== null}
                 />
@@ -371,53 +361,24 @@ function noAnalysisText(status: CallStatus): string {
   }
 }
 
-function Section({
-  title,
-  icon,
-  children,
-}: {
-  title: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  children: ReactNode;
-}) {
-  return (
-    <View style={styles.section}>
-      <View style={styles.sectionHead}>
-        <Ionicons name={icon} size={18} color={colors.textMuted} />
-        <AppText variant="body" weight="semibold" color={colors.textMuted}>
-          {title}
-        </AppText>
-      </View>
-      {children}
-    </View>
-  );
-}
-
 function Recommendation({ action }: { action: CallAnalysis["recommendedAction"] }) {
   const rec = RECOMMENDATION_TH[action];
   if (!rec) return null;
-  return (
-    <View style={styles.recRow}>
-      <Ionicons name={rec.icon} size={18} color={rec.color} />
-      <AppText variant="small" weight="semibold" color={rec.color}>
-        {rec.text}
-      </AppText>
-    </View>
-  );
+  return <ListRow icon={rec.icon} iconColor={rec.color} title={rec.text} titleColor={rec.color} />;
 }
 
 function StatusIcon({ status }: { status: CallStatus }) {
-  const map: Partial<Record<CallStatus, { icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }>> = {
-    forwarded: { icon: "call", color: colors.success, bg: colors.successSoft },
-    accepted: { icon: "checkmark-circle", color: colors.success, bg: colors.successSoft },
-    rejected: { icon: "ban", color: colors.danger, bg: colors.dangerSoft },
-    blocked: { icon: "ban", color: colors.danger, bg: colors.dangerSoft },
-    auto_blocked: { icon: "shield", color: colors.danger, bg: colors.dangerSoft },
+  const map: Partial<Record<CallStatus, { icon: keyof typeof Ionicons.glyphMap; color: string }>> = {
+    forwarded: { icon: "call", color: colors.success },
+    accepted: { icon: "checkmark", color: colors.success },
+    rejected: { icon: "hand-left", color: colors.danger },
+    blocked: { icon: "hand-left", color: colors.danger },
+    auto_blocked: { icon: "shield", color: colors.danger },
   };
-  const s = map[status] ?? { icon: "call-outline" as const, color: colors.textMuted, bg: colors.bubbleAssistant };
+  const s = map[status] ?? { icon: "call" as const, color: colors.gray };
   return (
-    <View style={[styles.statusIcon, { backgroundColor: s.bg }]}>
-      <Ionicons name={s.icon} size={44} color={s.color} />
+    <View style={[styles.statusIcon, { backgroundColor: s.color }]}>
+      <Ionicons name={s.icon} size={40} color={colors.white} />
     </View>
   );
 }
@@ -436,15 +397,16 @@ function LoadingState() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.lg, gap: spacing.lg },
+  content: { padding: spacing.lg, gap: spacing.xl },
   flex: { flex: 1 },
+  centerText: { textAlign: "center" },
   centerWrap: { flex: 1, justifyContent: "center", padding: spacing.xl, backgroundColor: colors.bg },
   centerButton: { marginTop: spacing.lg },
 
-  hero: { padding: spacing.lg, gap: spacing.md },
-  heroTop: { flexDirection: "row", alignItems: "flex-start", gap: spacing.md },
-  meterWrap: { alignItems: "center", paddingTop: spacing.sm },
-  pendingHero: { alignItems: "center", gap: spacing.md, paddingVertical: spacing.md },
+  hero: { alignItems: "center", gap: spacing.sm, paddingTop: spacing.sm },
+  heroMeta: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  meterWrap: { alignItems: "center", paddingTop: spacing.lg },
+  pendingHero: { alignSelf: "stretch", alignItems: "center", gap: spacing.md, paddingVertical: spacing.lg },
   pendingRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   statusRow: {
     flexDirection: "row",
@@ -452,42 +414,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexWrap: "wrap",
     gap: spacing.sm,
+    marginTop: spacing.xs,
   },
   statusIcon: {
-    alignSelf: "center",
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: spacing.sm,
+    marginVertical: spacing.md,
   },
 
-  section: { gap: spacing.sm },
-  sectionHead: { flexDirection: "row", alignItems: "center", gap: spacing.xs + 2, paddingHorizontal: spacing.xs },
-  cardPad: { padding: spacing.lg },
-  summary: { lineHeight: 30 },
-  recRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs + 2,
-    marginTop: spacing.md,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
+  cellPad: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, backgroundColor: colors.card },
+  summary: { lineHeight: 27 },
   skeletonStack: { gap: spacing.sm },
 
-  safeRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  evidenceList: { gap: spacing.md },
   evidenceRow: {
-    gap: spacing.xs,
-    paddingLeft: spacing.md,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.danger,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.card,
   },
-  evidenceHead: { flexDirection: "row", alignItems: "center", gap: spacing.xs + 2 },
-  quote: { lineHeight: 26 },
+  quote: { marginTop: 2, lineHeight: 22 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
 
   actionBar: {
@@ -498,16 +448,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingTop: spacing.md,
     paddingHorizontal: spacing.lg,
-    backgroundColor: colors.card,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    borderTopLeftRadius: radii.lg,
-    borderTopRightRadius: radii.lg,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: -4 },
-    elevation: 12,
+    backgroundColor: colors.bar,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.separator,
   },
   actionRow: { flexDirection: "row", gap: spacing.sm },
 });

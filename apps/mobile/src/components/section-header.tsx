@@ -1,5 +1,5 @@
 import { StyleSheet, View } from "react-native";
-import { colors, radii, spacing } from "@/theme";
+import { colors, spacing } from "@/theme";
 import { AppText } from "./app-text";
 
 export interface SectionHeaderProps {
@@ -7,18 +7,17 @@ export interface SectionHeaderProps {
   count?: number;
 }
 
+/** Bold title3-style section heading (Apple Mail / Phone style), optional grey count. */
 export function SectionHeader({ title, count }: SectionHeaderProps) {
   return (
     <View style={styles.row} accessibilityRole="header">
-      <AppText variant="large" weight="semibold">
+      <AppText variant="title" weight="bold" style={styles.title}>
         {title}
       </AppText>
       {typeof count === "number" && (
-        <View style={styles.count}>
-          <AppText variant="caption" weight="semibold" color={colors.textMuted}>
-            {count}
-          </AppText>
-        </View>
+        <AppText variant="title" weight="medium" color={colors.textSubtle} style={styles.title}>
+          {count}
+        </AppText>
       )}
     </View>
   );
@@ -27,17 +26,11 @@ export function SectionHeader({ title, count }: SectionHeaderProps) {
 const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "baseline",
     gap: spacing.sm,
     paddingTop: spacing.xl,
     paddingBottom: spacing.sm,
+    paddingHorizontal: spacing.xs,
   },
-  count: {
-    minWidth: 24,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 1,
-    borderRadius: radii.pill,
-    backgroundColor: colors.bubbleAssistant,
-    alignItems: "center",
-  },
+  title: { fontSize: 20, lineHeight: 28 },
 });

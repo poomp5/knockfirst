@@ -16,14 +16,17 @@ export interface AppTextProps extends Omit<TextProps, "style" | "children"> {
 
 // Thai glyphs have tall marks above/below, so line heights are generous (~1.5x) to avoid clipping.
 const LINE_HEIGHT: Record<AppTextVariant, number> = {
-  caption: 18,
+  caption: 17,
   small: 21,
-  body: 24,
-  large: 27,
-  title: 32,
-  h1: 40,
+  body: 25,
+  large: 25,
+  title: 30,
+  h1: 44,
   display: 56,
 };
+
+// iOS tightens tracking on large display sizes.
+const TRACKING: Partial<Record<AppTextVariant, number>> = { title: -0.2, h1: -0.4, display: -0.6 };
 
 /** All text in the app goes through this (Noto Sans Thai). Never set fontWeight: Android needs the per-weight family. */
 export function AppText({
@@ -41,7 +44,13 @@ export function AppText({
       numberOfLines={numberOfLines}
       style={[
         styles.base,
-        { fontFamily: fonts[weight], fontSize: fontSize[variant], lineHeight: LINE_HEIGHT[variant], color },
+        {
+          fontFamily: fonts[weight],
+          fontSize: fontSize[variant],
+          lineHeight: LINE_HEIGHT[variant],
+          letterSpacing: TRACKING[variant] ?? 0,
+          color,
+        },
         style,
       ]}
     >

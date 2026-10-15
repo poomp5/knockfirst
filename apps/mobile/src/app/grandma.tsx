@@ -2,8 +2,6 @@
 // While this screen is mounted, useAutoRing() opens /ring/[callId] when a known caller rings.
 import { useEffect, useState } from "react";
 import { Alert, AppState, Pressable, StyleSheet, View } from "react-native";
-import { Image } from "expo-image";
-import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
@@ -13,7 +11,7 @@ import { USE_MOCKS } from "@/lib/firebase";
 import { mockSimulateKnownCall } from "@/lib/mocks";
 import { useAutoRing } from "@/lib/ring";
 import { useDeviceRole } from "@/lib/role";
-import { AppText } from "@/components";
+import { AppText, IconTile, PrimaryButton } from "@/components";
 import { colors, radii, spacing, TAP } from "@/theme";
 
 /** "วันพฤหัสบดีที่ 15 ตุลาคม" */
@@ -21,12 +19,12 @@ function thaiDate(d: Date): string {
   return `วัน${format(d, "EEEE", { locale: th })}ที่ ${format(d, "d MMMM", { locale: th })}`;
 }
 
-/** Today's Thai date, refreshed every minute and when the app returns to the foreground. */
-function useThaiToday(): string {
-  const [label, setLabel] = useState(() => thaiDate(new Date()));
+/** Now, refreshed every 15 s (so the clock never lags a minute) and when the app returns to the foreground. */
+function useNow(): Date {
+  const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    const refresh = () => setLabel(thaiDate(new Date()));
-    const timer = setInterval(refresh, 60_000);
+    const refresh = () => setNow(new Date());
+    const timer = setInterval(refresh, 15_000);
     const sub = AppState.addEventListener("change", (s) => {
       if (s === "active") refresh();
     });
@@ -35,13 +33,13 @@ function useThaiToday(): string {
       sub.remove();
     };
   }, []);
-  return label;
+  return now;
 }
 
 export default function GrandmaHome() {
   const insets = useSafeAreaInsets();
   const { role, setRole } = useDeviceRole();
-  const today = useThaiToday();
+  const now = useNow();
 
   useAutoRing(role === "grandma");
 
@@ -53,7 +51,7 @@ export default function GrandmaHome() {
   }
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.lg }]}>
+    <View style={[styles.screen, { paddingTop: insets.top + spacing.sm, paddingBottom: insets.bottom + spacing.lg }]}>
       <View style={styles.topBar}>
         <Pressable
           onPress={switchMode}
@@ -62,98 +60,64 @@ export default function GrandmaHome() {
           accessibilityLabel="เปลี่ยนโหมด"
           style={({ pressed }) => [styles.switchLink, pressed && styles.pressed]}
         >
-          <Ionicons name="swap-horizontal" size={16} color={colors.textSubtle} />
-          <AppText variant="small" color={colors.textSubtle}>
+          <AppText variant="body" color={colors.brand}>
             เปลี่ยนโหมด
           </AppText>
         </Pressable>
       </View>
 
-      <View style={styles.body}>
-        <Image
-          source={require("../../assets/shield.png")}
-          style={styles.shield}
-          contentFit="contain"
-          accessibilityIgnoresInvertColors
-        />
-        <View style={styles.headline}>
-          <AppText variant="display" weight="bold" color={colors.brand} style={styles.center}>
-            KnockFirst
-          </AppText>
-          <AppText variant="display" weight="bold" color={colors.ink} style={styles.center}>
-            ปกป้องคุณอยู่
-          </AppText>
-        </View>
-
-        <View style={styles.datePill}>
-          <Ionicons name="calendar" size={28} color={colors.ink} />
-          <AppText variant="title" weight="semibold" color={colors.ink}>
-            {today}
-          </AppText>
-        </View>
-
-        <AppText variant="title" weight="medium" color={colors.textMuted} style={[styles.center, styles.note]}>
-          สายจากคนแปลกหน้า AI จะรับแทน{"\n"}ลูกหลานจะเป็นคนตรวจสอบ
+      {/* Lock Screen-style date + clock: the biggest, calmest thing on the screen. */}
+      <View style={styles.clockBlock} accessible accessibilityLabel={`${thaiDate(now)} เวลา ${format(now, "HH:mm")} น.`}>
+        <AppText variant="title" weight="semibold" color={colors.textMuted} style={styles.center}>
+          {thaiDate(now)}
+        </AppText>
+        <AppText weight="bold" color={colors.ink} style={[styles.center, styles.clock]}>
+          {format(now, "HH:mm")}
         </AppText>
       </View>
 
+      <View style={styles.body}>
+        <View style={styles.card}>
+          <IconTile name="shield-checkmark" color={colors.brand} size={64} />
+          <AppText variant="h1" weight="bold" style={styles.center}>
+            KnockFirst{"\n"}ปกป้องคุณอยู่
+          </AppText>
+          <AppText variant="title" weight="medium" color={colors.textSubtle} style={styles.center}>
+            สายจากคนแปลกหน้า AI จะรับแทน{"\n"}ลูกหลานจะเป็นคนตรวจสอบ
+          </AppText>
+        </View>
+      </View>
+
       {USE_MOCKS ? (
-        <Pressable
+        <PrimaryButton
+          title="จำลองคนรู้จักโทรมา"
+          variant="secondary"
+          icon="flask"
           onPress={() => {
             mockSimulateKnownCall();
             Haptics.selectionAsync().catch(() => {});
           }}
-          accessibilityRole="button"
-          accessibilityLabel="จำลองคนรู้จักโทรมา (โหมดทดสอบ)"
-          style={({ pressed }) => [styles.devButton, pressed && styles.pressed]}
-        >
-          <Ionicons name="flask-outline" size={18} color={colors.brandPressed} />
-          <AppText variant="small" weight="semibold" color={colors.brandPressed}>
-            จำลองคนรู้จักโทรมา
-          </AppText>
-        </Pressable>
+        />
       ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: spacing.xl },
+  screen: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: spacing.lg },
   topBar: { flexDirection: "row", justifyContent: "flex-end" },
-  switchLink: {
-    flexDirection: "row",
+  switchLink: { minHeight: TAP, justifyContent: "center", paddingHorizontal: spacing.sm },
+  pressed: { opacity: 0.4 },
+  clockBlock: { alignItems: "center", marginTop: spacing.sm },
+  clock: { fontSize: 96, lineHeight: 112, letterSpacing: -3 },
+  body: { flex: 1, justifyContent: "center" },
+  card: {
     alignItems: "center",
-    gap: spacing.xs,
-    minHeight: TAP,
-    paddingHorizontal: spacing.sm,
-  },
-  pressed: { opacity: 0.6 },
-  body: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.xl },
-  shield: { width: 140, height: 140 },
-  headline: { alignItems: "center" },
-  center: { textAlign: "center" },
-  datePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
+    gap: spacing.lg,
     backgroundColor: colors.card,
-    borderWidth: 2,
-    borderColor: colors.border,
-    borderRadius: radii.pill,
+    borderRadius: radii.xxl,
+    paddingVertical: spacing.xxl,
     paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
   },
-  note: { maxWidth: 360 },
-  devButton: {
-    minHeight: TAP,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.sm,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: colors.brand,
-    backgroundColor: colors.brandSoft,
-  },
+  center: { textAlign: "center" },
 });
