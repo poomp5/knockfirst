@@ -1,6 +1,7 @@
 // Captures real KnockFirst app screens from Expo web in mock mode.
 // Run the app first: (apps/mobile) EXPO_PUBLIC_USE_MOCKS=true npx expo start --web --port 8099
 import { chromium } from "playwright";
+import { writeFileSync } from "node:fs";
 
 const BASE = process.env.APP_URL ?? "http://localhost:8099";
 const OUT = new URL("../public/shots/", import.meta.url).pathname;
@@ -42,9 +43,20 @@ async function clean(p) {
   });
 }
 
+const seen = new Set();
 async function shot(p, name) {
   await p.waitForTimeout(1600);
   await clean(p);
+  if (process.env.DUMP) {
+    const texts = await p.evaluate(() => {
+      const out = [];
+      const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      while (w.nextNode()) { const t = w.currentNode.nodeValue; if (/[\u0E00-\u0E7F]/.test(t)) out.push(t); }
+      return out;
+    });
+    texts.forEach((t) => seen.add(t));
+    writeFileSync(`${OUT}../../scripts/thai-strings.json`, JSON.stringify([...seen], null, 1));
+  }
   await p.screenshot({ path: `${OUT}${name}.png` });
   console.log("shot", name);
 }
@@ -127,6 +139,5 @@ await p.getByText("จำลองคนรู้จักโทรมา", { ex
 await p.waitForTimeout(2500);
 await shot(p, "ring");
 
-import { writeFileSync } from "node:fs";
 writeFileSync(`${OUT}layout.json`, JSON.stringify(layout, null, 2));
 await browser.close();
