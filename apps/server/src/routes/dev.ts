@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { Router, RequestHandler } from "express";
 import { z } from "zod";
 import { env } from "../env";
@@ -10,7 +11,10 @@ export const devRouter = Router();
 
 // Per-route (not router.use) so it never touches requests meant for routes mounted later, like /health.
 const requireAdmin: RequestHandler = (req, res, next) => {
-  if (req.header("x-admin-token") !== env.DEMO_ADMIN_TOKEN) return void res.sendStatus(401);
+  const given = Buffer.from(req.header("x-admin-token") ?? "");
+  const want = Buffer.from(env.DEMO_ADMIN_TOKEN);
+  // Constant-time compare (SAFETY.md finding 4).
+  if (given.length !== want.length || !crypto.timingSafeEqual(given, want)) return void res.sendStatus(401);
   next();
 };
 
