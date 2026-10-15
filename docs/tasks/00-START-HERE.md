@@ -1,6 +1,6 @@
 # KnockFirst: START HERE (everyone reads this first, about 5 minutes)
 
-> **Update 04 (Thu 15 Oct): we're now KnockFirst, contract v2.** *"Strangers knock first. Family opens the door."* After this file, read `docs/tasks/04-knockfirst-update.md`.
+> **Update 04 (Thu 15 Oct): we're now KnockFirst, contract v2.** *"Strangers knock first. Family opens the door."* After this file, read the updates in order: `docs/tasks/04-knockfirst-update.md`, then `docs/tasks/05-no-twilio.md` (**no Twilio**: calls happen in the browser, contract v3).
 
 **What we're building:** an AI call screener for elderly parents. Calls from trusted numbers ring grandma as normal. Unknown callers get a polite Thai AI assistant (ElevenLabs) that asks who they are and why. The family gets a summary plus a scam-risk score in the **KnockFirst Android app** and taps **Accept** (whitelist; next time it rings grandma) or **Block** (blocked and reported).
 
