@@ -22,7 +22,7 @@
 
 **KnockFirst is an AI call screener for elderly parents.** Calls from people the family knows ring grandma as usual. An unknown number has to *knock first*: a polite Thai AI voice assistant answers, asks who is calling, who they want and why, and never gives anything away about her. Seconds later the family gets a summary with a scam-risk score and the caller's own words as evidence, and taps **Accept** (next time it rings grandma) or **Block** (cut off, and reported to a blocklist shared by every family). Obvious scams are blocked automatically, so nobody is spammed.
 
-U-Hackathon 2026 · AI track.
+U-Hackathon 2026 · AI track
 
 ---
 
