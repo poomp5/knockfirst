@@ -1,13 +1,15 @@
 // KnockFirst shared contract — identical copy in server, mobile, web-demo.
 // Owner: Tete. Do not edit locally; ask Tete to bump the version.
-export const CONTRACT_VERSION = 1;
+export const CONTRACT_VERSION = 2;
 
 export const DEFAULT_FAMILY_ID = "demo-family";
 export const AUTO_BLOCK_SCORE = 85;          // server env AUTO_BLOCK_SCORE overrides
 export const GLOBAL_BLOCK_THRESHOLD = 3;     // server env GLOBAL_BLOCK_THRESHOLD overrides
 export const PUSH_CHANNEL_DEFAULT = "screened-calls";
 export const PUSH_CHANNEL_URGENT = "urgent-calls";
-export const APK_ASSET_NAME = "knockfirst-guardian.apk";
+export const PUSH_CHANNEL_LIVE = "live-calls";              // v2: "someone is calling now" (importance HIGH)
+export const PUSH_CHANNEL_UPDATES = "call-updates";         // v2: silent result updates (importance LOW)
+export const APK_ASSET_NAME = "knockfirst.apk";
 export const ANDROID_PACKAGE = "com.knockfirst.guardian";
 
 /** Works for both firebase (client) and firebase-admin Timestamps. */
@@ -56,6 +58,7 @@ export interface FamilyDoc {
   guardianName: string;
   twilioNumber: string;          // E.164 number callers dial
   pushTokens: string[];          // FCM device tokens of guardian phones
+  notifyOnIncoming?: boolean;    // v2: guardian setting; treat missing as true
   createdAt: Ts;
 }
 
@@ -153,6 +156,7 @@ export interface CallDoc {
   decision?: "accepted" | "blocked" | null;
   decidedAt?: Ts | null;
   notified?: boolean;            // push sent
+  incomingNotified?: boolean;    // v2: true once the "calling now" push was sent
   simulated?: boolean;           // created by /dev/simulate-call
 }
 
@@ -162,7 +166,7 @@ export function riskLevelFromScore(score: number): RiskLevel {
 
 // ---------- Push (FCM data payload; all values are strings) ----------
 export interface PushData {
-  type: "screened_call";
+  type: "incoming_call" | "screened_call" | "call_update";
   familyId: string;
   callId: string;
   urgent: "0" | "1";

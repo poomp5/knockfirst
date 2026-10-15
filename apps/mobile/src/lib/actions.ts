@@ -24,7 +24,9 @@ import {
   mockUpdateFamily,
 } from "./mocks";
 
-export type FamilyPatch = Partial<Pick<FamilyDoc, "ownerName" | "ownerLabelForCallers" | "ownerPhone" | "guardianName">>;
+export type FamilyPatch = Partial<
+  Pick<FamilyDoc, "ownerName" | "ownerLabelForCallers" | "ownerPhone" | "guardianName" | "notifyOnIncoming">
+>;
 
 const ERROR_TITLE = "ทำรายการไม่สำเร็จ";
 const ERROR_HINT = "กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง";
@@ -147,7 +149,8 @@ export function removeFromWhitelist(callerKey: string): Promise<boolean> {
 /** EDIT family info. Empty/undefined fields are skipped; ownerPhone is normalized to E.164. */
 export function updateFamily(patch: FamilyPatch): Promise<boolean> {
   const clean: FamilyPatch = {};
-  (Object.keys(patch) as (keyof FamilyPatch)[]).forEach((k) => {
+  if (typeof patch.notifyOnIncoming === "boolean") clean.notifyOnIncoming = patch.notifyOnIncoming;
+  (["ownerName", "ownerLabelForCallers", "ownerPhone", "guardianName"] as const).forEach((k) => {
     const v = patch[k];
     if (typeof v !== "string") return;
     const t = v.trim();

@@ -376,6 +376,7 @@ function seedState(): MockState {
       ownerLabelForCallers: "เจ้าของเบอร์นี้",
       ownerPhone: "+66811112222",
       guardianName: "พูม",
+      notifyOnIncoming: true,
       twilioNumber: "+6620000000",
       pushTokens: [],
       createdAt: mockTs(3 * 24 * HOUR),

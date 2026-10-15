@@ -8,6 +8,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   TextInput,
   View,
   type TextInputProps,
@@ -200,6 +201,17 @@ export default function SettingsScreen() {
     }
   }
 
+  // contract v2: missing notifyOnIncoming means "on"
+  const [liveBusy, setLiveBusy] = useState(false);
+  const notifyLive = family?.notifyOnIncoming !== false;
+  async function toggleLive(next: boolean) {
+    if (liveBusy || !family) return;
+    setLiveBusy(true);
+    const ok = await updateFamily({ notifyOnIncoming: next });
+    setLiveBusy(false);
+    if (ok) setNotice({ tone: "success", text: next ? "จะแจ้งเตือนทันทีเมื่อมีสายแปลกโทรเข้า" : "ปิดการแจ้งเตือนระหว่างสายแล้ว" });
+  }
+
   async function testNotification() {
     if (testBusy) return;
     setTestBusy(true);
@@ -331,6 +343,23 @@ export default function SettingsScreen() {
             >
               {perm ? PERM_LABEL[perm] : "กำลังตรวจสอบ…"}
             </AppText>
+          </View>
+          <View style={styles.statusRow}>
+            <Ionicons name="call-outline" size={22} color={colors.brand} />
+            <View style={styles.flex1}>
+              <AppText variant="body">แจ้งเตือนทันทีเมื่อมีสายแปลกโทรเข้า</AppText>
+              <AppText variant="caption" color={colors.textSubtle}>
+                เด้งเตือนระหว่างที่ AI กำลังรับสาย แล้วเปลี่ยนเป็นสรุปเมื่อวางสาย
+              </AppText>
+            </View>
+            <Switch
+              value={notifyLive}
+              onValueChange={toggleLive}
+              disabled={liveBusy || !family}
+              trackColor={{ true: colors.brand, false: colors.divider }}
+              thumbColor={colors.white}
+              accessibilityLabel="แจ้งเตือนทันทีเมื่อมีสายแปลกโทรเข้า"
+            />
           </View>
           {perm && perm !== "granted" && (
             <PrimaryButton

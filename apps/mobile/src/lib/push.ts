@@ -5,7 +5,7 @@ import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { router, type Href } from "expo-router";
-import { PUSH_CHANNEL_DEFAULT, PUSH_CHANNEL_URGENT } from "./contract";
+import { PUSH_CHANNEL_DEFAULT, PUSH_CHANNEL_LIVE, PUSH_CHANNEL_UPDATES, PUSH_CHANNEL_URGENT } from "./contract";
 import { registerPushToken } from "./actions";
 import { USE_MOCKS } from "./firebase";
 
@@ -32,6 +32,15 @@ async function ensureChannels(): Promise<void> {
     name: "สายด่วน",
     importance: Notifications.AndroidImportance.MAX,
     vibrationPattern: [0, 300, 200, 300],
+  });
+  // contract v2: "someone is calling now" + silent result updates (server tags by callId so they replace each other)
+  await Notifications.setNotificationChannelAsync(PUSH_CHANNEL_LIVE, {
+    name: "สายแปลกกำลังโทรเข้า",
+    importance: Notifications.AndroidImportance.HIGH,
+  });
+  await Notifications.setNotificationChannelAsync(PUSH_CHANNEL_UPDATES, {
+    name: "ผลการกรองสาย",
+    importance: Notifications.AndroidImportance.LOW,
   });
 }
 
