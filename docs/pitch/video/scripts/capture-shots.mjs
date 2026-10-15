@@ -2,6 +2,7 @@
 // Run the app first: (apps/mobile) EXPO_PUBLIC_USE_MOCKS=true npx expo start --web --port 8099
 import { chromium } from "playwright";
 import { writeFileSync } from "node:fs";
+import { EN, EN_BY_PAGE, EN_PATTERNS } from "./en.mjs";
 
 const BASE = process.env.APP_URL ?? "http://localhost:8099";
 const OUT = new URL("../public/shots/", import.meta.url).pathname;
@@ -44,9 +45,45 @@ async function clean(p) {
 }
 
 const seen = new Set();
+// The film is 100% English: translate every rendered Thai string in place (layout reflows naturally).
+async function translate(p, name) {
+  const dict = { ...EN, ...(name.startsWith("call-") ? EN_BY_PAGE.call : {}) };
+  const patterns = EN_PATTERNS.map(([re, to]) => [re.source, to]);
+  const left = await p.evaluate(({ dict, patterns }) => {
+    const res = patterns.map(([src, to]) => [new RegExp(src), to]);
+    const tr = (t) => {
+      if (dict[t] != null) return dict[t];
+      const trimmed = t.trim();
+      if (dict[trimmed] != null) return t.replace(trimmed, dict[trimmed]);
+      for (const [re, to] of res) if (re.test(trimmed)) return trimmed.replace(re, to);
+      if (t.includes(" · ")) return t.split(" · ").map(tr).join(" · ");
+      return t;
+    };
+    const thai = /[\u0E00-\u0E7F]/;
+    const missing = [];
+    const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    while (w.nextNode()) {
+      const n = w.currentNode;
+      if (!thai.test(n.nodeValue)) continue;
+      n.nodeValue = tr(n.nodeValue);
+      if (thai.test(n.nodeValue)) missing.push(n.nodeValue);
+    }
+    for (const el of document.querySelectorAll("input,textarea")) {
+      if (thai.test(el.value)) {
+        el.value = tr(el.value);
+        if (thai.test(el.value)) missing.push(el.value);
+      }
+    }
+    return missing;
+  }, { dict, patterns });
+  if (left.length) console.warn("untranslated in", name, left);
+}
+
 async function shot(p, name) {
   await p.waitForTimeout(1600);
   await clean(p);
+  await translate(p, name);
+  await p.waitForTimeout(150);
   if (process.env.DUMP) {
     const texts = await p.evaluate(() => {
       const out = [];
@@ -81,19 +118,19 @@ async function go(p, path) {
 let p = await page(null);
 await go(p, "/");
 await shot(p, "welcome");
-await measure(p, "welcome", { guardian: "ลูกหลาน (ผู้ดูแล)" });
+await measure(p, "welcome", { guardian: "Family (guardian)" });
 
 // 2. guardian inbox + tabs
 p = await page("guardian");
 await go(p, "/");
 await shot(p, "inbox");
-await measure(p, "inbox", { live: "กำลังรับสาย", review: "รอคุณตัดสินใจ" });
+await measure(p, "inbox", { live: "Answering now", review: "Needs your decision" });
 await go(p, "/whitelist");
 await shot(p, "whitelist");
-await measure(p, "whitelist", { title: "รายชื่อที่อนุญาต", blocked: "เบอร์ที่ถูกบล็อก" });
+await measure(p, "whitelist", { title: "Allowed", blocked: "Blocked numbers" });
 await go(p, "/settings");
 await shot(p, "settings");
-await measure(p, "settings", { notify: "แจ้งเตือนทันทีที่มีสายแปลก" });
+await measure(p, "settings", { notify: "Alert me when a stranger calls" });
 await go(p, "/blocked");
 await shot(p, "blocked");
 
@@ -101,13 +138,13 @@ await shot(p, "blocked");
 for (const id of ["mock_police", "mock_rider", "mock_clinic", "mock_screening"]) {
   await go(p, `/call/${id}`);
   await shot(p, `call-${id.replace("mock_", "")}`);
-  await measure(p, `call-${id.replace("mock_", "")}`, { block: "บล็อกและรายงาน", accept: "อนุญาตเบอร์นี้", summary: "สรุปจาก AI" });
+  await measure(p, `call-${id.replace("mock_", "")}`, { block: "Block & Report", accept: "Allow this number", summary: "AI summary" });
 }
 for (const id of ["mock_police", "mock_rider", "mock_clinic"]) {
   const t = await page("guardian", 2600);
   await go(t, `/call/${id}`);
   await shot(t, `call-${id.replace("mock_", "")}-tall`);
-  await measure(t, `call-${id.replace("mock_", "")}-tall`, { summary: "สรุปจาก AI", facts: "ข้อมูลผู้โทร", flags: "สัญญาณอันตราย", transcript: "บทสนทนา" });
+  await measure(t, `call-${id.replace("mock_", "")}-tall`, { summary: "AI summary", facts: "Caller info", flags: "Red flags", transcript: "Transcript" });
 }
 
 // 4. accept the rider → banner state
