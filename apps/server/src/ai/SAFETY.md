@@ -36,8 +36,8 @@ Owner: Sky. Tete pastes the first section into the root README.
 | 1 | ✅ Resolved | `/webhooks/elevenlabs` skipped the HMAC check when `ELEVENLABS_WEBHOOK_SECRET` was empty. | The secret is set on Railway; probes show 401 for unsigned, forged and stale signatures. |
 | 2 | ✅ Resolved | `/twilio/voice` accepted unsigned requests. | Twilio was removed in update 05 (`/twilio/*` now 404). |
 | 3 | ✅ Mitigated | `trust proxy: true` trusts `X-Forwarded-For`, which could let a client dodge the per-IP limit (now on `/call/start`). | Live probe: spoofed headers are still limited, because Railway's edge rewrites the header. |
-| 4 | Low | `requireAdmin` compares the admin token with `!==` (not constant-time). Risk is small with a ≥16-char random token. | `crypto.timingSafeEqual` on equal-length buffers. |
-| 5 | Low | `.gitignore` has `.env` and `.env.*` but not names like `.env .local` (one such file exists locally right now). | Use `.env*` plus `!.env.example`. |
+| 4 | ✅ Resolved | `requireAdmin` compared the admin token with `!==` (not constant-time). | Now `crypto.timingSafeEqual` on equal-length buffers. |
+| 5 | ✅ Resolved | `.gitignore` had `.env` and `.env.*` but missed names like `.env .local`. | Now `.env*` plus `!.env.example`. |
 
 ## Known limits (say this if judges ask)
 
