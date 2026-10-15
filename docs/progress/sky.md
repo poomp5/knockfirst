@@ -1,0 +1,14 @@
+# Sky progress (AI + safety + web demo)
+
+Legend: ✅ done · 🟡 in progress · ❌ not started
+
+| ID | Task | Status | Note |
+|---|---|---|---|
+| B0 | ElevenLabs agent (Thai + English), send key/agent ID/webhook secret to Tete, `agent/agent-config.md` | ❌ | |
+| B1 | Analysis engine `apps/server/src/ai/` (llm, prompt, schema, rules, index) | ❌ | Tete's stub still in place |
+| B2 | Eval set (22 cases) + `eval/run.ts` + `eval/results.md` | ❌ | |
+| B3 | `eval/simulate.ts` (`--case`, `--all`, `--demo`) | ❌ | |
+| B4 | Firestore rules in `firebase/`, deployed + tested | ❌ | deploy after Poom's anon auth works |
+| B5 | Web demo `apps/web-demo` on Vercel | ❌ | |
+| B6 | Security checklist + README "Safety & privacy" text for Tete | ❌ | Fri 09:00–10:00 |
+| B7 | Stretch goals | ❌ | only after M2 |
