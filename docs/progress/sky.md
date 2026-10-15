@@ -13,3 +13,8 @@ Legend: ✅ done · 🟡 in progress · ❌ not started
 | B6 | Security checklist + README "Safety & privacy" text for Tete | 🟡 | history scan clean; SAFETY.md (README text + 5 findings for Tete); live probe script `src/ai/eval/security.ts` (needs server URL); agent tests listed in agent-config.md (needs B0) |
 | U04 | Update 04: rename, rules field, web badges | 🟡 | eval renamed to KnockFirst; rules allow notifyOnIncoming; web badges done (incomingNotified tag, 'guardian alerted now' note, no Accept/Block while screening/analyzing); agent rename with B0 |
 | B7 | Stretch goals | ❌ | only after M2 |
+| U05 | Update 05: no Twilio (done by Tete covering for Sky, Thu evening) | ✅ | see rows below |
+| U05-1 | Agent: authentication on, 4 dynamic variables, post-call webhook | ✅ | applied via API; prompt/first message now use `{{owner_label}}`; max call 120 s, silence hang-up 20 s; workspace webhook "KnockFirst server" (HMAC). **TODO:** add English as an additional language in the dashboard |
+| U05-2 | Web demo caller page = phone line | ✅ | `@twilio/voice-sdk` → `@elevenlabs/client` (WebRTC). "Call as" number (random Thai mobile, new/same number), optional name, persona chips, live captions, timer; blocked → busy tone; whitelisted → ringback + live `ownerResponse`, 30 s timeout; `/call/end` with the conversation id. Contract v3. Needs a real browser test with a mic |
+| U05-3 | Firestore rules v3 | ✅ | `ownerPushTokens`, `ownerResponse` (forwarded calls only), `conversations/` server-only; 26/26 emulator tests; deployed |
+| U05-4 | Eval/simulate unchanged; security probes updated | ✅ | `security.ts` now probes `/call/start` + `/call/end`; 14/14 PASS against Railway |
