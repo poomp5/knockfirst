@@ -1,8 +1,9 @@
 # KnockFirst brand kit
 
 **Name:** KnockFirst
-**Tagline (EN):** "Unknown calls knock first. Family decides."
-**Alt taglines for the deck:** "Strangers knock. Family answers." · "สายแปลกต้องเคาะก่อน ลูกหลานช่วยกรอง"
+**Tagline (EN):** "Strangers knock first. Family opens the door."
+**Tagline (TH):** "คนแปลกหน้าต้องเคาะประตูก่อน ลูกหลานเป็นคนเปิด"
+**Alt taglines for the deck:** "Unknown calls knock first. Family decides." · "Strangers knock. Family answers."
 
 The mark is a "K": a solid bar (the door) plus a ringing handset (the caller knocking).
 
