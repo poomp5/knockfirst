@@ -20,7 +20,7 @@
 | B8 | Dev/demo endpoints, seed, reset | ✅ | Emulator-tested: simulate (needs_review / no_message / auto_blocked), /demo/reset, `npm run seed`, `npm run reset`. |
 | B9 | APK release workflow | 🟡 | Workflow committed. Needs Actions secrets (B0.1) and Poom's `apps/mobile` + `package-lock.json` before the first `v0.1.0` tag. |
 | B10 | Deploy + end-to-end test matrix | ❌ | Use update 05's call test (7 rows) instead of the Twilio matrix. |
-| B11 | README for judges | ❌ | |
+| B11 | README for judges | 🟡 | Done: logo, links, problem, how it works + diagram, web/app screenshots, try-it steps, eval table, safety, tech, run locally, roadmap, 8 diagrams in docs/assets. Pending: PM's validation numbers + pitch deck link, PM's GitHub handle. |
 | B12 | Extras (U-Bot, signature validation, /stats) | ❌ | Only after M2. |
 | U04-0 | Update 04 Part 0: KnockFirst rename, CLAUDE.md v2, contract v2 | ✅ | Repo stays `poomp5/u-hackathon` (no rename/set-url); APK `knockfirst.apk`; tagline "Strangers knock first. Family opens the door." |
 | U04-1 | Update 04 Part 1: instant "calling now" push + decision guard | 🟡 | Server done: `sendToGuardians` (tag = callId), `notifyIncoming` (not awaited in `/twilio/voice`), `notifyUpdate`, transactional guard in the pipeline. Emulator + mocked FCM: 14/14 checks pass (push matrix, replace-by-tag, `notifyOnIncoming=false`, whitelist no push, guard). Real-phone tests (a)–(e) wait for the APK; record the (a) delay here. |
