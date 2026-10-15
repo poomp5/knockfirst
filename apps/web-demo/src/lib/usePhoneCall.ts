@@ -6,6 +6,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { paths } from "./contract";
 import { FAMILY_ID, SERVER_URL } from "./env";
 import { db, ensureSignedIn } from "./firebase";
+import { stripVoiceTags } from "./speech";
 
 export type CallPhase =
   | "idle" | "dialing" | "connecting" | "talking" | "ended"   // unknown number → AI
@@ -162,9 +163,9 @@ export function usePhoneCall() {
         dynamicVariables: r.dynamicVariables,
         onConnect: () => setState(s => ({ ...s, phase: "talking", since: Date.now() })),
         onMessage: m => {
-          const text = m.message?.trim();
-          if (!text) return;
           const role: Caption["role"] = m.role === "agent" ? "assistant" : "caller";
+          const text = role === "assistant" ? stripVoiceTags(m.message ?? "") : m.message?.trim();
+          if (!text) return;
           setState(s => ({ ...s, captions: [...s.captions, { role, text }].slice(-8) }));
         },
         onDisconnect: () => {
