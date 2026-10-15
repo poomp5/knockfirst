@@ -1,4 +1,4 @@
-name: Android APK release
+name: KnockFirst APK release
 on:
   workflow_dispatch:
   push:
@@ -49,14 +49,14 @@ jobs:
         working-directory: apps/mobile/android
         run: ./gradlew assembleRelease --no-daemon
       - name: Rename APK
-        run: cp android/app/build/outputs/apk/release/app-release.apk luklan-guardian.apk
+        run: cp android/app/build/outputs/apk/release/app-release.apk knockfirst.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: luklan-guardian
-          path: apps/mobile/luklan-guardian.apk
+          name: knockfirst
+          path: apps/mobile/knockfirst.apk
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: apps/mobile/luklan-guardian.apk
+          files: apps/mobile/knockfirst.apk
           generate_release_notes: true
