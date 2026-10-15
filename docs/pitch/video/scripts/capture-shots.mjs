@@ -82,6 +82,21 @@ async function translate(p, name) {
 async function shot(p, name) {
   await p.waitForTimeout(1600);
   await clean(p);
+  // dev-mode error toast (may live in a shadow root): hide its small floating box
+  await p
+    .getByText(/cannot contain a nested/)
+    .evaluateAll((els) =>
+      els.forEach((e) => {
+        let n = e;
+        for (;;) {
+          const up = n.parentElement ?? n.getRootNode().host;
+          if (!up || up === document.body || up.getBoundingClientRect().height > 160) break;
+          n = up;
+        }
+        n.style.setProperty("display", "none", "important");
+      }),
+    )
+    .catch(() => {});
   await translate(p, name);
   await p.waitForTimeout(150);
   if (process.env.DUMP) {
