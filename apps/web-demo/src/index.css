@@ -510,10 +510,13 @@ button { font: inherit; color: inherit; }
 .foot img { height: 24px; width: auto; }
 .foot-tag { margin-top: 12px; color: var(--ink-2); }
 .foot-h { font-size: 0.8125rem; font-weight: 600; margin-top: 32px; color: var(--ink); font-family: var(--font); }
-.team { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-wrap: wrap; gap: 14px 40px; }
-.team li { display: grid; }
-.team a, .team span { color: var(--ink); font-weight: 600; }
-.team small { color: var(--ink-3); }
+.team { list-style: none; padding: 0; margin: 16px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 28px 32px; }
+.team li { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.team-name { color: var(--ink); font-weight: 600; font-size: 1rem; }
+.team-full { color: var(--ink-2); }
+.team-role { color: var(--ink-3); }
+.team-bio { margin: 8px 0 10px; color: var(--ink-2); line-height: 1.55; }
+.team-site { margin-top: auto; font-weight: 500; }
 .foot-repo { display: inline-block; margin-top: 28px; }
 .foot-small { color: var(--ink-3); margin-top: 18px; }
 

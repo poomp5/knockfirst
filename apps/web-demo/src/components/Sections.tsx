@@ -80,15 +80,44 @@ export function GetApp() {
   );
 }
 
+// Bios from each member's own site (Oct 2026).
 const TEAM = [
-  { name: "Tete", role: "Backend & telephony", gh: "teterw" },
-  { name: "Poom", role: "Mobile app & design", gh: "poomp5" },
-  { name: "Sky", role: "AI, safety & web", gh: "Skysosmart" },
-  { name: "PM", role: "Pitch & research", gh: null },
+  {
+    name: "Tete", full: "Nattasit Manapiyawong", url: "https://github.com/teterw", site: "github.com/teterw",
+    role: { th: "Backend และระบบโทรศัพท์", en: "Backend & telephony" },
+    bio: {
+      th: "สายสร้างของที่มีงานอดิเรกเพียบ และพิมพ์เร็วตัวจริง ผลงานเช่น catsole จอ OLED ข้างโต๊ะจาก Arduino ที่โชว์เนื้อเพลงหรือสถานะเครื่อง สลับด้วยการแตะ NFC",
+      en: "Hobbyist builder and speed typist. Built catsole, an Arduino desk display that shows synced lyrics or live PC stats and switches with an NFC tap.",
+    },
+  },
+  {
+    name: "Poom", full: "Poonyapat Goonmanoon", url: "https://poomp5.com/", site: "poomp5.com",
+    role: { th: "แอปมือถือและดีไซน์", en: "Mobile app & design" },
+    bio: {
+      th: "CEO ของ Pranakorn Group นักพัฒนาฟรอนต์เอนด์และดีไซเนอร์ที่เรียนเอง รางวัลชนะเลิศ Intania Innovation Contest 2026, Platinum Coding Thailand 2026 และเหรียญทอง I-New Gen Award 2025",
+      en: "CEO of Pranakorn Group, self-taught front-end developer and designer. Grand Prize at Intania Innovation Contest 2026, Platinum at Coding Thailand 2026, Gold at I-New Gen Award 2025.",
+    },
+  },
+  {
+    name: "Sky", full: "Nonthanaphong Saechua", url: "https://zarutech.dev/", site: "zarutech.dev",
+    role: { th: "AI ความปลอดภัย และเว็บ", en: "AI, safety & web" },
+    bio: {
+      th: "สาย Cyber Security และ CTF เหรียญทอง Thailand New Gen Inventors Award 2026 (PDLite), อันดับ 3 ระดับประเทศ CODEKIT 2026 และ ACT Brand Ambassador 2025",
+      en: "Cyber security and CTF player. Gold medal at Thailand New Gen Inventors Award 2026 (PDLite), 3rd nationally at CODEKIT 2026, ACT Brand Ambassador 2025.",
+    },
+  },
+  {
+    name: "PM", full: "Phassaree Prasai", url: "https://mmm432.vercel.app/", site: "mmm432.vercel.app",
+    role: { th: "พิตช์และงานวิจัย", en: "Pitch & research" },
+    bio: {
+      th: "ดูแลเรื่องเล่าและงานวิจัยผู้ใช้ของ KnockFirst เคยร่วมทำ CareMotion, Doodee Future, Doodee Move และ PicoPair",
+      en: "Owns KnockFirst's story and user research. Has worked on CareMotion, Doodee Future, Doodee Move and PicoPair.",
+    },
+  },
 ];
 
 export function Footer() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   return (
     <footer className="foot">
       <img src="/brand/logo-wordmark.png" alt="KnockFirst" height="32" />
@@ -97,8 +126,11 @@ export function Footer() {
       <ul className="team">
         {TEAM.map(m => (
           <li key={m.name}>
-            {m.gh ? <a href={`https://github.com/${m.gh}`}>{m.name}</a> : <span>{m.name}</span>}
-            <small>{m.role}</small>
+            <span className="team-name">{m.name}</span>
+            <small className="team-full">{m.full}</small>
+            <small className="team-role">{m.role[lang]}</small>
+            <p className="team-bio">{m.bio[lang]}</p>
+            <a className="team-site" href={m.url} target="_blank" rel="noreferrer">{m.site}</a>
           </li>
         ))}
       </ul>
