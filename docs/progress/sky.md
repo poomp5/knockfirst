@@ -5,8 +5,8 @@ Legend: ✅ done · 🟡 in progress · ❌ not started
 | ID | Task | Status | Note |
 |---|---|---|---|
 | B0 | ElevenLabs agent (Thai + English), send key/agent ID/webhook secret to Tete, `agent/agent-config.md` | 🟡 | agent-config.md drafted (prompt, first message, data collection, test table); Sky fills voice/model/latency + test results |
-| B1 | Analysis engine `apps/server/src/ai/` (llm, prompt, schema, rules, index) | 🟡 | code done, typechecks; rules + normalize smoke-tested. Live LLM test pending `LLM_API_KEY` in .env |
-| B2 | Eval set (24 cases: 13 scam incl. 1 EN, 11 legit incl. 1 EN) + `eval/run.ts` + `eval/results.md` | 🟡 | rules-only baseline in results-rules.md: 10/13 scams, 0/11 false alarms, auto-block precision 7/7. LLM run pending `LLM_API_KEY` |
+| B1 | Analysis engine `apps/server/src/ai/` (llm, prompt, schema, rules, index) | ✅ | live LLM verified (Haiku 5.5, avg 4.1 s per call) |
+| B2 | Eval set (24 cases: 13 scam incl. 1 EN, 11 legit incl. 1 EN) + `eval/run.ts` + `eval/results.md` | ✅ | LLM run (results.md): 12/13 scams ≥70, 0/11 false alarms, auto-block precision 12/12, 24/24 cases pass, avg 4.1 s. Only miss: refuse-01 (45 → review, as intended). Rules-only baseline: 10/13, 0/11, 7/7. Numbers on the web demo |
 | B3 | `eval/simulate.ts` (`--case`, `--all`, `--demo`) | 🟡 | done + tested against a local mock; live run needs SERVER_URL + DEMO_ADMIN_TOKEN from Tete |
 | B4 | Firestore rules in `firebase/` + emulator tests | 🟡 | rules + 21 passing emulator tests (`cd firebase && bun run test`); v2 `notifyOnIncoming` included. Deploy pending: project id in .firebaserc + Poom's anon auth |
 | B5 | Web demo `apps/web-demo` on Vercel | 🟡 | built: browser call, live inbox + drawer with Accept/Block (A6 recipes), how it works, results, QR, team, TH/EN; checked in preview mode at desktop + 390px, no console errors. Pending: Firebase web config + server URL, live call test, Vercel deploy |
