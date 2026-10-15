@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="brand/logo-wordmark.png" alt="KnockFirst" width="380">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="brand/logo-wordmark-dark.png">
+    <img src="brand/logo-wordmark.png" alt="KnockFirst" width="380">
+  </picture>
 </p>
 
 <h3 align="center">Strangers knock first. Family opens the door.</h3>
