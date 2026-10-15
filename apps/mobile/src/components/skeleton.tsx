@@ -35,7 +35,7 @@ export function Skeleton({ height = 16, width = "100%" }: SkeletonProps) {
       importantForAccessibility="no-hide-descendants"
       style={[
         // spec allows any string; RN only accepts numbers / "auto" / percentages
-        { height, width: width as DimensionValue, borderRadius: radii.sm, backgroundColor: colors.border },
+        { height, width: width as DimensionValue, borderRadius: radii.md, backgroundColor: colors.fill },
         anim,
       ]}
     />

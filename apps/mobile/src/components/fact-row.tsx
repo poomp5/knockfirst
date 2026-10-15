@@ -7,16 +7,16 @@ export interface FactRowProps {
   value?: string | null;
 }
 
-/** "label: value" row; renders nothing when value is null/empty. */
+/** Contacts-style field: small label above the value. Renders nothing when value is null/empty. */
 export function FactRow({ label, value }: FactRowProps) {
   const v = typeof value === "string" ? value.trim() : "";
   if (!v) return null;
   return (
     <View style={styles.row} accessible accessibilityLabel={`${label} ${v}`}>
-      <AppText variant="body" color={colors.textSubtle} style={styles.label}>
+      <AppText variant="caption" weight="medium" color={colors.textSubtle}>
         {label}
       </AppText>
-      <AppText variant="body" weight="medium" style={styles.value} selectable>
+      <AppText variant="body" selectable>
         {v}
       </AppText>
     </View>
@@ -24,12 +24,5 @@ export function FactRow({ label, value }: FactRowProps) {
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  label: { width: 128 },
-  value: { flex: 1 },
+  row: { paddingHorizontal: spacing.lg, paddingVertical: 10, gap: 1, backgroundColor: colors.card },
 });

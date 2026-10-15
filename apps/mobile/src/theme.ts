@@ -1,34 +1,48 @@
-// KnockFirst theme — values from brand/colors.md.
-// Brand orange is close to the risk colors, so risk is always shown as color + text label.
+// KnockFirst theme: iOS-style (Human Interface Guidelines) grouped UI, KnockFirst orange as the tint.
+// Neutrals follow iOS system colors; risk is always shown as color + text label (contract RISK_COLOR).
 
 export const colors = {
+  // tint
   brand: "#F2611C",
   brandPressed: "#D9500F",
-  brandSoft: "#FDEDE4",
-  ink: "#111111",
-  text: "#111111",
-  textMuted: "#4A4A4A",
-  textSubtle: "#7A7A7A",
-  border: "#E6E4E1",
-  divider: "#D9D9D9",
-  bg: "#F7F6F4",
-  card: "#FFFFFF",
+  brandSoft: "rgba(242,97,28,0.12)",
+  // labels (iOS label / secondaryLabel / tertiaryLabel, flattened for Android)
+  ink: "#000000",
+  text: "#000000",
+  textMuted: "#6C6C70",
+  textSubtle: "#8E8E93",
+  textFaint: "#C7C7CC",
+  // surfaces
+  bg: "#F2F2F7", // systemGroupedBackground
+  card: "#FFFFFF", // secondarySystemGroupedBackground
+  fill: "#E9E9EB", // tertiarySystemFill-ish (bubbles, chips)
+  fillPressed: "#E5E5EA",
+  bar: "#F9F9F9", // tab / toolbar material (opaque: RN has no blur here, and tinted buttons sit on it)
+  separator: "#C6C6C8",
+  border: "#E5E5EA",
+  divider: "#C6C6C8",
   white: "#FFFFFF",
+  // system accents
+  blue: "#007AFF",
+  indigo: "#5856D6",
+  gray: "#8E8E93",
   // risk / feedback (same hexes as contract RISK_COLOR)
   success: "#1E8E5A",
-  successSoft: "#E3F3EB",
+  successSoft: "rgba(30,142,90,0.12)",
   warning: "#D98E04",
-  warningSoft: "#FBF0D9",
+  warningSoft: "rgba(217,142,4,0.14)",
   danger: "#D93025",
-  dangerSoft: "#FBE4E2",
-  // transcript bubbles
-  bubbleAssistant: "#EFEDEA",
-  bubbleCaller: "#FDEDE4",
+  dangerSoft: "rgba(217,48,37,0.10)",
+  // iOS switch on-color
+  switchOn: "#34C759",
+  // transcript bubbles (iMessage-like: AI is "our side")
+  bubbleAssistant: "#D9500F", // brandPressed: white text stays readable (~4.1:1, like iMessage blue)
+  bubbleCaller: "#E9E9EB",
 } as const;
 
-export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
+export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 32 } as const;
 
-export const radii = { sm: 8, md: 12, lg: 16, pill: 999 } as const;
+export const radii = { sm: 8, md: 10, lg: 12, xl: 16, xxl: 22, pill: 999 } as const;
 
 /** Font family names registered in src/app/_layout.tsx via useFonts. */
 export const fonts = {
@@ -38,14 +52,17 @@ export const fonts = {
   bold: "NotoSansThai_700Bold",
 } as const;
 
-export const fontSize = { caption: 12, small: 14, body: 16, large: 18, title: 22, h1: 28, display: 44 } as const;
+/** iOS text styles: caption2/footnote, subheadline, body, headline, title2, largeTitle, display. */
+export const fontSize = { caption: 12, small: 15, body: 17, large: 17, title: 22, h1: 34, display: 44 } as const;
 
 /** Minimum tap target (B8 accessibility). */
 export const TAP = 48;
 
+/** Inset grouped row/card surface: no border, rounded like iOS 17 grouped lists. */
 export const cardStyle = {
   backgroundColor: colors.card,
   borderRadius: radii.lg,
-  borderWidth: 1,
-  borderColor: colors.border,
 } as const;
+
+/** Left inset for row separators when a row has a 30pt icon tile (16 + 30 + 12). */
+export const SEPARATOR_INSET = 58;
