@@ -1,21 +1,17 @@
 # KnockFirst
 
-> ## ⚠️ IMPORTANT NOTICE: project renamed LukLan → **KnockFirst** (Thu 15 Oct, Poom)
-> **เปลี่ยนชื่อโปรเจกต์จาก LukLan เป็น KnockFirst แล้ว ห้ามใช้ชื่อเก่าในโค้ด UI เอกสาร หรือ pitch**
->
-> - The project and app are now called **KnockFirst**. Don't use "LukLan" anywhere in code, UI, docs or the deck.
-> - **Contract (Part A) changed:** `ANDROID_PACKAGE = "com.knockfirst.guardian"`, `APK_ASSET_NAME = "knockfirst-guardian.apk"`. Register the Firebase Android app with the **new** package (Tete).
-> - Other renames: server package `knockfirst-server`, Railway example `knockfirst-server.up.railway.app`, Firebase project id e.g. `knockfirst-hackathon`, Expo slug/scheme `knockfirst`, ElevenLabs agent "KnockFirst Screener". Repo links now point at the real repo `github.com/poomp5/u-hackathon`.
-> - Logo, app icons, OG image, colors (brand orange `#F2611C`, ink `#111111`): see `brand/` and `brand/colors.md`.
-> - Have local work that still says LukLan? `git pull --rebase origin main`, then `grep -rni luklan .` and rename what's left.
+**Strangers knock first. Family opens the door.**
+*คนแปลกหน้าต้องเคาะประตูก่อน ลูกหลานเป็นคนเปิด*
 
-AI call screener for elderly parents: trusted numbers ring grandma as normal, unknown callers talk to a polite Thai AI assistant first, and the family approves or blocks them from the KnockFirst Android app.
+AI call screener for elderly parents. Trusted numbers ring grandma as normal. Unknown callers have to "knock first": a polite Thai AI assistant (ElevenLabs) asks who they are and why, and the family approves or blocks them from the KnockFirst Android app.
 
 > 🚧 U-Hackathon 2026 (AI track), work in progress. The full README for judges lands Fri 16 Oct.
 
+**Links:** [Android APK](https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst.apk) · web demo (coming) · pitch deck (coming)
+
 ## Team: start here
 
-1. Read [`docs/tasks/00-START-HERE.md`](docs/tasks/00-START-HERE.md) (5 min).
+1. Read [`docs/tasks/00-START-HERE.md`](docs/tasks/00-START-HERE.md) (5 min), then every update file (`docs/tasks/04-*.md`, …).
 2. Clone, make your branch, run Claude Code:
    ```bash
    git clone https://github.com/poomp5/u-hackathon.git
@@ -23,7 +19,7 @@ AI call screener for elderly parents: trusted numbers ring grandma as normal, un
    git checkout -b <yourname>/<topic>   # tete/server · poom/app · sky/ai
    claude
    ```
-3. Answer when Claude asks who you are. It loads your task file from `docs/tasks/` and tells you your next step.
+3. Answer when Claude asks who you are. It loads your task file and the updates, then tells you your next step.
 
 | Person | GitHub | Task file |
 |---|---|---|

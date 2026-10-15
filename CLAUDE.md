@@ -1,19 +1,12 @@
 # KnockFirst: instructions for Claude Code (read automatically in every session)
 
-> ## ⚠️ IMPORTANT NOTICE: project renamed LukLan → **KnockFirst** (Thu 15 Oct, Poom)
-> **เปลี่ยนชื่อโปรเจกต์จาก LukLan เป็น KnockFirst แล้ว ห้ามใช้ชื่อเก่าในโค้ด UI เอกสาร หรือ pitch**
->
-> - The project and app are now called **KnockFirst**. Don't use "LukLan" anywhere in code, UI, docs or the deck.
-> - **Contract (Part A) changed:** `ANDROID_PACKAGE = "com.knockfirst.guardian"`, `APK_ASSET_NAME = "knockfirst-guardian.apk"`. Register the Firebase Android app with the **new** package (Tete).
-> - Other renames: server package `knockfirst-server`, Railway example `knockfirst-server.up.railway.app`, Firebase project id e.g. `knockfirst-hackathon`, Expo slug/scheme `knockfirst`, ElevenLabs agent "KnockFirst Screener". Repo links now point at the real repo `github.com/poomp5/u-hackathon`.
-> - Logo, app icons, OG image, colors (brand orange `#F2611C`, ink `#111111`): see `brand/` and `brand/colors.md`.
-> - Have local work that still says LukLan? `git pull --rebase origin main`, then `grep -rni luklan .` and rename what's left.
-
-This repo is a 3-developer hackathon project (U-Hackathon, AI track). Several people run Claude Code on it at the same time. Each person owns different folders. **Following ownership is what keeps us from breaking each other's work.**
+KnockFirst is a 3-developer hackathon project (U-Hackathon, AI track): an AI call screener for elderly parents.
+Strangers have to "knock first": unknown callers talk to an AI assistant, and the family decides who gets through.
+Several people run Claude Code on this repo at the same time, and each owns different folders.
+**Following ownership is what keeps us from breaking each other's work.**
 
 ## At the start of EVERY new session, before any other action
 
-0. **Show the human the IMPORTANT NOTICE above in 1–2 lines** (renamed LukLan → KnockFirst, new Android package) before anything else, until code freeze.
 1. **Ask exactly this and wait for the answer** (don't guess from git config, the OS username, or the branch):
    > "Who are you? **Tete** (teterw), **Poom** (poomp5), **Sky** (Skysosmart), or **PM**?"
 2. Read the matching file **completely**:
@@ -23,19 +16,20 @@ This repo is a 3-developer hackathon project (U-Hackathon, AI track). Several pe
    | Poom | `docs/tasks/02-poom-mobile.md` | `apps/mobile/**`, `brand/**`, `docs/progress/poom.md` |
    | Sky | `docs/tasks/03-sky-ai-web.md` | `apps/server/src/ai/**`, `apps/web-demo/**`, `firebase/**`, `docs/progress/sky.md` |
    | PM / not sure | `docs/tasks/00-START-HERE.md` | `docs/pitch/**` only (no app code) |
-3. Work out where this person is:
+3. **Then read every update file `docs/tasks/04-*.md`, `05-*.md`, … in number order.** Updates override older task files where they disagree (e.g. the name is **KnockFirst**, contract version **2**). Do that person's section of each update once their main milestone allows it.
+4. Work out where this person is:
    - Run `git pull --rebase origin main`.
    - Read `docs/progress/<name>.md` (create it from the Part B task list if it's missing).
    - Look at `git log --oneline -20`.
-4. Reply in **3 short lines**: their role, the paths they own, and the **next unfinished task ID** with its first concrete step. Then ask "Start?", unless they already told you what to do.
+5. Reply in **3 short lines**: their role, the paths they own, and the **next unfinished task ID** (main file or update) with its first concrete step. Then ask "Start?", unless they already told you what to do.
 
 ## Rules for the whole session
 
 - **Only create, edit, move or delete files inside that person's owned paths.** If something outside them needs to change, stop and write a short request message the person can send to the owner (e.g. *"Tete: please add CORS origin https://… to Railway"*).
-- **Part A (shared contract) is identical in every task file.** Code must match it: Firestore paths, field names, `toCallerKey`, env var names, endpoint shapes. If code and contract disagree, follow the contract and tell the human. Only Tete changes the contract.
+- **Part A (shared contract) plus the contract changes in update files** define the data model, endpoints and env names. Code must match them. If code and contract disagree, follow the contract and tell the human. Only Tete changes the contract.
 - **Secrets never go in git:** `.env*` (except `.env.example`), `google-services.json`, service-account JSON. Before every push, run `git diff --cached | grep -iE "key|secret|token|BEGIN PRIVATE"` and look at the results.
 - Branch per person (`tete/*`, `poom/*`, `sky/*`). Commit small with the prefix from Part A2. Merge to `main` at least every 2 hours.
 - After each task: update `docs/progress/<name>.md`, commit, and give a 3-line status (done / next / blocked).
-- When an SDK or API in the task file doesn't match the current docs, trust the docs, adapt, and leave a one-line comment.
+- When an SDK or API in a task file doesn't match the current docs, trust the docs, adapt, and leave a one-line comment.
 - If scope is unclear, choose whatever makes the **demo loop (Part A10)** work soonest. A polished small feature set beats an ambitious broken one.
 - Times are Bangkok (UTC+7). **Code freeze Fri 16 Oct 12:30. Submit by 13:30.**
