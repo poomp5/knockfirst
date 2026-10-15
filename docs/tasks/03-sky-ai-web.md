@@ -104,14 +104,16 @@ Guardian (Poom's app, or Sky's web demo) — live Firestore listener shows the c
 ```ts
 // KnockFirst shared contract — identical copy in server, mobile, web-demo.
 // Owner: Tete. Do not edit locally; ask Tete to bump the version.
-export const CONTRACT_VERSION = 1;
+export const CONTRACT_VERSION = 2;
 
 export const DEFAULT_FAMILY_ID = "demo-family";
 export const AUTO_BLOCK_SCORE = 85;          // server env AUTO_BLOCK_SCORE overrides
 export const GLOBAL_BLOCK_THRESHOLD = 3;     // server env GLOBAL_BLOCK_THRESHOLD overrides
 export const PUSH_CHANNEL_DEFAULT = "screened-calls";
 export const PUSH_CHANNEL_URGENT = "urgent-calls";
-export const APK_ASSET_NAME = "knockfirst-guardian.apk";
+export const PUSH_CHANNEL_LIVE = "live-calls";              // v2: "someone is calling now" (importance HIGH)
+export const PUSH_CHANNEL_UPDATES = "call-updates";         // v2: silent result updates (importance LOW)
+export const APK_ASSET_NAME = "knockfirst.apk";
 export const ANDROID_PACKAGE = "com.knockfirst.guardian";
 
 /** Works for both firebase (client) and firebase-admin Timestamps. */
@@ -160,6 +162,7 @@ export interface FamilyDoc {
   guardianName: string;
   twilioNumber: string;          // E.164 number callers dial
   pushTokens: string[];          // FCM device tokens of guardian phones
+  notifyOnIncoming?: boolean;    // v2: guardian setting; treat missing as true
   createdAt: Ts;
 }
 
@@ -257,6 +260,7 @@ export interface CallDoc {
   decision?: "accepted" | "blocked" | null;
   decidedAt?: Ts | null;
   notified?: boolean;            // push sent
+  incomingNotified?: boolean;    // v2: true once the "calling now" push was sent
   simulated?: boolean;           // created by /dev/simulate-call
 }
 
@@ -266,7 +270,7 @@ export function riskLevelFromScore(score: number): RiskLevel {
 
 // ---------- Push (FCM data payload; all values are strings) ----------
 export interface PushData {
-  type: "screened_call";
+  type: "incoming_call" | "screened_call" | "call_update";
   familyId: string;
   callId: string;
   urgent: "0" | "1";
@@ -330,7 +334,7 @@ All clients (mobile app, web demo) sign in with **Firebase Anonymous Auth**. Sec
 
 | Path | Created by | Clients may change |
 |---|---|---|
-| `families/{f}` | server seed script | `ownerName`, `ownerLabelForCallers`, `ownerPhone`, `guardianName`, `pushTokens` |
+| `families/{f}` | server seed script | `ownerName`, `ownerLabelForCallers`, `ownerPhone`, `guardianName`, `pushTokens`, `notifyOnIncoming` |
 | `families/{f}/calls/{callId}` | **server only** | only `decision`, `decidedAt`, `status` (via the recipes below) |
 | `families/{f}/whitelist/{callerKey}` | seed script, clients | create/delete |
 | `families/{f}/blocked/{callerKey}` | server (auto), clients | create/delete |
@@ -444,23 +448,34 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 VITE_FAMILY_ID=demo-family
 VITE_SERVER_URL=
-VITE_APK_URL=https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst-guardian.apk
+VITE_APK_URL=https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst.apk
 VITE_REPO_URL=https://github.com/poomp5/u-hackathon
 ```
 
 ## A9. Push notifications
 
 - Sent by the server with `firebase-admin` (`messaging().sendEachForMulticast`) to `families/{f}.pushTokens`. Dead tokens are removed.
-- Android channels, created by the app at startup: `screened-calls` (importance HIGH) and `urgent-calls` (importance MAX).
+- Android channels, created by the app at startup: `screened-calls` (importance HIGH), `urgent-calls` (importance MAX), and since v2 `live-calls` (HIGH) and `call-updates` (LOW).
 - Message: `notification { title, body }`, `data: PushData`, `android { priority: "high", notification: { channelId } }`.
   - Title: `"มีสายแปลกรอตรวจสอบ"`, or when urgent `"ด่วน: มีสายแปลกรอตรวจสอบ"`.
   - Body: `` `${analysis.callerName ?? formatCallerKey(callerKey)} · ${analysis.reason}` `` cut to 100 characters.
 - Tapping the notification opens the call detail screen for `data.callId`.
 
+**Push matrix (v2, update 04).** Every message sets Android `tag = callId`, so a later push for the same call **replaces** the earlier one.
+
+| When | `data.type` | Channel | Title | Body |
+|---|---|---|---|---|
+| Unknown call hits `/twilio/voice` (if `notifyOnIncoming !== false`) | `incoming_call` | `live-calls` | `📞 สายแปลกกำลังโทรหา{ownerName}` | `{formatCallerKey} · AI กำลังรับสายแทน` (+ ` · ⚠️ ถูกรายงานแล้ว {n} ครั้ง` if `n > 0`) |
+| Analysis → `needs_review` | `screened_call` | `screened-calls` / `urgent-calls` | as above | as above |
+| Analysis → `auto_blocked` | `call_update` | `call-updates` | `AI บล็อกสายนี้แล้ว (เสี่ยงสูง)` | `{name or number} · {reason}` |
+| Analysis → `no_message` | `call_update` | `call-updates` | `ผู้โทรวางสายโดยไม่ฝากข้อความ` | `{formatCallerKey}` |
+
+`call_update` pushes are sent only if `incomingNotified === true` for that call.
+
 ## A10. The demo loop (this must work on stage; everything else is extra)
 
 1. A judge opens the web demo and taps **"Call grandma / โทรหาคุณยาย"** (browser call). The AI assistant answers in Thai, or English if the judge speaks English.
-2. The judge plays a delivery rider or a clinic and hangs up. **Within about 15 s** a card appears live on the web demo **and** a push arrives on the guardian's Android phone (APK).
+2. **Within seconds the guardian phone on stage buzzes:** "📞 สายแปลกกำลังโทรหาคุณยายสมศรี" (hold it up while the AI is still talking). The judge plays a delivery rider or a clinic and hangs up. **Within about 15 s** a card appears live on the web demo **and** the same notification turns into the summary.
 3. The guardian taps **Accept**. The judge calls again, and **grandma's phone** (a teammate's Android) **rings on stage**.
 4. A teammate calls from a real phone playing a fake-police scammer. The card is red, auto-blocked, with evidence quotes.
 5. Show the APK download link, the shared blocklist, and the eval accuracy numbers.

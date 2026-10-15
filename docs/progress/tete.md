@@ -23,3 +23,5 @@
 | B10 | Deploy + end-to-end test matrix | ❌ | |
 | B11 | README for judges | ❌ | |
 | B12 | Extras (U-Bot, signature validation, /stats) | ❌ | Only after M2. |
+| U04-0 | Update 04 Part 0: KnockFirst rename, CLAUDE.md v2, contract v2 | ✅ | Repo stays `poomp5/u-hackathon` (no rename/set-url); APK `knockfirst.apk`; tagline "Strangers knock first. Family opens the door." |
+| U04-1 | Update 04 Part 1: instant "calling now" push + decision guard | 🟡 | Server done: `sendToGuardians` (tag = callId), `notifyIncoming` (not awaited in `/twilio/voice`), `notifyUpdate`, transactional guard in the pipeline. Emulator + mocked FCM: 14/14 checks pass (push matrix, replace-by-tag, `notifyOnIncoming=false`, whitelist no push, guard). Real-phone tests (a)–(e) wait for the APK; record the (a) delay here. |

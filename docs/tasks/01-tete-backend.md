@@ -104,14 +104,16 @@ Guardian (Poom's app, or Sky's web demo) — live Firestore listener shows the c
 ```ts
 // KnockFirst shared contract — identical copy in server, mobile, web-demo.
 // Owner: Tete. Do not edit locally; ask Tete to bump the version.
-export const CONTRACT_VERSION = 1;
+export const CONTRACT_VERSION = 2;
 
 export const DEFAULT_FAMILY_ID = "demo-family";
 export const AUTO_BLOCK_SCORE = 85;          // server env AUTO_BLOCK_SCORE overrides
 export const GLOBAL_BLOCK_THRESHOLD = 3;     // server env GLOBAL_BLOCK_THRESHOLD overrides
 export const PUSH_CHANNEL_DEFAULT = "screened-calls";
 export const PUSH_CHANNEL_URGENT = "urgent-calls";
-export const APK_ASSET_NAME = "knockfirst-guardian.apk";
+export const PUSH_CHANNEL_LIVE = "live-calls";              // v2: "someone is calling now" (importance HIGH)
+export const PUSH_CHANNEL_UPDATES = "call-updates";         // v2: silent result updates (importance LOW)
+export const APK_ASSET_NAME = "knockfirst.apk";
 export const ANDROID_PACKAGE = "com.knockfirst.guardian";
 
 /** Works for both firebase (client) and firebase-admin Timestamps. */
@@ -160,6 +162,7 @@ export interface FamilyDoc {
   guardianName: string;
   twilioNumber: string;          // E.164 number callers dial
   pushTokens: string[];          // FCM device tokens of guardian phones
+  notifyOnIncoming?: boolean;    // v2: guardian setting; treat missing as true
   createdAt: Ts;
 }
 
@@ -257,6 +260,7 @@ export interface CallDoc {
   decision?: "accepted" | "blocked" | null;
   decidedAt?: Ts | null;
   notified?: boolean;            // push sent
+  incomingNotified?: boolean;    // v2: true once the "calling now" push was sent
   simulated?: boolean;           // created by /dev/simulate-call
 }
 
@@ -266,7 +270,7 @@ export function riskLevelFromScore(score: number): RiskLevel {
 
 // ---------- Push (FCM data payload; all values are strings) ----------
 export interface PushData {
-  type: "screened_call";
+  type: "incoming_call" | "screened_call" | "call_update";
   familyId: string;
   callId: string;
   urgent: "0" | "1";
@@ -330,7 +334,7 @@ All clients (mobile app, web demo) sign in with **Firebase Anonymous Auth**. Sec
 
 | Path | Created by | Clients may change |
 |---|---|---|
-| `families/{f}` | server seed script | `ownerName`, `ownerLabelForCallers`, `ownerPhone`, `guardianName`, `pushTokens` |
+| `families/{f}` | server seed script | `ownerName`, `ownerLabelForCallers`, `ownerPhone`, `guardianName`, `pushTokens`, `notifyOnIncoming` |
 | `families/{f}/calls/{callId}` | **server only** | only `decision`, `decidedAt`, `status` (via the recipes below) |
 | `families/{f}/whitelist/{callerKey}` | seed script, clients | create/delete |
 | `families/{f}/blocked/{callerKey}` | server (auto), clients | create/delete |
@@ -444,23 +448,34 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 VITE_FAMILY_ID=demo-family
 VITE_SERVER_URL=
-VITE_APK_URL=https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst-guardian.apk
+VITE_APK_URL=https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst.apk
 VITE_REPO_URL=https://github.com/poomp5/u-hackathon
 ```
 
 ## A9. Push notifications
 
 - Sent by the server with `firebase-admin` (`messaging().sendEachForMulticast`) to `families/{f}.pushTokens`. Dead tokens are removed.
-- Android channels, created by the app at startup: `screened-calls` (importance HIGH) and `urgent-calls` (importance MAX).
+- Android channels, created by the app at startup: `screened-calls` (importance HIGH), `urgent-calls` (importance MAX), and since v2 `live-calls` (HIGH) and `call-updates` (LOW).
 - Message: `notification { title, body }`, `data: PushData`, `android { priority: "high", notification: { channelId } }`.
   - Title: `"มีสายแปลกรอตรวจสอบ"`, or when urgent `"ด่วน: มีสายแปลกรอตรวจสอบ"`.
   - Body: `` `${analysis.callerName ?? formatCallerKey(callerKey)} · ${analysis.reason}` `` cut to 100 characters.
 - Tapping the notification opens the call detail screen for `data.callId`.
 
+**Push matrix (v2, update 04).** Every message sets Android `tag = callId`, so a later push for the same call **replaces** the earlier one.
+
+| When | `data.type` | Channel | Title | Body |
+|---|---|---|---|---|
+| Unknown call hits `/twilio/voice` (if `notifyOnIncoming !== false`) | `incoming_call` | `live-calls` | `📞 สายแปลกกำลังโทรหา{ownerName}` | `{formatCallerKey} · AI กำลังรับสายแทน` (+ ` · ⚠️ ถูกรายงานแล้ว {n} ครั้ง` if `n > 0`) |
+| Analysis → `needs_review` | `screened_call` | `screened-calls` / `urgent-calls` | as above | as above |
+| Analysis → `auto_blocked` | `call_update` | `call-updates` | `AI บล็อกสายนี้แล้ว (เสี่ยงสูง)` | `{name or number} · {reason}` |
+| Analysis → `no_message` | `call_update` | `call-updates` | `ผู้โทรวางสายโดยไม่ฝากข้อความ` | `{formatCallerKey}` |
+
+`call_update` pushes are sent only if `incomingNotified === true` for that call.
+
 ## A10. The demo loop (this must work on stage; everything else is extra)
 
 1. A judge opens the web demo and taps **"Call grandma / โทรหาคุณยาย"** (browser call). The AI assistant answers in Thai, or English if the judge speaks English.
-2. The judge plays a delivery rider or a clinic and hangs up. **Within about 15 s** a card appears live on the web demo **and** a push arrives on the guardian's Android phone (APK).
+2. **Within seconds the guardian phone on stage buzzes:** "📞 สายแปลกกำลังโทรหาคุณยายสมศรี" (hold it up while the AI is still talking). The judge plays a delivery rider or a clinic and hangs up. **Within about 15 s** a card appears live on the web demo **and** the same notification turns into the summary.
 3. The guardian taps **Accept**. The judge calls again, and **grandma's phone** (a teammate's Android) **rings on stage**.
 4. A teammate calls from a real phone playing a fake-police scammer. The card is red, auto-blocked, with evidence quotes.
 5. Show the APK download link, the shared blocklist, and the eval accuracy numbers.
@@ -504,7 +519,7 @@ VITE_REPO_URL=https://github.com/poomp5/u-hackathon
 Keep a private note called **"KnockFirst secrets"** and paste each value there as you get it. Share it with the team **only in the private chat**.
 
 ### B0.1 GitHub
-- [ ] Create **public** repo `poomp5/u-hackathon`, with no template. Add collaborators **poomp5** and **Skysosmart** (write access).
+- [x] Repo `poomp5/u-hackathon` (Poom owns it; teterw, Skysosmart and mil3rd have write access). **Poom makes it public before submission.**
 - [ ] Later, in Settings → Secrets and variables → Actions, add the secrets listed in B9.
 
 ### B0.2 Firebase (project id e.g. `knockfirst-hackathon`)
@@ -535,7 +550,7 @@ Keep a private note called **"KnockFirst secrets"** and paste each value there a
 - [ ] Get one key: Anthropic (`LLM_PROVIDER=anthropic`, `LLM_MODEL=claude-haiku-5-5`) **or** any OpenAI-compatible API (`LLM_PROVIDER=openai_compatible`, plus `LLM_BASE_URL`, `LLM_MODEL`). Ask organisers whether the participant AI credits cover a specific provider.
 
 ### B0.6 Railway (server hosting; no sleeping, so Twilio webhooks don't time out)
-- [ ] New project → Deploy from GitHub repo `poomp5/u-hackathon` → service **root directory `apps/server`**.
+- [ ] New project → Deploy from GitHub repo `poomp5/u-hackathon` → service **root directory `apps/server`**. Poom owns the repo, so either Poom grants Railway's GitHub app access to it, or deploy with the Railway CLI (`railway up` from `apps/server`).
 - [ ] Build `npm ci && npm run build`, start `npm start`. Add all `apps/server/.env` vars.
 - [ ] Settings → Networking → **Generate domain** → `PUBLIC_BASE_URL`. Share it with Poom and Sky.
 - [ ] Do **not** use Render's free tier: it sleeps, and the first Twilio webhook after sleep times out.
@@ -1066,21 +1081,21 @@ jobs:
         working-directory: apps/mobile/android
         run: ./gradlew assembleRelease --no-daemon
       - name: Rename APK
-        run: cp android/app/build/outputs/apk/release/app-release.apk knockfirst-guardian.apk
+        run: cp android/app/build/outputs/apk/release/app-release.apk knockfirst.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: knockfirst-guardian
-          path: apps/mobile/knockfirst-guardian.apk
+          name: knockfirst
+          path: apps/mobile/knockfirst.apk
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: apps/mobile/knockfirst-guardian.apk
+          files: apps/mobile/knockfirst.apk
           generate_release_notes: true
 ```
 
 - The Expo prebuild template signs `release` with the debug keystore, so the APK installs on any phone with "install unknown apps" allowed. That's fine for a demo. Store publishing would need a real keystore, which we skip.
-- The stable download link is `https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst-guardian.apk`. The web demo and README point to it.
+- The stable download link is `https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst.apk`. The web demo and README point to it.
 - **Release cadence:** tag `v0.1.0` as soon as Poom's app opens (target Thu 22:00) to prove the pipeline works. Then tag again whenever Poom says "ready": `v0.2.x` tonight, **`v1.0.0` by Fri 11:00**. Only Tete pushes tags: `git tag v1.0.0 && git push origin v1.0.0`.
 - If the build fails, read the log. Common causes are a Java version mismatch (try 17, or whatever the Expo SDK docs say), a missing `google-services.json`, or Gradle running out of memory (add `org.gradle.jvmargs=-Xmx4g` through an Expo config plugin, which is Poom's area). If CI is still red at 23:30, Poom builds locally (fallback in A12) and you upload the APK to a GitHub Release by hand.
 

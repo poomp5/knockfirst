@@ -1,5 +1,7 @@
 # STARTER PROMPT (Tete runs this ONCE to set up the project)
 
+> ✅ **Already run (Thu 15 Oct).** The repo is `poomp5/u-hackathon`, created by Poom, so the `gh repo create` step was skipped. Kept for reference only.
+
 ## Before you paste
 1. Put all 6 files in one folder in your Downloads, e.g. `~/Downloads/U-hackathon prompt/`:
    `00-START-HERE.md`, `01-tete-backend.md`, `02-poom-mobile.md`, `03-sky-ai-web.md`, `CLAUDE.md`, `STARTER-PROMPT.md`
