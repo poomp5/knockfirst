@@ -5,6 +5,7 @@ import {
 } from "../lib/contract";
 import { timeAgo, useLang } from "../lib/i18n";
 import { callTime, type InboxState } from "../lib/useCalls";
+import { Icon, type IconName } from "./Icon";
 
 interface Props {
   inbox: InboxState;
@@ -112,7 +113,7 @@ export function FamilySide({ inbox, myKeys, onOpen, onLanded }: Props) {
   );
 }
 
-const COMPACT_GLYPH: Partial<Record<CallDoc["status"], string>> = { rejected: "⊘", forwarded: "✓", no_message: "…" };
+const COMPACT_GLYPH: Partial<Record<CallDoc["status"], IconName>> = { rejected: "block", forwarded: "check", no_message: "more" };
 
 function CallRow({ call, mine, latest, fresh, onOpen }: {
   call: CallDoc; mine: boolean; latest: boolean; fresh: boolean; onOpen: (id: string) => void;
@@ -128,15 +129,16 @@ function CallRow({ call, mine, latest, fresh, onOpen }: {
   const status = (en ? STATUS_LABEL_EN : STATUS_LABEL_TH)[call.status];
   const owner = call.ownerResponse === "answered" ? t("ownerAnswered") : call.ownerResponse === "declined" ? t("ownerDeclined") : null;
   const alerted = call.incomingNotified && (mine || live
-    ? <span className="tag tag--alerted"><span aria-hidden="true">📲</span> {t("guardianAlerted")}</span>
-    : <span className="tag tag--alerted" title={t("guardianAlerted")}><span aria-hidden="true">📲</span><span className="sr">{t("guardianAlerted")}</span></span>);
+    ? <span className="tag tag--alerted"><Icon name="bell" size={14} /> {t("guardianAlerted")}</span>
+    : <span className="tag tag--alerted tag--icon" title={t("guardianAlerted")}><Icon name="bell" size={14} /><span className="sr">{t("guardianAlerted")}</span></span>);
 
   return (
     <li className={`row row--${kind} row--${call.status}${mine ? " row--mine" : ""}${latest ? " row--latest-mine" : ""}${fresh ? " row--fresh" : ""}`} data-id={call.id}>
       <button className="row-btn" onClick={() => onOpen(call.id)}>
         {kind === "full" && a ? <RiskTile level={a.riskLevel} score={a.riskScore} />
           : kind === "live" ? <span className="row-tile row-tile--live" aria-hidden="true"><i /><i /><i /></span>
-          : <span className="row-tile" aria-hidden="true">{COMPACT_GLYPH[call.status] ?? "·"}</span>}
+          : <span className="row-tile" aria-hidden="true"><Icon name={COMPACT_GLYPH[call.status] ?? "more"} size={22}
+              strokeWidth={COMPACT_GLYPH[call.status] && call.status !== "no_message" ? 1.75 : 3} /></span>}
 
         <span className="row-main">
           <span className="row-top">
@@ -149,7 +151,7 @@ function CallRow({ call, mine, latest, fresh, onOpen }: {
 
           {(kind !== "compact" || mine || alerted) && (
             <span className="row-tags">
-              {kind === "full" && <span className={`pill pill--${call.status}`}>{status}{call.status === "needs_review" ? " →" : ""}</span>}
+              {kind === "full" && <span className={`pill pill--${call.status}`}>{status}{call.status === "needs_review" && <Icon name="arrowRight" size={13} />}</span>}
               {mine && <span className="tag tag--mine">{t("yourCall")}</span>}
               {flags.slice(0, 3).map(f => <span key={f} className="tag tag--flag">{(en ? RED_FLAG_LABEL_EN : RED_FLAG_LABEL_TH)[f]}</span>)}
               {flags.length > 3 && <span className="tag tag--flag">+{flags.length - 3}</span>}

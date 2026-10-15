@@ -4,12 +4,13 @@ import { loadLastNumber, randomThaiMobile, saveLastNumber } from "../lib/callerN
 import { useLang, type StrKey } from "../lib/i18n";
 import { useClock } from "../lib/useClock";
 import type { CallPhase, CallState } from "../lib/usePhoneCall";
+import { Icon, type IconName } from "./Icon";
 
 const SCENARIOS = [
-  { id: "rider", icon: "🚚", label: "role_rider", say: "scenario_rider_say" },
-  { id: "police", icon: "👮", label: "role_police", say: "scenario_police_say" },
-  { id: "clinic", icon: "🏥", label: "role_clinic", say: "scenario_clinic_say" },
-] as const satisfies readonly { id: string; icon: string; label: StrKey; say: StrKey }[];
+  { id: "rider", icon: "truck", label: "role_rider", say: "scenario_rider_say" },
+  { id: "police", icon: "badge", label: "role_police", say: "scenario_police_say" },
+  { id: "clinic", icon: "cross", label: "role_clinic", say: "scenario_clinic_say" },
+] as const satisfies readonly { id: string; icon: IconName; label: StrKey; say: StrKey }[];
 
 export const ACTIVE: ReadonlySet<CallPhase> = new Set(["dialing", "connecting", "talking", "ringing"]);
 
@@ -69,7 +70,7 @@ export function CallerSide({ state, onCall, onHangUp, myLiveCall }: Props) {
           {SCENARIOS.map(s => (
             <label key={s.id} className="role-chip">
               <input type="radio" name="scenario" value={s.id} checked={scenario === s.id} onChange={() => setScenario(s.id)} />
-              <span><span aria-hidden="true" className="role-icon">{s.icon}</span>{t(s.label)}</span>
+              <span><Icon name={s.icon} size={20} className="icon role-icon" />{t(s.label)}</span>
             </label>
           ))}
         </div>
@@ -87,9 +88,9 @@ export function CallerSide({ state, onCall, onHangUp, myLiveCall }: Props) {
         </label>
         <div className="callas-btns">
           <button type="button" className="btn btn--chip" disabled={active} onClick={() => setNumber(randomThaiMobile())}>
-            <span aria-hidden="true">⟳</span> {t("newNumber")}</button>
+            <Icon name="refresh" size={16} /> {t("newNumber")}</button>
           <button type="button" className="btn btn--chip" disabled={active || !last || last === number}
-            onClick={() => last && setNumber(last)}><span aria-hidden="true">↩</span> {t("sameNumber")}</button>
+            onClick={() => last && setNumber(last)}><Icon name="undo" size={16} /> {t("sameNumber")}</button>
         </div>
         <label className="field field--name">
           <span>{t("yourName")}</span>
@@ -126,23 +127,23 @@ export function CallerSide({ state, onCall, onHangUp, myLiveCall }: Props) {
       )}
 
       {myLiveCall && (myLiveCall.status === "screening" || myLiveCall.status === "analyzing") && (
-        <p className="note note--alert" role="status"><span aria-hidden="true">📲</span> {t("guardianAlertedNow")}</p>
+        <p className="note note--alert" role="status"><Icon name="bell" /> {t("guardianAlertedNow")}</p>
       )}
-      {state.phase === "blocked" && <p className="note note--error" role="status"><span aria-hidden="true">📵</span> {t("blockedNow")}</p>}
+      {state.phase === "blocked" && <p className="note note--error" role="status"><Icon name="block" /> {t("blockedNow")}</p>}
       {state.phase === "answered" && (
-        <p className="note note--ok" role="status"><span aria-hidden="true">✅</span> {t("grandmaAnswered")}<br /><small>{t("noVoiceLine")}</small></p>
+        <p className="note note--ok" role="status"><Icon name="checkCircle" /> {t("grandmaAnswered")}<br /><small>{t("noVoiceLine")}</small></p>
       )}
       {(state.phase === "declined" || state.phase === "noAnswer") && (
         <p className="note note--done" role="status">{state.phase === "declined" ? t("grandmaDeclined") : t("grandmaNoAnswer")}</p>
       )}
-      {state.phase === "ended" && <a className="note note--next" href="#inbox"><span aria-hidden="true">→</span> {t("afterCall")}</a>}
+      {state.phase === "ended" && <a className="note note--next" href="#inbox">{t("afterCall")} <Icon name="arrowRight" /></a>}
       {errorText && (
         <div className="note note--error" role="alert">
           <p>{errorText}</p>
           {state.error === "unavailable" && <p className="note-hint">{t("callUnavailableHint")}</p>}
         </div>
       )}
-      <p className="tip"><span aria-hidden="true">🎧</span> {t("earphones")}</p>
+      <p className="tip"><Icon name="headphones" size={16} /> {t("earphones")}</p>
     </section>
   );
 }

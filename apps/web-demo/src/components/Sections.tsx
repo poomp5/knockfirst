@@ -9,7 +9,6 @@ export function HowItWorks() {
   return (
     <section className="block how" id="how" aria-labelledby="how-h">
       <h2 id="how-h">{t("howTitle")}</h2>
-      <p className="block-sub">{t("heroLead")}</p>
       {/* Same three lanes as the stage: stranger | the AI door | family */}
       <ol className="lanes">
         <li className="lane lane--caller">
@@ -74,7 +73,7 @@ export function GetApp() {
         <a className="btn btn--primary" href={APK_URL}>{t("download")}</a>
       </div>
       <figure className="qr">
-        <QRCodeSVG value={APK_URL} size={168} marginSize={2} fgColor="#111111" />
+        <QRCodeSVG value={APK_URL} size={168} marginSize={2} fgColor="#1D1D1F" />
         <figcaption>{t("scanQr")}</figcaption>
       </figure>
     </section>
@@ -92,7 +91,7 @@ export function Footer() {
   const { t } = useLang();
   return (
     <footer className="foot">
-      <img src="/brand/logo-wordmark-dark.png" alt="KnockFirst" height="32" />
+      <img src="/brand/logo-wordmark.png" alt="KnockFirst" height="32" />
       <p className="foot-tag">{t("tagline")}</p>
       <h2 className="foot-h">{t("team")}</h2>
       <ul className="team">

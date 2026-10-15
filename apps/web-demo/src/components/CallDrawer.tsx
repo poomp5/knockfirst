@@ -7,6 +7,7 @@ import { PREVIEW_MODE } from "../lib/env";
 import { timeAgo, useLang } from "../lib/i18n";
 import { callTime } from "../lib/useCalls";
 import { RiskTile } from "./FamilySide";
+import { Icon } from "./Icon";
 
 const DECIDABLE = new Set(["needs_review", "auto_blocked", "no_message", "accepted", "blocked"]);
 
@@ -64,7 +65,7 @@ export function CallDrawer({ call, onClose }: { call: CallDoc; onClose: () => vo
               {formatCallerKey(call.callerKey)}{a?.organization ? `, ${a.organization}` : ""} · {timeAgo(callTime(call), lang)}
             </p>
           </div>
-          <button ref={closeRef} className="icon-btn" onClick={onClose} aria-label={t("close")}>✕</button>
+          <button ref={closeRef} className="icon-btn" onClick={onClose} aria-label={t("close")}><Icon name="close" size={18} /></button>
         </header>
 
         <div className="drawer-body">
@@ -86,7 +87,7 @@ export function CallDrawer({ call, onClose }: { call: CallDoc; onClose: () => vo
             )}
           </div>
 
-          {call.incomingNotified && <p className="tag tag--alerted tag--block"><span aria-hidden="true">📲</span> {t("guardianAlerted")}</p>}
+          {call.incomingNotified && <p className="tag tag--alerted tag--block"><Icon name="bell" size={14} /> {t("guardianAlerted")}</p>}
 
           {a && (
             <section>

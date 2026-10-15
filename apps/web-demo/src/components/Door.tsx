@@ -34,7 +34,7 @@ export function Door({ mode }: { mode: DoorMode }) {
     <div className={`door door--${mode}`} aria-hidden="true">
       <div className="door-way"><p className="door-label">{phrased(t("door_open"))}</p></div>
       <div className="door-leaf">
-        <img className="door-mark" src="/brand/logo-dark.svg" alt="" width="40" height="38" />
+        <img className="door-mark" src="/brand/logo.svg" alt="" width="40" height="38" />
         <div className="door-signal">
           <span className="door-rings"><i /><i /><i /></span>
           <span className="door-bars"><i /><i /><i /><i /><i /></span>

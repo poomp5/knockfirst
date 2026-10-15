@@ -8,6 +8,7 @@ import type { CallDoc } from "./lib/contract";
 import { useLang } from "./lib/i18n";
 import { addMyKey, loadMyKeys } from "./lib/callerNumber";
 import { usePhoneCall } from "./lib/usePhoneCall";
+import { Icon } from "./components/Icon";
 import { useCalls } from "./lib/useCalls";
 
 export default function App() {
@@ -38,7 +39,6 @@ export default function App() {
       <a className="skip" href="#stage">{t("tryCall")}</a>
       <header className="top">
         <img className="top-logo" src="/brand/logo-wordmark.png" alt="KnockFirst" width="154" height="32" />
-        <h1 className="top-tag">{phrases(t("tagline")).map((p, i) => <span key={i} className="phrase">{p}</span>)}</h1>
         <nav className="top-nav" aria-label="KnockFirst">
           <div className="lang" role="group" aria-label="Language / ภาษา">
             <button aria-pressed={lang === "th"} onClick={() => setLang("th")}>ไทย</button>
@@ -49,6 +49,11 @@ export default function App() {
       </header>
 
       <main>
+        <section className="hero" aria-labelledby="hero-h">
+          <h1 id="hero-h" className="hero-title">{phrases(t("tagline")).map((p, i) => <span key={i} className="phrase">{p}</span>)}</h1>
+          <p className="hero-lead">{t("heroLead")}</p>
+        </section>
+
         <div className={`stage stage--${mode}`} id="stage">
           <CallerSide state={state} onCall={call} onHangUp={hangUp} myLiveCall={myLiveCall} />
           <Door mode={mode} />
@@ -94,7 +99,7 @@ function CallBar({ state, onHangUp, landed, onSee }: {
       ) : (
         <>
           <p className="callbar-text">{t("yourCardArrived")}</p>
-          <button className="callbar-btn" onClick={onSee}>{t("see")} →</button>
+          <button className="callbar-btn" onClick={onSee}>{t("see")} <Icon name="arrowRight" size={16} /></button>
         </>
       )}
     </div>
