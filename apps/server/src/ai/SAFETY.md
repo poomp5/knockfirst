@@ -26,7 +26,7 @@ Owner: Sky. Tete pastes the first section into the root README.
 
 - Git history (all branches): **clean.** No `.env`, service-account or `google-services.json` was ever committed; all `.env.example` files hold names only.
 - Firestore rules: **26/26 pass** in the emulator (v3 grandma mode included) and deployed to `knockfirst-hackathon`.
-- Live server probes: **14/14 PASS** against Railway after update 05, including a spoofed `X-Forwarded-For` (still rate-limited: Railway's edge rewrites the header).
+- Live server probes: **14/14 PASS** against Railway after update 05 (re-run by Sky Thu 15 Oct evening, `u-hackathon-production.up.railway.app`), including a spoofed `X-Forwarded-For` (still rate-limited: Railway's edge rewrites the header).
 - Agent tests: **pending** B0.
 
 ## Findings for Tete (server code, `apps/server/**` is Tete's)

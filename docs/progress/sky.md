@@ -10,7 +10,7 @@ Legend: ✅ done · 🟡 in progress · ❌ not started
 | B3 | `eval/simulate.ts` (`--case`, `--all`, `--demo`) | ✅ | `--demo` run live on Railway Thu 15 Oct: police-01 95 + scholarship-01 92 auto_blocked; rider-01 20, clinic-01 15, refuse-01 55 needs_review (LLM, 5–9 s per call) |
 | B4 | Firestore rules in `firebase/` + emulator tests | 🟡 | rules + 21 passing emulator tests (`cd firebase && bun run test`); v2 `notifyOnIncoming` included. Deploy pending: project id in .firebaserc + Poom's anon auth |
 | B5 | Web demo `apps/web-demo` on Vercel | 🟡 | built: browser call, live inbox + drawer with Accept/Block (A6 recipes), how it works, results, QR, team, TH/EN; checked in preview mode at desktop + 390px, no console errors. Pending: Firebase web config + server URL, live call test, Vercel deploy |
-| B6 | Security checklist + README "Safety & privacy" text for Tete | 🟡 | history scan clean; SAFETY.md (README text + 5 findings for Tete); live probe script `src/ai/eval/security.ts` (needs server URL); agent tests listed in agent-config.md (needs B0) |
+| B6 | Security checklist + README "Safety & privacy" text for Tete | 🟡 | history scan clean; SAFETY.md (README text + 5 findings for Tete); `src/ai/eval/security.ts` 14/14 PASS live on Railway (webhook HMAC, admin token, CORS, rate limit incl. spoofed XFF); agent social-engineering tests still pending (B0) |
 | U04 | Update 04: rename, rules field, web badges | 🟡 | eval renamed to KnockFirst; rules allow notifyOnIncoming; web badges done (incomingNotified tag, 'guardian alerted now' note, no Accept/Block while screening/analyzing); agent rename with B0 |
 | B7 | Stretch goals | ❌ | only after M2 |
 | U05 | Update 05: no Twilio (done by Tete covering for Sky, Thu evening) | ✅ | see rows below |
