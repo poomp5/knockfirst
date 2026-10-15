@@ -1,5 +1,6 @@
 # KnockFirst
 
+# Deploy
 **Strangers knock first. Family opens the door.**
 *คนแปลกหน้าต้องเคาะประตูก่อน ลูกหลานเป็นคนเปิด*
 
