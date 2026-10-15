@@ -1,6 +1,6 @@
 import { db } from "../firebase";
 import { env } from "../env";
-import { paths, FamilyDoc, GlobalBlockEntry } from "../contract";
+import { paths, FamilyDoc, GlobalBlockEntry, WhitelistEntry } from "../contract";
 
 export async function findFamilyIdByTwilioNumber(to: string): Promise<string> {
   if (to) {
@@ -17,6 +17,11 @@ export async function getFamily(familyId: string): Promise<FamilyDoc | null> {
 
 export async function isWhitelisted(f: string, key: string) {
   return (await db.doc(paths.whitelistEntry(f, key)).get()).exists;
+}
+
+export async function getWhitelistEntry(f: string, key: string): Promise<WhitelistEntry | null> {
+  const s = await db.doc(paths.whitelistEntry(f, key)).get();
+  return s.exists ? (s.data() as WhitelistEntry) : null;
 }
 
 export async function isBlocked(f: string, key: string) {

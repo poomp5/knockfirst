@@ -1,6 +1,6 @@
 import { messaging, db, FieldValue } from "../firebase";
 import {
-  paths, PUSH_CHANNEL_DEFAULT, PUSH_CHANNEL_URGENT, PUSH_CHANNEL_LIVE, PUSH_CHANNEL_UPDATES,
+  paths, PUSH_CHANNEL_DEFAULT, PUSH_CHANNEL_URGENT, PUSH_CHANNEL_LIVE, PUSH_CHANNEL_UPDATES, PUSH_CHANNEL_RING,
   formatCallerKey, CallAnalysis, FamilyDoc, GlobalBlockEntry, PushData,
 } from "../contract";
 import { getFamily } from "./families";
@@ -14,10 +14,12 @@ export interface GuardianPush {
   priority: "high" | "normal";
 }
 
-/** Sends to every guardian phone of the family and removes dead tokens. Pass `fam` if it was already read. */
-export async function sendToGuardians(familyId: string, p: GuardianPush, fam?: FamilyDoc | null): Promise<boolean> {
+type TokenField = "pushTokens" | "ownerPushTokens";
+
+/** Sends to every phone in one token list of the family and removes dead tokens from that list. */
+async function sendPush(familyId: string, field: TokenField, p: GuardianPush, fam?: FamilyDoc | null): Promise<boolean> {
   const family = fam === undefined ? await getFamily(familyId) : fam;
-  const tokens = family?.pushTokens ?? [];
+  const tokens = family?.[field] ?? [];
   if (!tokens.length) return false;
   const res = await messaging.sendEachForMulticast({
     tokens,
@@ -28,8 +30,25 @@ export async function sendToGuardians(familyId: string, p: GuardianPush, fam?: F
   const dead = res.responses
     .map((r, i) => (!r.success && /registration-token-not-registered|invalid-argument/.test(r.error?.code ?? "") ? tokens[i] : null))
     .filter(Boolean) as string[];
-  if (dead.length) await db.doc(paths.family(familyId)).update({ pushTokens: FieldValue.arrayRemove(...dead) });
+  if (dead.length) await db.doc(paths.family(familyId)).update({ [field]: FieldValue.arrayRemove(...dead) });
   return res.successCount > 0;
+}
+
+/** Guardian phones (`pushTokens`). Pass `fam` if it was already read. */
+export function sendToGuardians(familyId: string, p: GuardianPush, fam?: FamilyDoc | null): Promise<boolean> {
+  return sendPush(familyId, "pushTokens", p, fam);
+}
+
+/** v3: a whitelisted caller rings grandma's phone (app in grandma mode, `ownerPushTokens`). */
+export function notifyOwnerRing(familyId: string, callId: string, displayName: string): Promise<boolean> {
+  return sendPush(familyId, "ownerPushTokens", {
+    title: `📞 ${displayName} กำลังโทรหาคุณ`,
+    body: "แตะเพื่อรับสาย",
+    data: { type: "owner_ring", familyId, callId, urgent: "0" },
+    channelId: PUSH_CHANNEL_RING,
+    tag: callId,
+    priority: "high",
+  });
 }
 
 /** "Someone is calling grandma right now" — sent the moment an unknown call reaches /call/start. */

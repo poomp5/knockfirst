@@ -10,11 +10,14 @@ export interface NewCall {
   route: CallRoute;
   status: CallStatus;
   simulated?: boolean;
+  channel?: "web" | "phone";
+  callerLabel?: string | null;
 }
 
 export async function createCall(c: NewCall, extra: Record<string, unknown> = {}) {
+  const defined = Object.fromEntries(Object.entries(c).filter(([, v]) => v !== undefined));
   await db.doc(paths.call(c.familyId, c.id)).set({
-    ...c,
+    ...defined,
     simulated: c.simulated ?? false,
     startedAt: FieldValue.serverTimestamp(),
     transcript: [],
