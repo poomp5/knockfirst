@@ -1,9 +1,10 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CallDrawer } from "./components/CallDrawer";
-import { CallerSide } from "./components/CallerSide";
+import { ACTIVE, CallerSide, PhoneIcon, useStatusLine } from "./components/CallerSide";
+import { Door, doorMode } from "./components/Door";
 import { FamilySide } from "./components/FamilySide";
 import { Footer, GetApp, HowItWorks, Results } from "./components/Sections";
-import { APK_URL } from "./lib/env";
+import type { CallDoc } from "./lib/contract";
 import { useLang } from "./lib/i18n";
 import { addMyKey, loadMyKeys } from "./lib/callerNumber";
 import { usePhoneCall } from "./lib/usePhoneCall";
@@ -19,38 +20,39 @@ export default function App() {
   const [openId, setOpenId] = useState<string | null>(null);
   const open = openId ? calls.find(c => c.id === openId) ?? null : null; // live doc, updates in place
   const close = useCallback(() => setOpenId(null), []);
-  const myLiveCall = calls.find(c => c.id === state.callId && (c.status === "screening" || c.status === "analyzing")) ?? null;
-  const ringing = state.phase === "connecting" || state.phase === "talking" || state.phase === "ringing";
+  const myCall = state.callId ? calls.find(c => c.id === state.callId) ?? null : null;
+  const myLiveCall = myCall && (myCall.status === "screening" || myCall.status === "analyzing") ? myCall : null;
+  const mode = doorMode(state, myCall);
+
+  // "Your card is in" toast (mostly for phones, where the inbox is below the fold).
+  const [landed, setLanded] = useState<CallDoc | null>(null);
+  const onLanded = useCallback((c: CallDoc) => setLanded(c), []);
+  useEffect(() => {
+    if (!landed) return;
+    const id = setTimeout(() => setLanded(null), 9000);
+    return () => clearTimeout(id);
+  }, [landed]);
 
   return (
     <>
+      <a className="skip" href="#stage">{t("tryCall")}</a>
       <header className="top">
-        <img className="top-logo" src="/brand/logo-wordmark.png" alt="KnockFirst" height="36" />
-        <nav className="top-nav">
-          <div className="lang" role="group" aria-label="Language">
+        <img className="top-logo" src="/brand/logo-wordmark.png" alt="KnockFirst" width="154" height="32" />
+        <h1 className="top-tag">{phrases(t("tagline")).map((p, i) => <span key={i} className="phrase">{p}</span>)}</h1>
+        <nav className="top-nav" aria-label="KnockFirst">
+          <div className="lang" role="group" aria-label="Language / ภาษา">
             <button aria-pressed={lang === "th"} onClick={() => setLang("th")}>ไทย</button>
-            <button aria-pressed={lang === "en"} onClick={() => setLang("en")}>EN</button>
+            <button aria-pressed={lang === "en"} onClick={() => setLang("en")} lang="en">EN</button>
           </div>
           <a className="top-app" href="#app">{t("getApp")}</a>
         </nav>
       </header>
 
       <main>
-        <section className="hero">
-          <h1>{t("tagline")}</h1>
-          <div>
-            <p className="hero-lead">{t("heroLead")}</p>
-            <p className="hero-cta">
-              <a className="btn btn--primary" href="#stage">{t("tryCall")}</a>
-              <a className="btn btn--quiet" href={APK_URL}>{t("getApp")}</a>
-            </p>
-          </div>
-        </section>
-
-        <div className={`stage${ringing ? " stage--knocking" : ""}`} id="stage">
+        <div className={`stage stage--${mode}`} id="stage">
           <CallerSide state={state} onCall={call} onHangUp={hangUp} myLiveCall={myLiveCall} />
-          <div className="door" aria-hidden="true"><span className="knock" /><span className="knock" /><span className="knock" /></div>
-          <FamilySide inbox={inbox} myKeys={myKeys} onOpen={setOpenId} />
+          <Door mode={mode} />
+          <FamilySide inbox={inbox} myKeys={myKeys} onOpen={setOpenId} onLanded={onLanded} />
         </div>
 
         <HowItWorks />
@@ -59,7 +61,42 @@ export default function App() {
       </main>
       <Footer />
 
+      <CallBar state={state} onHangUp={hangUp} landed={landed}
+        onSee={() => { if (landed) setOpenId(landed.id); setLanded(null); }} />
       {open && <CallDrawer call={open} onClose={close} />}
     </>
+  );
+}
+
+/** Split a tagline at its clause boundary so Thai never wraps mid-phrase ("…ก่อน | ลูกหลาน…", "…first. | Family…"). */
+function phrases(s: string): string[] {
+  const i = s.indexOf(". ");
+  if (i > 0) return [s.slice(0, i + 1) + " ", s.slice(i + 2)];
+  const j = s.indexOf(" ");
+  return j > 0 ? [s.slice(0, j) + " ", s.slice(j + 1)] : [s];
+}
+
+/** Phones only: keeps hang-up and the call status reachable while you scroll down to the inbox. */
+function CallBar({ state, onHangUp, landed, onSee }: {
+  state: ReturnType<typeof usePhoneCall>["state"]; onHangUp: () => void; landed: CallDoc | null; onSee: () => void;
+}) {
+  const { t } = useLang();
+  const { text, clock } = useStatusLine(state);
+  const active = ACTIVE.has(state.phase);
+  if (!active && !landed) return null;
+  return (
+    <div className="callbar" role="region" aria-label={t("liveCaptions")}>
+      {active ? (
+        <>
+          <p className="callbar-text"><span className="callbar-dot" aria-hidden="true" /><span className="callbar-label">{text}</span>{clock && <b>{clock}</b>}</p>
+          <button className="callbar-btn callbar-btn--hang" onClick={onHangUp}><PhoneIcon down size={20} /> {t("hangUp")}</button>
+        </>
+      ) : (
+        <>
+          <p className="callbar-text">{t("yourCardArrived")}</p>
+          <button className="callbar-btn" onClick={onSee}>{t("see")} →</button>
+        </>
+      )}
+    </div>
   );
 }

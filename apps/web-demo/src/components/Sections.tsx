@@ -7,19 +7,23 @@ import { useLang } from "../lib/i18n";
 export function HowItWorks() {
   const { t } = useLang();
   return (
-    <section className="block how" aria-labelledby="how-h">
+    <section className="block how" id="how" aria-labelledby="how-h">
       <h2 id="how-h">{t("howTitle")}</h2>
-      <div className="flow">
-        <div className="flow-start">
-          <p className="flow-step"><strong>{t("how1")}</strong><span>{t("how1b")}</span></p>
-          <p className="flow-branch"><strong>{t("how2")}</strong><span>{t("how2b")}</span></p>
-        </div>
-        <ol className="flow-path">
-          <li><strong>{t("how3")}</strong><span>{t("how3b")}</span></li>
-          <li><strong>{t("how4")}</strong><span>{t("how4b")}</span></li>
-          <li><strong>{t("how5")}</strong><span>{t("how5b")}</span></li>
-        </ol>
-      </div>
+      <p className="block-sub">{t("heroLead")}</p>
+      {/* Same three lanes as the stage: stranger | the AI door | family */}
+      <ol className="lanes">
+        <li className="lane lane--caller">
+          <p className="lane-step"><span className="step" aria-hidden="true">1</span><strong>{t("how1")}</strong><span>{t("how1b")}</span></p>
+          <p className="lane-branch"><strong>{t("how2")}</strong><span>{t("how2b")}</span></p>
+        </li>
+        <li className="lane lane--door">
+          <p className="lane-step"><span className="step" aria-hidden="true">2</span><strong>{t("how3")}</strong><span>{t("how3b")}</span></p>
+          <p className="lane-step"><span className="step" aria-hidden="true">3</span><strong>{t("how4")}</strong><span>{t("how4b")}</span></p>
+        </li>
+        <li className="lane lane--family">
+          <p className="lane-step"><span className="step" aria-hidden="true">4</span><strong>{t("how5")}</strong><span>{t("how5b")}</span></p>
+        </li>
+      </ol>
       <p className="built">
         <span>{t("builtWith")}</span>
         <strong>ElevenLabs Agents</strong><span>WebRTC</span><span>Claude</span><span>Firebase</span><span>Expo / React Native</span>

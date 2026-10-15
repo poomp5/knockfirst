@@ -1,27 +1,42 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  formatCallerKey, RED_FLAG_LABEL_EN, RED_FLAG_LABEL_TH, RISK_COLOR, RISK_LABEL_EN, RISK_LABEL_TH,
-  STATUS_LABEL_EN, STATUS_LABEL_TH, type CallDoc,
+  formatCallerKey, RED_FLAG_LABEL_EN, RED_FLAG_LABEL_TH, STATUS_LABEL_EN, STATUS_LABEL_TH, type CallDoc,
 } from "../lib/contract";
 import { acceptCall, blockCall } from "../lib/actions";
 import { PREVIEW_MODE } from "../lib/env";
 import { timeAgo, useLang } from "../lib/i18n";
 import { callTime } from "../lib/useCalls";
+import { RiskTile } from "./FamilySide";
 
 const DECIDABLE = new Set(["needs_review", "auto_blocked", "no_message", "accepted", "blocked"]);
 
 export function CallDrawer({ call, onClose }: { call: CallDoc; onClose: () => void }) {
   const { lang, t } = useLang();
+  const panelRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const [busy, setBusy] = useState<"accept" | "block" | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
     closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key !== "Tab" || !panelRef.current) return;
+      // keep keyboard focus inside the dialog
+      const items = panelRef.current.querySelectorAll<HTMLElement>("button:not([disabled]), a[href], [tabindex]:not([tabindex='-1'])");
+      if (items.length === 0) return;
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
     document.addEventListener("keydown", onKey);
     document.body.classList.add("no-scroll");
-    return () => { document.removeEventListener("keydown", onKey); document.body.classList.remove("no-scroll"); };
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.classList.remove("no-scroll");
+      opener?.focus?.();
+    };
   }, [onClose]);
 
   const a = call.analysis;
@@ -29,6 +44,7 @@ export function CallDrawer({ call, onClose }: { call: CallDoc; onClose: () => vo
   const level = a?.riskLevel;
   const live = call.status === "screening" || call.status === "analyzing";
   const decided = call.decision ?? (call.status === "accepted" || call.status === "blocked" ? call.status : null);
+  const status = (en ? STATUS_LABEL_EN : STATUS_LABEL_TH)[call.status];
 
   async function decide(kind: "accept" | "block") {
     setBusy(kind); setFailed(false);
@@ -39,8 +55,8 @@ export function CallDrawer({ call, onClose }: { call: CallDoc; onClose: () => vo
 
   return (
     <div className="drawer-wrap" onClick={onClose}>
-      <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-h" onClick={e => e.stopPropagation()}
-        style={{ ["--risk" as string]: level ? RISK_COLOR[level] : "var(--line)" }}>
+      <aside ref={panelRef} className={`drawer drawer--${level ?? "none"}`} role="dialog" aria-modal="true" aria-labelledby="drawer-h"
+        onClick={e => e.stopPropagation()}>
         <header className="drawer-head">
           <div>
             <h2 id="drawer-h">{a?.callerName ?? formatCallerKey(call.callerKey)}</h2>
@@ -55,19 +71,22 @@ export function CallDrawer({ call, onClose }: { call: CallDoc; onClose: () => vo
           <div className="verdict">
             {a ? (
               <>
-                <span className="verdict-score">{a.riskScore}</span>
+                <RiskTile level={a.riskLevel} score={a.riskScore} big />
                 <span className="verdict-text">
-                  <strong>{(en ? RISK_LABEL_EN : RISK_LABEL_TH)[a.riskLevel]}</strong>
-                  <span>{(en ? STATUS_LABEL_EN : STATUS_LABEL_TH)[call.status]}</span>
+                  <span className={`pill pill--${call.status}`}>{status}</span>
+                  {(en ? a.reasonEn ?? a.reason : a.reason) && <span className="verdict-reason">{en ? a.reasonEn ?? a.reason : a.reason}</span>}
                 </span>
               </>
             ) : (
-              <span className="verdict-text"><strong>{(en ? STATUS_LABEL_EN : STATUS_LABEL_TH)[call.status]}</strong>
-                {live && <span>{t("aiTalking")}</span>}</span>
+              <>
+                {live && <span className="row-tile row-tile--live row-tile--big" aria-hidden="true"><i /><i /><i /></span>}
+                <span className="verdict-text"><strong>{status}</strong>
+                  {live && <span className="verdict-reason">{t("aiTalking")}</span>}</span>
+              </>
             )}
           </div>
 
-          {call.incomingNotified && <p className="tag tag--alerted tag--block">📲 {t("guardianAlerted")}</p>}
+          {call.incomingNotified && <p className="tag tag--alerted tag--block"><span aria-hidden="true">📲</span> {t("guardianAlerted")}</p>}
 
           {a && (
             <section>
@@ -117,7 +136,7 @@ export function CallDrawer({ call, onClose }: { call: CallDoc; onClose: () => vo
         </div>
 
         <footer className="drawer-foot">
-          {decided === "accepted" && <p className="note note--next" role="status">{t("acceptedNext")}</p>}
+          {decided === "accepted" && <p className="note note--ok" role="status">{t("acceptedNext")}</p>}
           {decided === "blocked" && <p className="note note--done" role="status">{t("blockedDone")}</p>}
           {failed && <p className="note note--error" role="alert">{t("decisionFailed")}</p>}
           {live ? (
