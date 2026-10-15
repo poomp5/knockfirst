@@ -14,3 +14,4 @@ export * from "./banner";
 export * from "./card";
 export * from "./fact-row";
 export * from "./skeleton";
+export * from "./list";

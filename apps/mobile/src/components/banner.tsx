@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
+import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { colors, radii, spacing, TAP } from "@/theme";
 import { AppText } from "./app-text";
 
@@ -12,23 +13,26 @@ export interface BannerProps {
   onAction?: () => void;
 }
 
-const TONE: Record<BannerTone, { bg: string; fg: string; icon: keyof typeof Ionicons.glyphMap }> = {
-  success: { bg: colors.successSoft, fg: colors.success, icon: "checkmark-circle" },
-  danger: { bg: colors.dangerSoft, fg: colors.danger, icon: "ban" },
-  info: { bg: colors.brandSoft, fg: colors.brandPressed, icon: "information-circle" },
-  error: { bg: colors.dangerSoft, fg: colors.danger, icon: "alert-circle" },
+const TONE: Record<BannerTone, { fg: string; icon: keyof typeof Ionicons.glyphMap }> = {
+  success: { fg: colors.success, icon: "checkmark-circle" },
+  danger: { fg: colors.danger, icon: "hand-left" },
+  info: { fg: colors.brand, icon: "information-circle" },
+  error: { fg: colors.danger, icon: "alert-circle" },
 };
 
+/** Inline notice: white rounded card, tinted glyph, optional plain-text action (iOS style). */
 export function Banner({ tone, text, actionLabel, onAction }: BannerProps) {
   const t = TONE[tone] ?? TONE.info;
   return (
-    <View
-      style={[styles.wrap, { backgroundColor: t.bg }]}
+    <Animated.View
+      entering={FadeIn.duration(200)}
+      exiting={FadeOut.duration(150)}
+      style={styles.wrap}
       accessibilityRole={tone === "error" ? "alert" : undefined}
       accessibilityLiveRegion="polite"
     >
       <Ionicons name={t.icon} size={22} color={t.fg} />
-      <AppText variant="body" weight="medium" color={colors.text} style={styles.text}>
+      <AppText variant="small" weight="medium" color={colors.text} style={styles.text}>
         {text}
       </AppText>
       {!!actionLabel && !!onAction && (
@@ -38,12 +42,12 @@ export function Banner({ tone, text, actionLabel, onAction }: BannerProps) {
           hitSlop={8}
           style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}
         >
-          <AppText variant="body" weight="semibold" color={t.fg}>
+          <AppText variant="small" weight="semibold" color={colors.brand}>
             {actionLabel}
           </AppText>
         </Pressable>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -53,19 +57,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.md,
     paddingLeft: spacing.lg,
-    paddingRight: spacing.sm,
-    paddingVertical: spacing.sm,
-    minHeight: TAP + 8,
-    borderRadius: radii.md,
+    paddingRight: spacing.xs,
+    paddingVertical: spacing.xs,
+    minHeight: TAP + 4,
+    borderRadius: radii.lg,
+    backgroundColor: colors.card,
   },
-  text: { flex: 1, paddingVertical: spacing.xs },
+  text: { flex: 1, paddingVertical: spacing.sm },
   action: {
     minHeight: TAP,
     minWidth: TAP,
     paddingHorizontal: spacing.md,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: radii.sm,
   },
-  actionPressed: { backgroundColor: "rgba(0,0,0,0.06)" },
+  actionPressed: { opacity: 0.4 },
 });

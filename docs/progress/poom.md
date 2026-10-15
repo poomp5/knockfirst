@@ -28,3 +28,8 @@
 | U5.4 | Channel `grandma-ring` | ✅ | MAX, long vibration, bypass DND |
 | U5.5 | Guardian inbox labels for forwarded calls | ✅ | ต่อสายถึงคุณยายแล้ว / คุณยายรับสาย / ไม่รับสาย |
 | U5.6 | Contract v3 + version 0.2.0 (versionCode 2) | ✅ | Needs Tete to tag `v0.2.0` |
+
+## UI redesign (iOS / Apple HIG style)
+| ID | Task | Status | Notes |
+|---|---|---|---|
+| R1 | Apple-style redesign, no emoji in the UI | ✅ | iOS grouped lists (`components/list.tsx`: ListSection/ListRow/IconTile/LargeTitle), large titles on tabs, ring risk badge, rounded gauge, iMessage transcript, Settings-style settings, bottom-sheet add form, lock-screen clock on grandma home, iOS incoming-call ring screen. Removed 📞 and ✓. Checked on web (mock mode); needs an on-device pass. Server push titles still contain 📞/⚠️ (Tete's `services/push.ts`). |

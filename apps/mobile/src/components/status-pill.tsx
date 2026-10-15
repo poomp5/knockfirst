@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, View } from "react-native";
 import { STATUS_LABEL_TH, type CallStatus } from "@/lib/contract";
 import { colors, radii, spacing } from "@/theme";
@@ -17,29 +16,32 @@ function forwardedLabel(r: StatusPillProps["ownerResponse"]): string {
   return "คนรู้จัก · ต่อสายถึงคุณยายแล้ว";
 }
 
-type Tone = { bg: string; fg: string; icon: keyof typeof Ionicons.glyphMap };
+type Tone = { bg: string; fg: string };
 
-const NEUTRAL: Tone = { bg: colors.bubbleAssistant, fg: colors.textMuted, icon: "ellipse-outline" };
+const NEUTRAL: Tone = { bg: colors.fill, fg: colors.textMuted };
+const GOOD: Tone = { bg: colors.successSoft, fg: colors.success };
+const BAD: Tone = { bg: colors.dangerSoft, fg: colors.danger };
 
 const TONE: Record<CallStatus, Tone> = {
-  forwarded: { bg: colors.successSoft, fg: colors.success, icon: "call" },
-  accepted: { bg: colors.successSoft, fg: colors.success, icon: "checkmark-circle" },
-  rejected: { bg: colors.dangerSoft, fg: colors.danger, icon: "ban" },
-  auto_blocked: { bg: colors.dangerSoft, fg: colors.danger, icon: "shield" },
-  blocked: { bg: colors.dangerSoft, fg: colors.danger, icon: "ban" },
-  needs_review: { bg: colors.brandSoft, fg: colors.brandPressed, icon: "hand-left" },
-  screening: { bg: colors.bubbleAssistant, fg: colors.textMuted, icon: "mic" },
-  analyzing: { bg: colors.bubbleAssistant, fg: colors.textMuted, icon: "sparkles" },
-  no_message: { bg: colors.bubbleAssistant, fg: colors.textMuted, icon: "call-outline" },
+  forwarded: GOOD,
+  accepted: GOOD,
+  rejected: BAD,
+  auto_blocked: BAD,
+  blocked: BAD,
+  needs_review: { bg: colors.brandSoft, fg: colors.brandPressed },
+  screening: NEUTRAL,
+  analyzing: NEUTRAL,
+  no_message: NEUTRAL,
 };
 
+/** Tinted capsule with a status dot (color + text). */
 export function StatusPill({ status, ownerResponse }: StatusPillProps) {
   const declined = status === "forwarded" && ownerResponse === "declined";
-  const tone = declined ? { ...NEUTRAL, icon: "call-outline" as const } : (TONE[status] ?? NEUTRAL);
+  const tone = declined ? NEUTRAL : (TONE[status] ?? NEUTRAL);
   const label = status === "forwarded" ? forwardedLabel(ownerResponse) : (STATUS_LABEL_TH[status] ?? "ไม่ทราบสถานะ");
   return (
     <View style={[styles.pill, { backgroundColor: tone.bg }]} accessible accessibilityLabel={`สถานะ: ${label}`}>
-      <Ionicons name={tone.icon} size={13} color={tone.fg} />
+      <View style={[styles.dot, { backgroundColor: tone.fg }]} />
       <AppText variant="caption" weight="semibold" color={tone.fg} numberOfLines={1} style={styles.text}>
         {label}
       </AppText>
@@ -52,11 +54,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-start",
-    gap: 4,
+    gap: 5,
     flexShrink: 1,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
+    paddingVertical: 2,
     borderRadius: radii.pill,
   },
+  dot: { width: 6, height: 6, borderRadius: 3 },
   text: { flexShrink: 1 },
 });

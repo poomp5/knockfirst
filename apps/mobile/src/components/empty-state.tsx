@@ -1,30 +1,24 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image, StyleSheet, View, type ImageSourcePropType } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { colors, spacing } from "@/theme";
 import { AppText } from "./app-text";
 
 export interface EmptyStateProps {
   title: string;
   subtitle?: string;
-  image?: ImageSourcePropType;
+  icon?: keyof typeof Ionicons.glyphMap;
 }
 
-/** Centered illustration + message. Falls back to a shield icon when no image is given. */
-export function EmptyState({ title, subtitle, image }: EmptyStateProps) {
+/** iOS "content unavailable" view: large grey glyph, bold title, secondary description. */
+export function EmptyState({ title, subtitle, icon = "shield-checkmark" }: EmptyStateProps) {
   return (
     <View style={styles.wrap}>
-      {image ? (
-        <Image source={image} style={styles.image} resizeMode="contain" accessibilityIgnoresInvertColors />
-      ) : (
-        <View style={styles.iconCircle}>
-          <Ionicons name="shield-checkmark" size={48} color={colors.brand} />
-        </View>
-      )}
-      <AppText variant="title" weight="semibold" style={styles.center}>
+      <Ionicons name={icon} size={56} color={colors.textFaint} style={styles.icon} />
+      <AppText variant="title" weight="bold" style={styles.center}>
         {title}
       </AppText>
       {!!subtitle && (
-        <AppText variant="body" color={colors.textMuted} style={styles.center}>
+        <AppText variant="small" color={colors.textSubtle} style={styles.center}>
           {subtitle}
         </AppText>
       )}
@@ -37,18 +31,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: spacing.sm,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.xxl,
+    paddingVertical: spacing.xxl * 1.5,
   },
-  image: { width: 240, height: 180, marginBottom: spacing.md },
-  iconCircle: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
-    backgroundColor: colors.brandSoft,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: spacing.md,
-  },
+  icon: { marginBottom: spacing.sm },
   center: { textAlign: "center" },
 });

@@ -3,7 +3,11 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { colors, radii, spacing, TAP } from "@/theme";
 import { AppText } from "./app-text";
 
-export type PrimaryButtonVariant = "primary" | "danger" | "ghost" | "secondary";
+/**
+ * iOS button styles: primary = filled tint, danger = filled red,
+ * secondary = tinted (grey fill, tint label), ghost = plain text.
+ */
+export type PrimaryButtonVariant = "primary" | "danger" | "ghost" | "secondary" | "dangerTinted";
 
 export interface PrimaryButtonProps {
   title: string;
@@ -14,19 +18,23 @@ export interface PrimaryButtonProps {
   icon?: keyof typeof Ionicons.glyphMap;
 }
 
-type Look = { bg: string; bgPressed: string; fg: string; border: string };
+type Look = { bg: string; fg: string };
 
 const LOOK: Record<PrimaryButtonVariant, Look> = {
-  primary: { bg: colors.brand, bgPressed: colors.brandPressed, fg: colors.white, border: colors.brand },
-  danger: { bg: colors.card, bgPressed: colors.dangerSoft, fg: colors.danger, border: colors.danger },
-  secondary: { bg: colors.card, bgPressed: colors.bubbleAssistant, fg: colors.text, border: colors.divider },
-  ghost: { bg: "transparent", bgPressed: colors.brandSoft, fg: colors.brandPressed, border: "transparent" },
+  primary: { bg: colors.brand, fg: colors.white },
+  danger: { bg: colors.danger, fg: colors.white },
+  dangerTinted: { bg: colors.dangerSoft, fg: colors.danger },
+  secondary: { bg: colors.fill, fg: colors.brand },
+  ghost: { bg: "transparent", fg: colors.brand },
 };
 
-/** Full-width button, ≥48dp tall, with pressed / loading / disabled states. */
+const DISABLED: Look = { bg: colors.fill, fg: colors.textSubtle };
+
+/** Full-width button, 50pt tall, with pressed (dim) / loading / disabled states. */
 export function PrimaryButton({ title, onPress, variant = "primary", loading = false, disabled = false, icon }: PrimaryButtonProps) {
-  const look = LOOK[variant];
   const inactive = disabled || loading;
+  // iOS disabled buttons go neutral grey rather than a faded tint
+  const look = disabled && !loading && variant !== "ghost" ? DISABLED : LOOK[variant];
   return (
     <Pressable
       onPress={onPress}
@@ -36,17 +44,17 @@ export function PrimaryButton({ title, onPress, variant = "primary", loading = f
       accessibilityState={{ disabled: inactive, busy: loading }}
       style={({ pressed }) => [
         styles.base,
-        { backgroundColor: pressed && !inactive ? look.bgPressed : look.bg, borderColor: look.border },
-        variant === "danger" && styles.thick,
-        disabled && !loading && styles.disabled,
+        { backgroundColor: look.bg },
+        pressed && !inactive && styles.pressed,
+        disabled && !loading && variant === "ghost" && styles.disabled,
       ]}
     >
       {loading ? (
         <ActivityIndicator color={look.fg} />
       ) : (
         <View style={styles.content}>
-          {icon && <Ionicons name={icon} size={20} color={look.fg} />}
-          <AppText variant="large" weight="semibold" color={look.fg} numberOfLines={1}>
+          {icon && <Ionicons name={icon} size={19} color={look.fg} />}
+          <AppText variant="body" weight="semibold" color={look.fg} numberOfLines={1}>
             {title}
           </AppText>
         </View>
@@ -57,14 +65,13 @@ export function PrimaryButton({ title, onPress, variant = "primary", loading = f
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: TAP + 4,
+    minHeight: TAP + 2,
     paddingHorizontal: spacing.lg,
-    borderRadius: radii.md + 2,
-    borderWidth: 1,
+    borderRadius: radii.xl - 2,
     alignItems: "center",
     justifyContent: "center",
   },
-  thick: { borderWidth: 1.5 },
+  pressed: { opacity: 0.7 },
   content: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  disabled: { opacity: 0.45 },
+  disabled: { opacity: 0.4 },
 });

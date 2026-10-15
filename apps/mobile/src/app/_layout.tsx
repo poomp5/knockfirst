@@ -105,8 +105,9 @@ function AppStack({ role }: { role: DeviceRole | null }) {
       screenOptions={{
         headerStyle: { backgroundColor: colors.bg },
         headerShadowVisible: false,
-        headerTintColor: colors.ink,
-        headerTitleStyle: { fontFamily: fonts.semibold, fontSize: fontSize.large },
+        headerTintColor: colors.brand, // iOS: back chevron and bar buttons take the tint
+        headerTitleStyle: { fontFamily: fonts.semibold, fontSize: fontSize.body, color: colors.ink },
+        headerTitleAlign: "center",
         headerBackButtonDisplayMode: "minimal",
         contentStyle: { backgroundColor: colors.bg },
       }}
@@ -133,17 +134,15 @@ function AppStack({ role }: { role: DeviceRole | null }) {
 function SignInError({ onRetry }: { onRetry: () => void }) {
   return (
     <View style={[styles.center, styles.errorWrap]}>
-      <View style={styles.errorIcon}>
-        <Ionicons name="cloud-offline-outline" size={40} color={colors.danger} />
-      </View>
+      <Ionicons name="cloud-offline" size={56} color={colors.textFaint} style={styles.errorIcon} />
       <AppText variant="title" weight="bold" style={styles.textCenter}>
         เชื่อมต่อไม่สำเร็จ
       </AppText>
-      <AppText color={colors.textMuted} style={styles.textCenter}>
+      <AppText variant="small" color={colors.textSubtle} style={styles.textCenter}>
         ตรวจสอบอินเทอร์เน็ตของโทรศัพท์ แล้วลองใหม่อีกครั้ง
       </AppText>
       <View style={styles.errorButton}>
-        <PrimaryButton title="ลองใหม่" icon="refresh" onPress={onRetry} />
+        <PrimaryButton title="ลองใหม่" onPress={onRetry} />
       </View>
     </View>
   );
@@ -153,15 +152,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.bg },
   errorWrap: { paddingHorizontal: spacing.xxl, gap: spacing.md },
-  errorIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.dangerSoft,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: spacing.sm,
-  },
+  errorIcon: { marginBottom: spacing.sm },
   textCenter: { textAlign: "center" },
   errorButton: { alignSelf: "stretch", marginTop: spacing.lg },
 });
