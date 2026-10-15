@@ -3,6 +3,7 @@ import {
   formatCallerKey, RED_FLAG_LABEL_EN, RED_FLAG_LABEL_TH, STATUS_LABEL_EN, STATUS_LABEL_TH, type CallDoc,
 } from "../lib/contract";
 import { acceptCall, blockCall } from "../lib/actions";
+import { stripVoiceTags } from "../lib/speech";
 import { PREVIEW_MODE } from "../lib/env";
 import { timeAgo, useLang } from "../lib/i18n";
 import { callTime } from "../lib/useCalls";
@@ -128,7 +129,7 @@ export function CallDrawer({ call, onClose }: { call: CallDoc; onClose: () => vo
                 {call.transcript.map((turn, i) => (
                   <li key={i} className={`bubble bubble--${turn.role}`}>
                     <span className="bubble-who">{turn.role === "caller" ? t("caller") : t("assistant")}</span>
-                    {turn.text}
+                    {turn.role === "caller" ? turn.text : stripVoiceTags(turn.text)}
                   </li>
                 ))}
               </ol>
