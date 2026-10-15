@@ -88,6 +88,13 @@ export function scheduleFallback(familyId: string, callId: string, conversationI
     }
     if (Date.now() + fallbackTiming.everyMs > deadline) {
       console.warn(`fallback gave up on ${callId} (conversation ${conversationId})`);
+      // The conversation never finished (e.g. the browser never connected: mic denied). Don't leave the card on
+      // "AI is talking". No pipeline claim is taken, so a late webhook can still analyze the call.
+      await db.runTransaction(async tx => {
+        const ref = db.doc(paths.call(familyId, callId));
+        const s = await tx.get(ref);
+        if (s.exists && s.get("status") === "screening") tx.set(ref, { status: "no_message", endedAt: FieldValue.serverTimestamp() }, { merge: true });
+      }).catch(e => console.warn(`fallback could not close ${callId}`, e));
       return void pending.delete(key);
     }
     setTimeout(tick, fallbackTiming.everyMs);
