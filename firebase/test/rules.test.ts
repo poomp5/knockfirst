@@ -11,6 +11,7 @@ import {
 const F = "demo-family";
 const KEY = "+66900000101";
 const CALL = "sim_test1";
+const RING = "web_ring1"; // v3: whitelisted call ringing grandma
 let env: RulesTestEnvironment;
 let db: Firestore;   // anonymous guardian / web demo
 let anon: Firestore; // not signed in
@@ -36,6 +37,10 @@ beforeEach(async () => {
     await setDoc(doc(s, `families/${F}/calls/${CALL}`), {
       id: CALL, familyId: F, callerKey: KEY, from: KEY, to: "", route: "screened", status: "needs_review",
       startedAt: now, analysis: { riskScore: 40, reason: "ส่งของ", callerName: "สมชาย" }, decision: null,
+    });
+    await setDoc(doc(s, `families/${F}/calls/${RING}`), {
+      id: RING, familyId: F, callerKey: "+66811112222", from: "0811112222", to: "", route: "whitelist", status: "forwarded",
+      channel: "web", startedAt: now, analysis: null, decision: null, ownerResponse: null,
     });
   });
   db = env.authenticatedContext("anon-guardian", { firebase: { sign_in_provider: "anonymous" } }).firestore() as unknown as Firestore;
@@ -95,6 +100,31 @@ describe("families/{f}", () => {
     await assertFails(deleteDoc(doc(db, `families/${F}`)));
     await assertFails(updateDoc(doc(db, `families/${F}`), { ownerPhone: "call me maybe" }));
     await assertFails(updateDoc(doc(db, `families/${F}`), { notifyOnIncoming: "no" }));
+  });
+});
+
+describe("v3: grandma mode", () => {
+  const ringRef = () => doc(db, `families/${F}/calls/${RING}`);
+  test("move a push token between guardian and grandma lists in one update", async () => {
+    await assertSucceeds(updateDoc(doc(db, `families/${F}`), { ownerPushTokens: arrayUnion("fcm-1"), pushTokens: arrayRemove("fcm-1") }));
+    await assertSucceeds(updateDoc(doc(db, `families/${F}`), { pushTokens: arrayUnion("fcm-1"), ownerPushTokens: arrayRemove("fcm-1") }));
+  });
+  test("ownerPushTokens must be a list", async () => {
+    await assertFails(updateDoc(doc(db, `families/${F}`), { ownerPushTokens: "fcm-1" }));
+  });
+  test("grandma answers or declines a forwarded call", async () => {
+    await assertSucceeds(updateDoc(ringRef(), { ownerResponse: "answered" }));
+    await assertSucceeds(updateDoc(ringRef(), { ownerResponse: "declined" }));
+  });
+  test("ownerResponse: only on forwarded calls, only answered/declined, nothing else changed", async () => {
+    await assertFails(updateDoc(callRef(), { ownerResponse: "answered" }));            // needs_review call
+    await assertFails(updateDoc(ringRef(), { ownerResponse: "maybe" }));
+    await assertFails(updateDoc(ringRef(), { ownerResponse: "answered", status: "accepted" }));
+    await assertFails(updateDoc(ringRef(), { ownerResponse: "answered", endedAt: serverTimestamp() }));
+  });
+  test("conversations/ is server-only", async () => {
+    await assertFails(getDoc(doc(db, "conversations/conv_1")));
+    await assertFails(setDoc(doc(db, "conversations/conv_1"), { familyId: F, callId: RING }));
   });
 });
 

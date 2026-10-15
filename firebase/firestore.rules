@@ -18,22 +18,27 @@ service cloud.firestore {
       // Settings edits + push token registration. Only touched fields are validated, so a seed doc
       // missing an optional field still accepts edits to the others.
       allow update: if signedIn()
-        && changed().hasOnly(['ownerName', 'ownerLabelForCallers', 'ownerPhone', 'guardianName', 'pushTokens', 'notifyOnIncoming'])
+        && changed().hasOnly(['ownerName', 'ownerLabelForCallers', 'ownerPhone', 'guardianName', 'pushTokens', 'ownerPushTokens', 'notifyOnIncoming'])
         && (!changed().hasAny(['ownerName']) || isStr(data().ownerName, 80))
         && (!changed().hasAny(['ownerLabelForCallers']) || isStr(data().ownerLabelForCallers, 80))
         && (!changed().hasAny(['guardianName']) || isStr(data().guardianName, 80))
         && (!changed().hasAny(['ownerPhone']) || data().ownerPhone.matches('^[+][0-9]{8,15}$'))
         && (!changed().hasAny(['pushTokens']) || (data().pushTokens is list && data().pushTokens.size() <= 50))
+        && (!changed().hasAny(['ownerPushTokens']) || (data().ownerPushTokens is list && data().ownerPushTokens.size() <= 50)) // v3 grandma mode
         && (!changed().hasAny(['notifyOnIncoming']) || data().notifyOnIncoming is bool);
 
-      // Server creates calls and writes analysis. Clients may only record the guardian's decision.
+      // Server creates calls and writes analysis. Clients may only record the guardian's decision,
+      // or (v3) grandma's tap on a ringing whitelisted call.
       match /calls/{callId} {
         allow read: if signedIn();
-        allow update: if signedIn()
-          && changed().hasOnly(['decision', 'decidedAt', 'status'])
-          && data().decision in ['accepted', 'blocked']
-          && data().status == data().decision
-          && isNow(data().decidedAt);
+        allow update: if signedIn() && (
+          (changed().hasOnly(['decision', 'decidedAt', 'status'])
+            && data().decision in ['accepted', 'blocked']
+            && data().status == data().decision
+            && isNow(data().decidedAt))
+          || (changed().hasOnly(['ownerResponse'])
+            && data().ownerResponse in ['answered', 'declined']
+            && resource.data.status == 'forwarded'));
       }
 
       match /whitelist/{key} {
@@ -87,6 +92,8 @@ service cloud.firestore {
     }
 
     match /debug/{doc=**} { allow read, write: if false; }
+    // v3: conversations/{conversationId} = { familyId, callId }, written by the server only.
+    match /conversations/{id} { allow read, write: if false; }
     // Everything else is denied by default.
   }
 }
