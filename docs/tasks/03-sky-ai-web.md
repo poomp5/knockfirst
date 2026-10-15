@@ -1,6 +1,6 @@
-# LukLan: Task file for **Sky** (`Skysosmart`): AI and safety (ElevenLabs agent, call analysis, eval, security rules) and the judges' web demo
+# KnockFirst: Task file for **Sky** (`Skysosmart`): AI and safety (ElevenLabs agent, call analysis, eval, security rules) and the judges' web demo
 
-> **To Claude Code:** You are working with **Sky** on the U-Hackathon project **LukLan**. Read this **whole file** before writing any code. Part A is the shared contract, identical in all three teammates' files. Part B is **your** work. You may only create or edit files in `apps/server/src/ai/**`, `apps/web-demo/**` and `firebase/**`. Work through Part B **in order**. Commit after each task. After each milestone, give Sky a 3-line status: what works, what's next, what's blocked.
+> **To Claude Code:** You are working with **Sky** on the U-Hackathon project **KnockFirst**. Read this **whole file** before writing any code. Part A is the shared contract, identical in all three teammates' files. Part B is **your** work. You may only create or edit files in `apps/server/src/ai/**`, `apps/web-demo/**` and `firebase/**`. Work through Part B **in order**. Commit after each task. After each milestone, give Sky a 3-line status: what works, what's next, what's blocked.
 >
 > **To Sky:** clone the repo, create branch `sky/ai`, run `claude` and answer **"Sky"** when it asks who you are. `CLAUDE.md` loads this file and tracks your progress in `docs/progress/sky.md`. Tete sends you the Firebase web config, `DEMO_ADMIN_TOKEN` and the server URL in private chat. You send Tete the ElevenLabs API key and agent ID.
 
@@ -13,12 +13,12 @@
 
 ## A1. The product in one paragraph
 
-**LukLan (ลูกหลาน)** is an AI call screener for elderly parents.
+**KnockFirst** is an AI call screener for elderly parents.
 
 - Calls from trusted numbers ring the elderly person ("grandma") as normal.
 - Calls from unknown numbers are answered by a polite Thai AI assistant (an ElevenLabs voice agent). It asks who is calling, who they want, and why, and never reveals anything about grandma.
 - When the call ends, an LLM turns the transcript into a short summary plus a scam-risk score with evidence.
-- The guardian (an adult child) gets a push notification in the **LukLan Android app** and taps **Accept**, which whitelists the number so the next call rings grandma, or **Block**, which blocks the number for this family and reports it to a shared blocklist.
+- The guardian (an adult child) gets a push notification in the **KnockFirst Android app** and taps **Accept**, which whitelists the number so the next call rings grandma, or **Block**, which blocks the number for this family and reports it to a shared blocklist.
 - Obvious scams (risk ≥ 85) are blocked automatically, so the guardian isn't spammed.
 
 **Hackathon facts that drive decisions**
@@ -56,7 +56,7 @@
 ## A3. Repo layout
 
 ```
-luklan/                         public GitHub repo: github.com/teterw/luklan
+u-hackathon/                    public GitHub repo: github.com/poomp5/u-hackathon
 ├─ README.md                    Tete   (judge-facing: what it is, links, architecture, how to run)
 ├─ CLAUDE.md                    Tete   (auto-read by Claude Code: asks "who are you?" and routes to the task file)
 ├─ .gitignore                   Tete
@@ -102,7 +102,7 @@ Guardian (Poom's app, or Sky's web demo) — live Firestore listener shows the c
 ## A5. `contract.ts` (paste exactly; Tete owns changes)
 
 ```ts
-// LukLan shared contract — identical copy in server, mobile, web-demo.
+// KnockFirst shared contract — identical copy in server, mobile, web-demo.
 // Owner: Tete. Do not edit locally; ask Tete to bump the version.
 export const CONTRACT_VERSION = 1;
 
@@ -111,8 +111,8 @@ export const AUTO_BLOCK_SCORE = 85;          // server env AUTO_BLOCK_SCORE over
 export const GLOBAL_BLOCK_THRESHOLD = 3;     // server env GLOBAL_BLOCK_THRESHOLD overrides
 export const PUSH_CHANNEL_DEFAULT = "screened-calls";
 export const PUSH_CHANNEL_URGENT = "urgent-calls";
-export const APK_ASSET_NAME = "luklan-guardian.apk";
-export const ANDROID_PACKAGE = "com.luklan.guardian";
+export const APK_ASSET_NAME = "knockfirst-guardian.apk";
+export const ANDROID_PACKAGE = "com.knockfirst.guardian";
 
 /** Works for both firebase (client) and firebase-admin Timestamps. */
 export type Ts = { toDate(): Date };
@@ -375,7 +375,7 @@ Reading: list calls with `query(collection(db, paths.calls(f)), orderBy("started
 
 ## A7. Server HTTP API (Tete builds; others call)
 
-Base URL: `PUBLIC_BASE_URL` (Railway), e.g. `https://luklan-server.up.railway.app`. JSON unless noted.
+Base URL: `PUBLIC_BASE_URL` (Railway), e.g. `https://knockfirst-server.up.railway.app`. JSON unless noted.
 
 | Method | Path | Called by | Behavior |
 |---|---|---|---|
@@ -444,8 +444,8 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 VITE_FAMILY_ID=demo-family
 VITE_SERVER_URL=
-VITE_APK_URL=https://github.com/teterw/luklan/releases/latest/download/luklan-guardian.apk
-VITE_REPO_URL=https://github.com/teterw/luklan
+VITE_APK_URL=https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst-guardian.apk
+VITE_REPO_URL=https://github.com/poomp5/u-hackathon
 ```
 
 ## A9. Push notifications
@@ -508,7 +508,7 @@ VITE_REPO_URL=https://github.com/teterw/luklan
 
 1. Create an ElevenLabs account and claim the hackathon credits (see the ElevenLabs Hacker Guide in the event sheet).
 2. Create an **API key** with Agents/Conversational AI permissions. Send `ELEVENLABS_API_KEY` to Tete privately.
-3. **Agents → Create agent**, "LukLan Screener" (blank template):
+3. **Agents → Create agent**, "KnockFirst Screener" (blank template):
    - **Language:** Thai (`th`) primary. Add **English** as an additional language and turn on language detection if offered. Some judges speak English.
    - **Voice:** in the Voice Library, filter for Thai and pick a warm, clear, polite female voice. Test pronunciation of "ค่ะ", "เจ้าของเบอร์นี้", and a phone number read aloud. Try 2–3 voices and TTS models; pick the one that sounds most natural **with low latency**.
    - **LLM inside the agent:** choose a fast model from the dropdown (latency matters more than smarts here).

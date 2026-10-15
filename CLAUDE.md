@@ -1,9 +1,19 @@
-# LukLan (ลูกหลาน): instructions for Claude Code (read automatically in every session)
+# KnockFirst: instructions for Claude Code (read automatically in every session)
+
+> ## ⚠️ IMPORTANT NOTICE: project renamed LukLan → **KnockFirst** (Thu 15 Oct, Poom)
+> **เปลี่ยนชื่อโปรเจกต์จาก LukLan เป็น KnockFirst แล้ว ห้ามใช้ชื่อเก่าในโค้ด UI เอกสาร หรือ pitch**
+>
+> - The project and app are now called **KnockFirst**. Don't use "LukLan" anywhere in code, UI, docs or the deck.
+> - **Contract (Part A) changed:** `ANDROID_PACKAGE = "com.knockfirst.guardian"`, `APK_ASSET_NAME = "knockfirst-guardian.apk"`. Register the Firebase Android app with the **new** package (Tete).
+> - Other renames: server package `knockfirst-server`, Railway example `knockfirst-server.up.railway.app`, Firebase project id e.g. `knockfirst-hackathon`, Expo slug/scheme `knockfirst`, ElevenLabs agent "KnockFirst Screener". Repo links now point at the real repo `github.com/poomp5/u-hackathon`.
+> - Logo, app icons, OG image, colors (brand orange `#F2611C`, ink `#111111`): see `brand/` and `brand/colors.md`.
+> - Have local work that still says LukLan? `git pull --rebase origin main`, then `grep -rni luklan .` and rename what's left.
 
 This repo is a 3-developer hackathon project (U-Hackathon, AI track). Several people run Claude Code on it at the same time. Each person owns different folders. **Following ownership is what keeps us from breaking each other's work.**
 
 ## At the start of EVERY new session, before any other action
 
+0. **Show the human the IMPORTANT NOTICE above in 1–2 lines** (renamed LukLan → KnockFirst, new Android package) before anything else, until code freeze.
 1. **Ask exactly this and wait for the answer** (don't guess from git config, the OS username, or the branch):
    > "Who are you? **Tete** (teterw), **Poom** (poomp5), **Sky** (Skysosmart), or **PM**?"
 2. Read the matching file **completely**:

@@ -1,8 +1,8 @@
 {
-  "name": "luklan-server",
+  "name": "knockfirst-server",
   "version": "0.1.0",
   "private": true,
-  "description": "LukLan call-screening server (Twilio + ElevenLabs + Firebase)",
+  "description": "KnockFirst call-screening server (Twilio + ElevenLabs + Firebase)",
   "type": "commonjs",
   "scripts": {
     "dev": "tsx watch src/index.ts",

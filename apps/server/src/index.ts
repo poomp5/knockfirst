@@ -23,4 +23,4 @@ app.use(devRouter);
 
 app.get("/health", (_req, res) => res.json({ ok: true, contractVersion: CONTRACT_VERSION }));
 app.use((err: any, _req: any, res: any, _next: any) => { console.error(err); res.status(500).json({ error: "internal" }); });
-app.listen(env.PORT, () => console.log(`LukLan server on :${env.PORT}`));
+app.listen(env.PORT, () => console.log(`KnockFirst server on :${env.PORT}`));

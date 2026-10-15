@@ -1,6 +1,6 @@
-# LukLan: Task file for **Poom** (`poomp5`): Mobile app (React Native + Expo → Android APK) and all design assets
+# KnockFirst: Task file for **Poom** (`poomp5`): Mobile app (React Native + Expo → Android APK) and all design assets
 
-> **To Claude Code:** You are working with **Poom** on the U-Hackathon project **LukLan**. Read this **whole file** before writing any code. Part A is the shared contract, identical in all three teammates' files. Part B is **your** work. You may only create or edit files in `apps/mobile/**` and `brand/**`. Work through Part B **in order**. Commit after each task. After each milestone, give Poom a 3-line status: what works, what's next, what's blocked.
+> **To Claude Code:** You are working with **Poom** on the U-Hackathon project **KnockFirst**. Read this **whole file** before writing any code. Part A is the shared contract, identical in all three teammates' files. Part B is **your** work. You may only create or edit files in `apps/mobile/**` and `brand/**`. Work through Part B **in order**. Commit after each task. After each milestone, give Poom a 3-line status: what works, what's next, what's blocked.
 >
 > **To Poom:** clone the repo, create branch `poom/app`, run `claude` and answer **"Poom"** when it asks who you are. `CLAUDE.md` loads this file and tracks your progress in `docs/progress/poom.md`. You'll get the Firebase config and `google-services.json` from Tete in the private chat.
 
@@ -13,12 +13,12 @@
 
 ## A1. The product in one paragraph
 
-**LukLan (ลูกหลาน)** is an AI call screener for elderly parents.
+**KnockFirst** is an AI call screener for elderly parents.
 
 - Calls from trusted numbers ring the elderly person ("grandma") as normal.
 - Calls from unknown numbers are answered by a polite Thai AI assistant (an ElevenLabs voice agent). It asks who is calling, who they want, and why, and never reveals anything about grandma.
 - When the call ends, an LLM turns the transcript into a short summary plus a scam-risk score with evidence.
-- The guardian (an adult child) gets a push notification in the **LukLan Android app** and taps **Accept**, which whitelists the number so the next call rings grandma, or **Block**, which blocks the number for this family and reports it to a shared blocklist.
+- The guardian (an adult child) gets a push notification in the **KnockFirst Android app** and taps **Accept**, which whitelists the number so the next call rings grandma, or **Block**, which blocks the number for this family and reports it to a shared blocklist.
 - Obvious scams (risk ≥ 85) are blocked automatically, so the guardian isn't spammed.
 
 **Hackathon facts that drive decisions**
@@ -56,7 +56,7 @@
 ## A3. Repo layout
 
 ```
-luklan/                         public GitHub repo: github.com/teterw/luklan
+u-hackathon/                    public GitHub repo: github.com/poomp5/u-hackathon
 ├─ README.md                    Tete   (judge-facing: what it is, links, architecture, how to run)
 ├─ CLAUDE.md                    Tete   (auto-read by Claude Code: asks "who are you?" and routes to the task file)
 ├─ .gitignore                   Tete
@@ -102,7 +102,7 @@ Guardian (Poom's app, or Sky's web demo) — live Firestore listener shows the c
 ## A5. `contract.ts` (paste exactly; Tete owns changes)
 
 ```ts
-// LukLan shared contract — identical copy in server, mobile, web-demo.
+// KnockFirst shared contract — identical copy in server, mobile, web-demo.
 // Owner: Tete. Do not edit locally; ask Tete to bump the version.
 export const CONTRACT_VERSION = 1;
 
@@ -111,8 +111,8 @@ export const AUTO_BLOCK_SCORE = 85;          // server env AUTO_BLOCK_SCORE over
 export const GLOBAL_BLOCK_THRESHOLD = 3;     // server env GLOBAL_BLOCK_THRESHOLD overrides
 export const PUSH_CHANNEL_DEFAULT = "screened-calls";
 export const PUSH_CHANNEL_URGENT = "urgent-calls";
-export const APK_ASSET_NAME = "luklan-guardian.apk";
-export const ANDROID_PACKAGE = "com.luklan.guardian";
+export const APK_ASSET_NAME = "knockfirst-guardian.apk";
+export const ANDROID_PACKAGE = "com.knockfirst.guardian";
 
 /** Works for both firebase (client) and firebase-admin Timestamps. */
 export type Ts = { toDate(): Date };
@@ -375,7 +375,7 @@ Reading: list calls with `query(collection(db, paths.calls(f)), orderBy("started
 
 ## A7. Server HTTP API (Tete builds; others call)
 
-Base URL: `PUBLIC_BASE_URL` (Railway), e.g. `https://luklan-server.up.railway.app`. JSON unless noted.
+Base URL: `PUBLIC_BASE_URL` (Railway), e.g. `https://knockfirst-server.up.railway.app`. JSON unless noted.
 
 | Method | Path | Called by | Behavior |
 |---|---|---|---|
@@ -444,8 +444,8 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 VITE_FAMILY_ID=demo-family
 VITE_SERVER_URL=
-VITE_APK_URL=https://github.com/teterw/luklan/releases/latest/download/luklan-guardian.apk
-VITE_REPO_URL=https://github.com/teterw/luklan
+VITE_APK_URL=https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst-guardian.apk
+VITE_REPO_URL=https://github.com/poomp5/u-hackathon
 ```
 
 ## A9. Push notifications
@@ -506,7 +506,7 @@ VITE_REPO_URL=https://github.com/teterw/luklan
 
 ## B0. Brand kit first (17:00–18:30): CI and the web demo need it
 
-Name: **LukLan / ลูกหลาน**. Tagline ideas (pick one, give the PM the rest): *"สายแปลก ให้ลูกหลานช่วยกรอง"* · *"Unknown calls, screened by family."*
+Name: **KnockFirst**. Tagline ideas (pick one, give the PM the rest): *"สายแปลก ให้ลูกหลานช่วยกรอง"* · *"Unknown calls, screened by family."*
 
 **Direction:** warm, calm and trustworthy, like family, not a scary security product. Use one strong primary color plus neutrals. Keep **red/amber/green for risk only** (A5 `RISK_COLOR`), so don't use them as the brand color. Suggested primary: deep teal `#0F6E56` or indigo `#3C3489`; your call. Thai font: **Noto Sans Thai** or **IBM Plex Sans Thai** (Google Fonts, free).
 
@@ -544,15 +544,15 @@ Always use `npx expo install` for anything native, so versions match the Expo SD
 ```json
 {
   "expo": {
-    "name": "LukLan",
-    "slug": "luklan",
-    "scheme": "luklan",
+    "name": "KnockFirst",
+    "slug": "knockfirst",
+    "scheme": "knockfirst",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "android": {
-      "package": "com.luklan.guardian",
+      "package": "com.knockfirst.guardian",
       "versionCode": 1,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#FFFFFF" }
@@ -565,7 +565,7 @@ Always use `npx expo install` for anything native, so versions match the Expo SD
   }
 }
 ```
-- **`android.package` must be exactly `com.luklan.guardian`.** It's in the contract and the Firebase Android app was registered with it.
+- **`android.package` must be exactly `com.knockfirst.guardian`.** It's in the contract and the Firebase Android app was registered with it.
 - `google-services.json` comes from Tete. Put it in `apps/mobile/` (it's gitignored). CI writes its own copy.
 - Copy `apps/mobile/.env.example` from A8. Put real values in `.env` (gitignored).
 - Bump `android.versionCode` (+1) and `version` before every release tag.
