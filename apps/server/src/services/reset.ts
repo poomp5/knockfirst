@@ -10,16 +10,17 @@ async function deleteAll(refs: DocumentReference[]) {
   }
 }
 
-/** Clean demo state: calls, blocked, non-seed whitelist, and this family's global reports. Seeds and pushTokens stay. */
+/** Clean demo state: calls, blocked, non-seed whitelist, conversation mappings, and this family's global reports. Seeds and push tokens stay. */
 export async function resetFamily(familyId: string) {
-  const [calls, blocked, whitelist, reports] = await Promise.all([
+  const [calls, blocked, whitelist, reports, convs] = await Promise.all([
     db.collection(paths.calls(familyId)).get(),
     db.collection(paths.blocked(familyId)).get(),
     db.collection(paths.whitelist(familyId)).get(),
     db.collection(paths.globalBlocklist()).where("reportedBy", "array-contains", familyId).get(),
+    db.collection("conversations").where("familyId", "==", familyId).get(),
   ]);
   const nonSeed = whitelist.docs.filter(d => d.get("addedBy") !== "seed");
-  await deleteAll([...calls.docs, ...blocked.docs, ...nonSeed].map(d => d.ref));
+  await deleteAll([...calls.docs, ...blocked.docs, ...nonSeed, ...convs.docs].map(d => d.ref));
   for (let i = 0; i < reports.docs.length; i += 400) {
     const batch = db.batch();
     reports.docs.slice(i, i + 400).forEach(d => batch.update(d.ref, { reportedBy: FieldValue.arrayRemove(familyId), updatedAt: FieldValue.serverTimestamp() }));
