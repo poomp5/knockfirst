@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { StyleSheet } from "react-native";
 // SDK 57: `Tabs` from "expo-router" is deprecated in favour of "expo-router/js-tabs".
 import { Tabs } from "expo-router/js-tabs";
@@ -15,6 +15,11 @@ function tabIcon(name: IconName) {
     return <Ionicons name={name} size={25} color={color as string} />;
   }
   return TabIcon;
+}
+
+// The incoming-call glyph says "calls waiting" better than a plain handset; sized down to sit level with the Ionicons.
+function IncomingIcon({ color }: { focused: boolean; color: unknown; size: number }) {
+  return <MaterialCommunityIcons name="phone-incoming" size={24} color={color as string} />;
 }
 
 export default function TabsLayout() {
@@ -35,8 +40,8 @@ export default function TabsLayout() {
           borderTopWidth: StyleSheet.hairlineWidth,
           elevation: 0,
           // a little taller than the default so Thai marks below the line (ญ ุ ู) aren't clipped
-          height: 58 + insets.bottom,
-          paddingTop: 4,
+          height: 62 + insets.bottom,
+          paddingTop: 8,
         },
         sceneStyle: { backgroundColor: colors.bg },
       }}
@@ -45,7 +50,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: "สายเข้า",
-          tabBarIcon: tabIcon("call"),
+          tabBarIcon: IncomingIcon,
           tabBarBadge: pending > 0 ? pending : undefined,
           tabBarBadgeStyle: { backgroundColor: colors.danger, fontFamily: fonts.semibold, fontSize: 11 },
         }}
