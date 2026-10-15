@@ -18,3 +18,13 @@
 ## Waiting on others
 - **Tete:** Firebase Android app must be registered with `com.knockfirst.guardian`; send `google-services.json` + web config values.
 - **Sky:** use `brand/` assets and the KnockFirst name in the web demo.
+
+## Update 05 (no Twilio): grandma mode
+| ID | Task | Status | Notes |
+|---|---|---|---|
+| U5.1 | Device role (guardian / grandma) + first-launch chooser | ✅ | AsyncStorage; token goes to `pushTokens` or `ownerPushTokens` by role |
+| U5.2 | Grandma home | ✅ | Big text, Thai date, mode switch; mock "จำลองคนรู้จักโทรมา" |
+| U5.3 | Ring screen `ring/[callId]` | ✅ | Opens from `owner_ring` push or auto-listener; synthesized `assets/ring.mp3` + vibration; writes `ownerResponse` |
+| U5.4 | Channel `grandma-ring` | ✅ | MAX, long vibration, bypass DND |
+| U5.5 | Guardian inbox labels for forwarded calls | ✅ | ต่อสายถึงคุณยายแล้ว / คุณยายรับสาย / ไม่รับสาย |
+| U5.6 | Contract v3 + version 0.2.0 (versionCode 2) | ✅ | Needs Tete to tag `v0.2.0` |

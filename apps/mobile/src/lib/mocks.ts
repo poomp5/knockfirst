@@ -249,6 +249,7 @@ function base(id: string, callerKey: string, msAgo: number): Omit<CallDoc, "rout
     decidedAt: null,
     notified: false,
     simulated: true,
+    channel: "web",
   };
 }
 
@@ -327,6 +328,7 @@ function seedState(): MockState {
       status: "forwarded",
       endedAt: mockTs(5 * HOUR - 184_000),
       durationSec: 184,
+      ownerResponse: "answered",
     },
     {
       ...base("mock_rejected", POLICE_KEY, 20 * HOUR),
@@ -374,11 +376,12 @@ function seedState(): MockState {
     family: {
       ownerName: "คุณยายสมศรี",
       ownerLabelForCallers: "เจ้าของเบอร์นี้",
-      ownerPhone: "+66811112222",
+      ownerPhone: "+66812345678",
       guardianName: "พูม",
       notifyOnIncoming: true,
       twilioNumber: "+6620000000",
       pushTokens: [],
+      ownerPushTokens: [],
       createdAt: mockTs(3 * 24 * HOUR),
     },
     calls,
@@ -393,6 +396,7 @@ function seedState(): MockState {
       },
       { callerKey: "+66800000001", displayName: "ลูกสาว", note: null, addedBy: "seed", addedAt: mockTs(3 * 24 * HOUR), sourceCallId: null },
       { callerKey: "+66800000002", displayName: "หลานชาย", note: null, addedBy: "seed", addedAt: mockTs(3 * 24 * HOUR - 1000), sourceCallId: null },
+      { callerKey: "+66811112222", displayName: "หลานชาย (demo)", note: null, addedBy: "seed", addedAt: mockTs(3 * 24 * HOUR - 2000), sourceCallId: null },
     ],
     blocked: [
       { callerKey: POLICE_KEY, displayName: POLICE_ANALYSIS.callerName, reason: "auto", addedAt: mockTs(39 * MIN), sourceCallId: "mock_police" },
@@ -490,8 +494,24 @@ export function mockUpdateFamily(patch: Partial<FamilyDoc>) {
 }
 
 export function mockAddPushToken(token: string) {
-  if (state.family.pushTokens.includes(token)) return;
-  setState({ family: { ...state.family, pushTokens: [...state.family.pushTokens, token] } });
+  mockSetPushTokenRole(token, "guardian");
+}
+
+/** Mirrors registerPushToken: the token lives in exactly one of pushTokens / ownerPushTokens. */
+export function mockSetPushTokenRole(token: string, role: "guardian" | "grandma") {
+  const guardian = state.family.pushTokens.filter((t) => t !== token);
+  const owner = (state.family.ownerPushTokens ?? []).filter((t) => t !== token);
+  if (role === "guardian") guardian.push(token);
+  else owner.push(token);
+  setState({ family: { ...state.family, pushTokens: guardian, ownerPushTokens: owner } });
+}
+
+/** Grandma's tap on a ringing whitelisted call (rules: only while status == "forwarded"). */
+export function mockSetOwnerResponse(callId: string, response: "answered" | "declined") {
+  const call = state.calls.find((c) => c.id === callId);
+  if (!call) throw new Error(`mock call ${callId} not found`);
+  if (call.status !== "forwarded") throw new Error(`mock call ${callId} is not forwarded`);
+  patchCall(callId, { ownerResponse: response });
 }
 
 /** Restore the seed data (handy from a dev menu). */
@@ -547,5 +567,33 @@ export function mockSimulateIncomingCall(): string {
     }
   }, 6000);
 
+  return id;
+}
+
+const KNOWN_CALLER_KEY = "+66811112222"; // seed "หลานชาย (demo)" (update 05)
+
+/**
+ * Mock mode only: a whitelisted caller rings grandma right now (status "forwarded", no ownerResponse yet,
+ * startedAt = now so the auto-ring listener fires). Returns the new call id.
+ */
+export function mockSimulateKnownCall(): string {
+  const id = `web_mock_${Date.now().toString(36)}`;
+  const call: CallDoc = {
+    ...base(id, KNOWN_CALLER_KEY, 0),
+    route: "whitelist",
+    status: "forwarded",
+    ownerResponse: null,
+    channel: "web",
+    callerLabel: null,
+  };
+  if (!state.whitelist.some((w) => w.callerKey === KNOWN_CALLER_KEY)) {
+    setState({
+      whitelist: [
+        ...state.whitelist,
+        { callerKey: KNOWN_CALLER_KEY, displayName: "หลานชาย (demo)", note: null, addedBy: "seed", addedAt: mockTs(3 * 24 * HOUR - 2000), sourceCallId: null },
+      ],
+    });
+  }
+  setState({ calls: [call, ...state.calls] });
   return id;
 }

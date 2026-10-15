@@ -14,10 +14,11 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { ensureSignedIn, USE_MOCKS } from "@/lib/firebase";
 import { registerForPush, useNotificationRouting } from "@/lib/push";
+import { useDeviceRole, type DeviceRole } from "@/lib/role";
 import { AppText, PrimaryButton } from "@/components";
 import { colors, fonts, fontSize, spacing } from "@/theme";
 
-// Keep the native splash up until fonts are loaded and anonymous sign-in has resolved.
+// Keep the native splash up until fonts are loaded, anonymous sign-in has resolved and the device role is read.
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 type AuthState = "pending" | "ok" | "error";
@@ -30,6 +31,7 @@ export default function RootLayout() {
     NotoSansThai_700Bold,
   });
   const fontsReady = fontsLoaded || !!fontError;
+  const { role, loaded: roleLoaded } = useDeviceRole();
 
   const [authState, setAuthState] = useState<AuthState>(USE_MOCKS ? "ok" : "pending");
   const [attempt, setAttempt] = useState(0);
@@ -51,28 +53,29 @@ export default function RootLayout() {
     };
   }, [attempt]);
 
-  // Push registration runs in the background; never blocks the UI.
+  // Push registration runs in the background; never blocks the UI. Re-runs when the role changes so the token
+  // moves between pushTokens (guardian) and ownerPushTokens (grandma). No role yet → registerForPush is a no-op.
   useEffect(() => {
-    if (authState !== "ok") return;
+    if (authState !== "ok" || !role) return;
     registerForPush().catch((e: unknown) => console.warn("registerForPush failed", e));
-  }, [authState]);
+  }, [authState, role]);
 
-  const ready = fontsReady && authState !== "pending";
+  const ready = fontsReady && authState !== "pending" && roleLoaded;
   useEffect(() => {
     if (ready) SplashScreen.hideAsync().catch(() => {});
   }, [ready]);
 
   if (fontError) console.warn("font load failed, falling back to system font", fontError);
 
-  // Text components need the fonts; the native splash is still covering the screen here.
-  if (!fontsReady) return null;
+  // Text components need the fonts; the native splash is still covering the screen here (role read is ~instant).
+  if (!fontsReady || !roleLoaded) return null;
 
   return (
     <View style={styles.root}>
       {/* Light UI → dark status-bar icons. */}
       <StatusBar style="dark" />
       {authState === "ok" ? (
-        <AppStack />
+        <AppStack role={role} />
       ) : authState === "pending" ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.brand} />
@@ -89,8 +92,13 @@ export default function RootLayout() {
   );
 }
 
-/** Mounted only after sign-in, so notification taps (incl. cold start) navigate into a live navigator. */
-function AppStack() {
+/**
+ * Mounted only after sign-in, so notification taps (incl. cold start) navigate into a live navigator.
+ * Routing by device role uses guards: when a guard turns false the router moves to the first available
+ * screen, so null → welcome (chooser), "guardian" → (tabs), "grandma" → grandma home.
+ * call/[id] and ring/[callId] are unguarded so deep links / notification taps work in every role.
+ */
+function AppStack({ role }: { role: DeviceRole | null }) {
   useNotificationRouting();
   return (
     <Stack
@@ -103,9 +111,21 @@ function AppStack() {
         contentStyle: { backgroundColor: colors.bg },
       }}
     >
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Protected guard={role === "guardian"}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="blocked" options={{ title: "เบอร์ที่ถูกบล็อก" }} />
+      </Stack.Protected>
+      <Stack.Protected guard={role === "grandma"}>
+        <Stack.Screen name="grandma" options={{ headerShown: false }} />
+      </Stack.Protected>
+      <Stack.Protected guard={role === null}>
+        <Stack.Screen name="welcome" options={{ headerShown: false, gestureEnabled: false }} />
+      </Stack.Protected>
       <Stack.Screen name="call/[id]" options={{ title: "รายละเอียดสาย" }} />
-      <Stack.Screen name="blocked" options={{ title: "เบอร์ที่ถูกบล็อก" }} />
+      <Stack.Screen
+        name="ring/[callId]"
+        options={{ headerShown: false, presentation: "fullScreenModal", gestureEnabled: false }}
+      />
     </Stack>
   );
 }

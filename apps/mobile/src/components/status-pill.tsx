@@ -6,6 +6,15 @@ import { AppText } from "./app-text";
 
 export interface StatusPillProps {
   status: CallStatus;
+  /** v3: grandma's tap on a forwarded (known-caller) call. */
+  ownerResponse?: "answered" | "declined" | null;
+}
+
+/** Update 05: forwarded calls ring grandma's phone through the app, so say whether she picked up. */
+function forwardedLabel(r: StatusPillProps["ownerResponse"]): string {
+  if (r === "answered") return "คนรู้จัก · คุณยายรับสาย";
+  if (r === "declined") return "คนรู้จัก · คุณยายไม่รับสาย";
+  return "คนรู้จัก · ต่อสายถึงคุณยายแล้ว";
 }
 
 type Tone = { bg: string; fg: string; icon: keyof typeof Ionicons.glyphMap };
@@ -24,9 +33,10 @@ const TONE: Record<CallStatus, Tone> = {
   no_message: { bg: colors.bubbleAssistant, fg: colors.textMuted, icon: "call-outline" },
 };
 
-export function StatusPill({ status }: StatusPillProps) {
-  const tone = TONE[status] ?? NEUTRAL;
-  const label = STATUS_LABEL_TH[status] ?? "ไม่ทราบสถานะ";
+export function StatusPill({ status, ownerResponse }: StatusPillProps) {
+  const declined = status === "forwarded" && ownerResponse === "declined";
+  const tone = declined ? { ...NEUTRAL, icon: "call-outline" as const } : (TONE[status] ?? NEUTRAL);
+  const label = status === "forwarded" ? forwardedLabel(ownerResponse) : (STATUS_LABEL_TH[status] ?? "ไม่ทราบสถานะ");
   return (
     <View style={[styles.pill, { backgroundColor: tone.bg }]} accessible accessibilityLabel={`สถานะ: ${label}`}>
       <Ionicons name={tone.icon} size={13} color={tone.fg} />

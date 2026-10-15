@@ -189,7 +189,7 @@ export default function CallDetailScreen() {
           )}
 
           <View style={styles.statusRow}>
-            <StatusPill status={call.status} />
+            <StatusPill status={call.status} ownerResponse={call.ownerResponse} />
             {duration ? (
               <AppText variant="small" color={colors.textSubtle}>
                 ความยาวสาย {duration}

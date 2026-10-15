@@ -99,7 +99,7 @@ export function CallCard({ call, onPress }: CallCardProps) {
           )}
 
           <View style={styles.footer}>
-            <StatusPill status={call.status} />
+            <StatusPill status={call.status} ownerResponse={call.ownerResponse} />
             <AppText variant="caption" color={colors.textSubtle} numberOfLines={1} style={styles.time}>
               {when}
             </AppText>

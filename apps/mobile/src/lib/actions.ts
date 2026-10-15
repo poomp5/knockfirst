@@ -16,13 +16,15 @@ import { formatCallerKey, paths, toCallerKey, type CallDoc, type FamilyDoc } fro
 import { db, ensureSignedIn, FAMILY_ID, USE_MOCKS } from "./firebase";
 import {
   mockAcceptCall,
-  mockAddPushToken,
   mockAddWhitelist,
   mockBlockCall,
   mockRemoveWhitelist,
+  mockSetOwnerResponse,
+  mockSetPushTokenRole,
   mockUnblock,
   mockUpdateFamily,
 } from "./mocks";
+import type { DeviceRole } from "./role";
 
 export type FamilyPatch = Partial<
   Pick<FamilyDoc, "ownerName" | "ownerLabelForCallers" | "ownerPhone" | "guardianName" | "notifyOnIncoming">
@@ -167,15 +169,31 @@ export function updateFamily(patch: FamilyPatch): Promise<boolean> {
   });
 }
 
-/** REGISTER push token (silent: no haptic, no Alert; used by push.ts). */
-export async function registerPushToken(token: string): Promise<boolean> {
+/** GRANDMA's tap on a ringing whitelisted call. Writes ONLY ownerResponse (rules: only while status == "forwarded"). */
+export function setOwnerResponse(callId: string, response: "answered" | "declined"): Promise<boolean> {
+  return run("setOwnerResponse", response === "answered" ? "รับสายไม่สำเร็จ" : "ปฏิเสธสายไม่สำเร็จ", async () => {
+    if (USE_MOCKS) return mockSetOwnerResponse(callId, response);
+    await updateDoc(doc(db, paths.call(FAMILY_ID, callId)), { ownerResponse: response });
+  });
+}
+
+/**
+ * REGISTER push token by device role (silent: no haptic, no Alert; used by push.ts).
+ * guardian → pushTokens (and out of ownerPushTokens); grandma → ownerPushTokens (and out of pushTokens). One update.
+ */
+export async function registerPushToken(token: string, role: DeviceRole = "guardian"): Promise<boolean> {
   try {
     if (USE_MOCKS) {
-      mockAddPushToken(token);
+      mockSetPushTokenRole(token, role);
       return true;
     }
     await ensureSignedIn();
-    await updateDoc(doc(db, paths.family(FAMILY_ID)), { pushTokens: arrayUnion(token) });
+    await updateDoc(
+      doc(db, paths.family(FAMILY_ID)),
+      role === "grandma"
+        ? { ownerPushTokens: arrayUnion(token), pushTokens: arrayRemove(token) }
+        : { pushTokens: arrayUnion(token), ownerPushTokens: arrayRemove(token) },
+    );
     return true;
   } catch (e) {
     console.warn("[actions] registerPushToken failed", e);

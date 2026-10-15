@@ -19,6 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFamily } from "@/lib/hooks";
 import { updateFamily } from "@/lib/actions";
 import { FAMILY_ID, USE_MOCKS } from "@/lib/firebase";
+import { useDeviceRole } from "@/lib/role";
 import {
   getLastPushToken,
   getPushPermission,
@@ -118,6 +119,18 @@ export default function SettingsScreen() {
   const [token, setToken] = useState<string | null>(null);
 
   const version = Constants.expoConfig?.version ?? "—";
+
+  const { role, setRole } = useDeviceRole();
+  function switchToGrandma() {
+    Alert.alert(
+      "เปลี่ยนเป็นโหมดคุณยาย?",
+      "เครื่องนี้จะแสดงหน้าจอเรียบง่ายสำหรับคุณยาย และดังเมื่อคนรู้จักโทรมา จะไม่ได้รับแจ้งเตือนสายแปลกอีก",
+      [
+        { text: "ยกเลิก", style: "cancel" },
+        { text: "เปลี่ยน", onPress: () => void setRole("grandma") },
+      ],
+    );
+  }
 
   // Permission status: on mount and whenever the app returns to foreground (user may change it in system settings).
   useEffect(() => {
@@ -380,6 +393,29 @@ export default function SettingsScreen() {
           />
           <AppText variant="caption" color={colors.textSubtle}>
             การแจ้งเตือนจริงจากเซิร์ฟเวอร์ใช้ได้ในแอปที่ติดตั้งจาก APK เท่านั้น (ไม่ใช่ Expo Go)
+          </AppText>
+        </Card>
+
+        {/* ---------- Device role (update 05) ---------- */}
+        <SectionHeader title="โหมดของเครื่องนี้" />
+        <Card style={styles.card}>
+          <View style={styles.statusRow}>
+            <Ionicons name="phone-portrait-outline" size={22} color={colors.brand} />
+            <AppText variant="body" style={styles.flex1}>
+              เครื่องนี้เป็นของ
+            </AppText>
+            <AppText variant="body" weight="semibold">
+              {role === "grandma" ? "คุณยาย" : "ลูกหลาน (ผู้ดูแล)"}
+            </AppText>
+          </View>
+          <PrimaryButton
+            title="เปลี่ยนเป็นเครื่องของคุณยาย"
+            variant="secondary"
+            icon="swap-horizontal"
+            onPress={switchToGrandma}
+          />
+          <AppText variant="caption" color={colors.textSubtle}>
+            เครื่องของคุณยายจะดังเมื่อคนในรายชื่อที่อนุญาตโทรมา ส่วนสายแปลก AI จะรับแทนและแจ้งเครื่องลูกหลาน
           </AppText>
         </Card>
 
