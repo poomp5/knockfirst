@@ -9,7 +9,10 @@ import { devRouter } from "./routes/dev";
 export function createApp() {
   const app = express();
   app.set("trust proxy", true);
-  app.use(cors({ origin: env.CORS_ORIGINS.split(",").map(s => s.trim()) }));
+  // Exact origins from env, plus this project's Vercel deploys (u-hackathon.vercel.app and every
+  // u-hackathon-*.vercel.app preview). Not *.vercel.app: unknown origins must stay rejected (security probe).
+  const vercelPreview = /^https:\/\/u-hackathon(-[a-z0-9-]+)?\.vercel\.app$/;
+  app.use(cors({ origin: [...env.CORS_ORIGINS.split(",").map(s => s.trim()), vercelPreview] }));
 
   // 1) raw body FIRST for the ElevenLabs HMAC check (before any json parser)
   app.use(elevenlabsRouter);
