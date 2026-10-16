@@ -8,14 +8,15 @@ import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useDeviceRole, type DeviceRole } from "@/lib/role";
+import { useLang, type StrKey } from "@/lib/i18n";
 import { AppText, IconTile } from "@/components";
 import { colors, radii, spacing } from "@/theme";
 
 type Option = {
   role: DeviceRole;
   icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  body: string;
+  title: StrKey;
+  body: StrKey;
   tint: string;
 };
 
@@ -23,22 +24,22 @@ const OPTIONS: Option[] = [
   {
     role: "guardian",
     icon: "people",
-    title: "ลูกหลาน (ผู้ดูแล)",
-    body: "รับแจ้งเตือน ตรวจสอบสายแปลก อนุญาต/บล็อก",
+    title: "welcome.guardian.title",
+    body: "welcome.guardian.body",
     tint: colors.brand,
   },
   {
     role: "grandma",
     icon: "heart",
-    title: "คุณยาย (เจ้าของเบอร์)",
-    body: "รับสายจากคนรู้จัก หน้าจอเรียบง่าย ตัวใหญ่",
+    title: "welcome.grandma.title",
+    body: "welcome.grandma.body",
     tint: colors.switchOn,
   },
   {
     role: "caller",
     icon: "call",
-    title: "คนแปลกหน้า (ทดลองโทร)",
-    body: "โทรหาคุณยายเหมือนเบอร์ที่ไม่รู้จัก ให้ AI รับสาย",
+    title: "welcome.caller.title",
+    body: "welcome.caller.body",
     tint: colors.blue,
   },
 ];
@@ -46,6 +47,7 @@ const OPTIONS: Option[] = [
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
   const { setRole } = useDeviceRole();
+  const { t } = useLang();
   const [busy, setBusy] = useState<DeviceRole | null>(null);
 
   async function choose(role: DeviceRole) {
@@ -71,10 +73,10 @@ export default function WelcomeScreen() {
           accessibilityIgnoresInvertColors
         />
         <AppText variant="h1" weight="bold" style={styles.center}>
-          ยินดีต้อนรับสู่{"\n"}KnockFirst
+          {t("welcome.title")}
         </AppText>
         <AppText variant="body" color={colors.textSubtle} style={styles.center}>
-          เครื่องนี้เป็นของใคร? เลือกครั้งเดียว เปลี่ยนได้ภายหลังในการตั้งค่า
+          {t("welcome.subtitle")}
         </AppText>
       </View>
 
@@ -85,17 +87,17 @@ export default function WelcomeScreen() {
             onPress={() => choose(o.role)}
             disabled={busy !== null}
             accessibilityRole="button"
-            accessibilityLabel={`${o.title}. ${o.body}`}
+            accessibilityLabel={`${t(o.title)}. ${t(o.body)}`}
             style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}
           >
             <IconTile name={o.icon} color={o.tint} size={52} />
             <View style={[styles.optionText, i > 0 && styles.optionTextDivider]}>
               <View style={styles.flex}>
                 <AppText variant="title" weight="bold">
-                  {o.title}
+                  {t(o.title)}
                 </AppText>
                 <AppText variant="body" color={colors.textSubtle}>
-                  {o.body}
+                  {t(o.body)}
                 </AppText>
               </View>
               {busy === o.role ? (

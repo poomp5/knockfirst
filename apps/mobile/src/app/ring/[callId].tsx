@@ -22,6 +22,7 @@ import Animated, {
 import { setOwnerResponse } from "@/lib/actions";
 import { formatCallerKey } from "@/lib/contract";
 import { useCall, useWhitelist } from "@/lib/hooks";
+import { useLang, type StrKey } from "@/lib/i18n";
 import { RING_TIMEOUT_MS, useRingtone } from "@/lib/ring";
 import { tsToDate } from "@/lib/time";
 import { AppText } from "@/components";
@@ -66,8 +67,8 @@ export default function RingScreen() {
   useEffect(() => {
     if (!hasCall) return;
     const ageMs = startedSec == null ? 0 : Date.now() - startedSec * 1000;
-    const t = setTimeout(() => setTimedOut(true), ageMs > STALE_MS ? 0 : RING_TIMEOUT_MS);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setTimedOut(true), ageMs > STALE_MS ? 0 : RING_TIMEOUT_MS);
+    return () => clearTimeout(timer);
   }, [hasCall, startedSec]);
 
   let phase: Phase;
@@ -86,8 +87,8 @@ export default function RingScreen() {
     phase === "answered" || phase === "declined" ? RESULT_CLOSE_MS : phase === "missed" ? MISSED_CLOSE_MS : null;
   useEffect(() => {
     if (autoCloseMs == null) return;
-    const t = setTimeout(close, autoCloseMs);
-    return () => clearTimeout(t);
+    const timer = setTimeout(close, autoCloseMs);
+    return () => clearTimeout(timer);
   }, [autoCloseMs]);
 
   const respond = async (response: Response) => {
@@ -134,11 +135,12 @@ export default function RingScreen() {
 // ---------- Ringing ----------
 
 function Ringing({ name, onAnswer, onDecline }: { name: string; onAnswer: () => void; onDecline: () => void }) {
+  const { t } = useLang();
   return (
     <View style={styles.fill}>
       <View style={styles.top}>
         <AppText variant="title" weight="medium" color={FG_MUTED} style={styles.center_text}>
-          สายเข้า · KnockFirst
+          {t("ring.incoming")}
         </AppText>
         <AppText
           variant="display"
@@ -158,14 +160,20 @@ function Ringing({ name, onAnswer, onDecline }: { name: string; onAnswer: () => 
 
       <View style={styles.buttons}>
         <RoundButton
-          label="ไม่รับ"
+          label={t("ring.decline")}
           color={CALL_RED}
           icon="call"
           iconRotate="135deg"
           onPress={onDecline}
-          a11y={`ไม่รับสายจาก ${name}`}
+          a11y={t("ring.declineA11y", { name })}
         />
-        <RoundButton label="รับสาย" color={CALL_GREEN} icon="call" onPress={onAnswer} a11y={`รับสายจาก ${name}`} />
+        <RoundButton
+          label={t("ring.answer")}
+          color={CALL_GREEN}
+          icon="call"
+          onPress={onAnswer}
+          a11y={t("ring.answerA11y", { name })}
+        />
       </View>
     </View>
   );
@@ -253,13 +261,14 @@ function RoundButton({
 
 // ---------- After the call ----------
 
-const RESULT: Record<"answered" | "declined" | "missed", { title: string; icon: keyof typeof Ionicons.glyphMap; color: string }> = {
-  answered: { title: "รับสายแล้ว", icon: "checkmark", color: CALL_GREEN },
-  declined: { title: "ไม่รับสาย", icon: "close", color: CALL_RED },
-  missed: { title: "สายที่ไม่ได้รับ", icon: "call", color: AVATAR_BG },
+const RESULT: Record<"answered" | "declined" | "missed", { title: StrKey; icon: keyof typeof Ionicons.glyphMap; color: string }> = {
+  answered: { title: "ring.answered", icon: "checkmark", color: CALL_GREEN },
+  declined: { title: "ring.declined", icon: "close", color: CALL_RED },
+  missed: { title: "ring.missed", icon: "call", color: AVATAR_BG },
 };
 
 function Result({ phase, name }: { phase: "answered" | "declined" | "missed"; name: string }) {
+  const { t } = useLang();
   const r = RESULT[phase];
   return (
     <View style={[styles.fill, styles.centerCol]}>
@@ -267,7 +276,7 @@ function Result({ phase, name }: { phase: "answered" | "declined" | "missed"; na
         <Ionicons name={r.icon} size={72} color={FG} />
       </View>
       <AppText variant="display" weight="bold" color={FG} style={styles.center_text} accessibilityRole="header">
-        {r.title}
+        {t(r.title)}
       </AppText>
       {name ? (
         <AppText variant="title" weight="medium" color={FG_MUTED} style={styles.center_text} numberOfLines={2}>
@@ -276,7 +285,7 @@ function Result({ phase, name }: { phase: "answered" | "declined" | "missed"; na
       ) : null}
       {phase !== "missed" ? (
         <AppText variant="body" color={FG_MUTED} style={[styles.center_text, styles.note]}>
-          (เดโม: ไม่มีเสียงสนทนาในสายนี้)
+          {t("ring.demoNote")}
         </AppText>
       ) : (
         <CloseButton />
@@ -286,14 +295,15 @@ function Result({ phase, name }: { phase: "answered" | "declined" | "missed"; na
 }
 
 function NotFound() {
+  const { t } = useLang();
   return (
     <View style={[styles.fill, styles.centerCol]}>
       <Ionicons name="call" size={56} color={FG_MUTED} />
       <AppText variant="h1" weight="bold" color={FG} style={styles.center_text}>
-        ไม่พบสายนี้
+        {t("ring.notFound")}
       </AppText>
       <AppText variant="large" color={FG_MUTED} style={styles.center_text}>
-        สายอาจจบไปแล้ว
+        {t("ring.notFoundHint")}
       </AppText>
       <CloseButton />
     </View>
@@ -301,15 +311,16 @@ function NotFound() {
 }
 
 function CloseButton() {
+  const { t } = useLang();
   return (
     <Pressable
       onPress={close}
       accessibilityRole="button"
-      accessibilityLabel="ปิด"
+      accessibilityLabel={t("ring.close")}
       style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}
     >
       <AppText variant="title" weight="medium" color={FG}>
-        ปิด
+        {t("ring.close")}
       </AppText>
     </Pressable>
   );

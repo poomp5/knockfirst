@@ -5,6 +5,7 @@ import { Tabs } from "expo-router/js-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useCalls } from "@/lib/hooks";
+import { useLang } from "@/lib/i18n";
 import { colors, fonts } from "@/theme";
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -24,6 +25,7 @@ function IncomingIcon({ color }: { focused: boolean; color: unknown; size: numbe
 
 export default function TabsLayout() {
   const { calls } = useCalls();
+  const { t } = useLang();
   const pending = calls.filter((c) => c.status === "needs_review").length;
   const insets = useSafeAreaInsets();
 
@@ -49,7 +51,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "สายเข้า",
+          title: t("tabs.inbox"),
           tabBarIcon: IncomingIcon,
           tabBarBadge: pending > 0 ? pending : undefined,
           tabBarBadgeStyle: { backgroundColor: colors.danger, fontFamily: fonts.semibold, fontSize: 11 },
@@ -58,14 +60,14 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="whitelist"
         options={{
-          title: "รายชื่อที่อนุญาต",
+          title: t("tabs.whitelist"),
           tabBarIcon: tabIcon("people"),
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: "ตั้งค่า",
+          title: t("tabs.settings"),
           tabBarIcon: tabIcon("settings"),
         }}
       />

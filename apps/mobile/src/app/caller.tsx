@@ -6,16 +6,17 @@ import * as WebBrowser from "expo-web-browser";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useLang, type StrKey } from "@/lib/i18n";
 import { useDeviceRole } from "@/lib/role";
 import { AppText, IconTile, PrimaryButton } from "@/components";
 import { colors, radii, spacing, TAP } from "@/theme";
 
 const CALLER_URL = "https://knockfirst.pranakorn.co.th/#caller-h";
 
-const TIPS: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
-  { icon: "headset", text: "ใช้หูฟังเพื่อเสียงที่ชัดที่สุด" },
-  { icon: "mic", text: "กดอนุญาตไมโครโฟนเมื่อเบราว์เซอร์ถาม" },
-  { icon: "notifications", text: "วางสายแล้ว ลูกหลานจะเห็นสรุปในแอปภายในราว 15 วินาที" },
+const TIPS: { icon: keyof typeof Ionicons.glyphMap; text: StrKey }[] = [
+  { icon: "headset", text: "caller.tipHeadset" },
+  { icon: "mic", text: "caller.tipMic" },
+  { icon: "notifications", text: "caller.tipSummary" },
 ];
 
 async function openCaller() {
@@ -30,12 +31,13 @@ async function openCaller() {
 export default function CallerHome() {
   const insets = useSafeAreaInsets();
   const { setRole } = useDeviceRole();
+  const { t } = useLang();
 
   function switchMode() {
-    Alert.alert("เปลี่ยนโหมด", "เปลี่ยนเครื่องนี้เป็นโหมดไหน?", [
-      { text: "ลูกหลาน (ผู้ดูแล)", onPress: () => void setRole("guardian") },
-      { text: "คุณยาย (เจ้าของเบอร์)", onPress: () => void setRole("grandma") },
-      { text: "ยกเลิก", style: "cancel" },
+    Alert.alert(t("common.switchMode"), t("caller.switchQuestion"), [
+      { text: t("caller.roleGuardian"), onPress: () => void setRole("guardian") },
+      { text: t("caller.roleGrandma"), onPress: () => void setRole("grandma") },
+      { text: t("common.cancel"), style: "cancel" },
     ]);
   }
 
@@ -46,11 +48,11 @@ export default function CallerHome() {
           onPress={switchMode}
           hitSlop={12}
           accessibilityRole="button"
-          accessibilityLabel="เปลี่ยนโหมด"
+          accessibilityLabel={t("common.switchMode")}
           style={({ pressed }) => [styles.switchLink, pressed && styles.pressed]}
         >
           <AppText variant="body" color={colors.brand}>
-            เปลี่ยนโหมด
+            {t("common.switchMode")}
           </AppText>
         </Pressable>
       </View>
@@ -59,26 +61,26 @@ export default function CallerHome() {
         <View style={styles.card}>
           <IconTile name="call" color={colors.blue} size={64} />
           <AppText variant="h1" weight="bold" style={styles.center}>
-            คุณคือคนแปลกหน้า
+            {t("caller.title")}
           </AppText>
           <AppText variant="title" weight="medium" color={colors.textSubtle} style={styles.center}>
-            โทรหาเบอร์ของคุณยายในนามเบอร์ที่ไม่รู้จัก{"\n"}ผู้ช่วย AI จะรับสายแทน พูดไทยหรืออังกฤษก็ได้
+            {t("caller.subtitle")}
           </AppText>
         </View>
 
         <View style={styles.tips}>
-          {TIPS.map((t) => (
-            <View key={t.icon} style={styles.tip}>
-              <Ionicons name={t.icon} size={20} color={colors.textSubtle} />
+          {TIPS.map((tip) => (
+            <View key={tip.icon} style={styles.tip}>
+              <Ionicons name={tip.icon} size={20} color={colors.textSubtle} />
               <AppText variant="body" color={colors.textSubtle} style={styles.flex}>
-                {t.text}
+                {t(tip.text)}
               </AppText>
             </View>
           ))}
         </View>
       </View>
 
-      <PrimaryButton title="โทรหาคุณยาย" icon="call" onPress={() => void openCaller()} />
+      <PrimaryButton title={t("caller.callGrandma")} icon="call" onPress={() => void openCaller()} />
     </View>
   );
 }

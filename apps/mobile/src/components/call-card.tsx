@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, View } from "react-native";
 import Animated, { FadeIn, LinearTransition } from "react-native-reanimated";
-import { formatCallerKey, RISK_LABEL_TH, riskLevelFromScore, STATUS_LABEL_TH, type CallDoc } from "@/lib/contract";
+import { formatCallerKey, riskLevelFromScore, type CallDoc } from "@/lib/contract";
+import { useLang } from "@/lib/i18n";
 import { timeAgo } from "@/lib/time";
 import { colors, radii, spacing, TAP } from "@/theme";
 import { AppText } from "./app-text";
@@ -24,12 +25,13 @@ const LEAD = 52;
 
 /** Inbox row (B4), Apple Phone/Mail style. Tolerates missing analysis, null timestamps and client: keys. */
 export function CallCard({ call, onPress, first = true, last = true }: CallCardProps) {
+  const { t, lang, riskLabel, statusLabel } = useLang();
   const analysis = call.analysis ?? null;
   const live = call.status === "screening" || call.status === "analyzing";
   const urgent = analysis?.urgency === "urgent";
 
-  const title = analysis?.callerName?.trim() || formatCallerKey(call.callerKey ?? call.from ?? "") || "ไม่ทราบเบอร์";
-  const subtitle = [analysis?.organization, analysis?.reason]
+  const title = analysis?.callerName?.trim() || formatCallerKey(call.callerKey ?? call.from ?? "") || t("comp.unknownNumber");
+  const subtitle = [analysis?.organization, (lang === "en" && analysis?.reasonEn) || analysis?.reason]
     .map((s) => (typeof s === "string" ? s.trim() : ""))
     .filter(Boolean)
     .join(" · ");
@@ -40,9 +42,9 @@ export function CallCard({ call, onPress, first = true, last = true }: CallCardP
   const score = analysis ? clampScore(analysis.riskScore) : null;
   const a11y = [
     title,
-    score !== null && !live ? `ความเสี่ยง ${score} ${RISK_LABEL_TH[riskLevelFromScore(score)]}` : null,
-    urgent ? "ด่วน" : null,
-    STATUS_LABEL_TH[call.status],
+    score !== null && !live ? t("comp.cardRiskA11y", { score, label: riskLabel[riskLevelFromScore(score)] }) : null,
+    urgent ? t("comp.urgent") : null,
+    statusLabel[call.status],
     when,
   ]
     .filter(Boolean)
@@ -58,7 +60,7 @@ export function CallCard({ call, onPress, first = true, last = true }: CallCardP
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={a11y}
-        accessibilityHint="แตะเพื่อดูรายละเอียดสาย"
+        accessibilityHint={t("comp.cardHint")}
         style={({ pressed }) => [styles.row, pressed && styles.pressed]}
       >
         <View style={styles.lead}>
@@ -89,7 +91,7 @@ export function CallCard({ call, onPress, first = true, last = true }: CallCardP
 
           {live ? (
             <AppText variant="small" color={colors.brand} numberOfLines={1}>
-              {call.status === "screening" ? "AI กำลังคุยกับผู้โทร…" : "AI กำลังสรุปบทสนทนา…"}
+              {call.status === "screening" ? t("comp.aiTalking") : t("comp.aiSummarizing")}
             </AppText>
           ) : subtitle ? (
             <AppText variant="small" color={colors.textSubtle} numberOfLines={2}>

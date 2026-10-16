@@ -1,5 +1,6 @@
 import { StyleSheet, View } from "react-native";
-import { STATUS_LABEL_TH, type CallStatus } from "@/lib/contract";
+import type { CallStatus } from "@/lib/contract";
+import { useLang } from "@/lib/i18n";
 import { colors, radii, spacing } from "@/theme";
 import { AppText } from "./app-text";
 
@@ -10,10 +11,10 @@ export interface StatusPillProps {
 }
 
 /** Update 05: forwarded calls ring grandma's phone through the app, so say whether she picked up. */
-function forwardedLabel(r: StatusPillProps["ownerResponse"]): string {
-  if (r === "answered") return "คนรู้จัก · คุณยายรับสาย";
-  if (r === "declined") return "คนรู้จัก · คุณยายไม่รับสาย";
-  return "คนรู้จัก · ต่อสายถึงคุณยายแล้ว";
+function forwardedLabel(r: StatusPillProps["ownerResponse"], t: ReturnType<typeof useLang>["t"]): string {
+  if (r === "answered") return t("comp.fwdAnswered");
+  if (r === "declined") return t("comp.fwdDeclined");
+  return t("comp.fwdRinging");
 }
 
 type Tone = { bg: string; fg: string };
@@ -36,11 +37,12 @@ const TONE: Record<CallStatus, Tone> = {
 
 /** Tinted capsule with a status dot (color + text). */
 export function StatusPill({ status, ownerResponse }: StatusPillProps) {
+  const { t, statusLabel } = useLang();
   const declined = status === "forwarded" && ownerResponse === "declined";
   const tone = declined ? NEUTRAL : (TONE[status] ?? NEUTRAL);
-  const label = status === "forwarded" ? forwardedLabel(ownerResponse) : (STATUS_LABEL_TH[status] ?? "ไม่ทราบสถานะ");
+  const label = status === "forwarded" ? forwardedLabel(ownerResponse, t) : (statusLabel[status] ?? t("comp.statusUnknown"));
   return (
-    <View style={[styles.pill, { backgroundColor: tone.bg }]} accessible accessibilityLabel={`สถานะ: ${label}`}>
+    <View style={[styles.pill, { backgroundColor: tone.bg }]} accessible accessibilityLabel={t("comp.statusA11y", { label })}>
       <View style={[styles.dot, { backgroundColor: tone.fg }]} />
       <AppText variant="caption" weight="semibold" color={tone.fg} numberOfLines={1} style={styles.text}>
         {label}

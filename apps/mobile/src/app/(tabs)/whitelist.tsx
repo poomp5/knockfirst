@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useWhitelist } from "@/lib/hooks";
 import { addToWhitelist, removeFromWhitelist } from "@/lib/actions";
 import { formatCallerKey, toCallerKey, type WhitelistEntry } from "@/lib/contract";
+import { useLang, type StrKey } from "@/lib/i18n";
 import { AppText, Banner, EmptyState, LargeTitle, ListRow, ListSection, Skeleton } from "@/components";
 import { colors, fonts, fontSize, radii, spacing, TAP } from "@/theme";
 
@@ -48,10 +49,10 @@ function Avatar({ name }: { name: string }) {
   );
 }
 
-function sourceLabel(entry: WhitelistEntry): string | null {
-  if (entry.addedBy === "seed") return "ค่าเริ่มต้น";
-  if (entry.addedBy === "contacts") return "จากรายชื่อติดต่อ";
-  if (entry.addedBy === "guardian" && entry.sourceCallId) return "จากสายที่อนุญาต";
+function sourceLabel(entry: WhitelistEntry): StrKey | null {
+  if (entry.addedBy === "seed") return "whitelist.source.seed";
+  if (entry.addedBy === "contacts") return "whitelist.source.contacts";
+  if (entry.addedBy === "guardian" && entry.sourceCallId) return "whitelist.source.call";
   return null;
 }
 
@@ -64,8 +65,10 @@ function EntryRow({
   removing: boolean;
   onRemove: (e: WhitelistEntry) => void;
 }) {
+  const { t } = useLang();
   const name = entry.displayName || formatCallerKey(entry.callerKey);
-  const source = sourceLabel(entry);
+  const sourceKey = sourceLabel(entry);
+  const source = sourceKey ? t(sourceKey) : null;
   return (
     <ListRow
       leading={<Avatar name={entry.displayName ?? ""} />}
@@ -73,7 +76,7 @@ function EntryRow({
       subtitle={[formatCallerKey(entry.callerKey), source].filter(Boolean).join(" · ")}
       onLongPress={() => onRemove(entry)}
       disabled={removing}
-      accessibilityHint="กดค้างเพื่อลบออกจากรายชื่อ"
+      accessibilityHint={t("whitelist.removeHint")}
       trailing={
         <Pressable
           onPress={() => onRemove(entry)}
@@ -81,7 +84,7 @@ function EntryRow({
           hitSlop={8}
           style={({ pressed }) => [styles.trash, pressed && styles.pressed]}
           accessibilityRole="button"
-          accessibilityLabel={`ลบ ${name} ออกจากรายชื่อ`}
+          accessibilityLabel={t("whitelist.removeA11y", { name })}
         >
           <Ionicons name="remove-circle" size={24} color={removing ? colors.textFaint : colors.danger} />
         </Pressable>
@@ -92,6 +95,7 @@ function EntryRow({
 
 export default function WhitelistScreen() {
   const { entries, loading, error } = useWhitelist();
+  const { t } = useLang();
   const insets = useSafeAreaInsets();
   const [modalOpen, setModalOpen] = useState(false);
   const [name, setName] = useState("");
@@ -117,7 +121,7 @@ export default function WhitelistScreen() {
     if (saving) return;
     const raw = phone.trim();
     if (digitCount(raw) < MIN_DIGITS) {
-      setFormError(`กรุณากรอกเบอร์โทรอย่างน้อย ${MIN_DIGITS} หลัก`);
+      setFormError(t("whitelist.minDigits", { n: MIN_DIGITS }));
       return;
     }
     setFormError(null);
@@ -127,7 +131,7 @@ export default function WhitelistScreen() {
       const ok = await addToWhitelist(displayName, raw);
       if (ok) {
         setModalOpen(false);
-        setNotice(`เพิ่ม ${displayName} แล้ว โทรเข้ามาจะต่อสายถึงทันที`);
+        setNotice(t("whitelist.added", { name: displayName }));
       }
     } finally {
       setSaving(false);
@@ -138,18 +142,18 @@ export default function WhitelistScreen() {
     if (removingKey) return;
     const label = entry.displayName || formatCallerKey(entry.callerKey);
     Alert.alert(
-      "ลบออกจากรายชื่อที่อนุญาต?",
-      `${label} (${formatCallerKey(entry.callerKey)}) จะต้องผ่าน AI รับสายก่อนในครั้งถัดไป`,
+      t("whitelist.removeTitle"),
+      t("whitelist.removeBody", { name: label, number: formatCallerKey(entry.callerKey) }),
       [
-        { text: "ยกเลิก", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "ลบ",
+          text: t("whitelist.remove"),
           style: "destructive",
           onPress: async () => {
             setRemovingKey(entry.callerKey);
             try {
               const ok = await removeFromWhitelist(entry.callerKey);
-              if (ok) setNotice(`ลบ ${label} ออกแล้ว`);
+              if (ok) setNotice(t("whitelist.removed", { name: label }));
             } finally {
               setRemovingKey(null);
             }
@@ -163,22 +167,22 @@ export default function WhitelistScreen() {
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={[styles.list, { paddingTop: insets.top, paddingBottom: spacing.xxl + insets.bottom }]}>
         <LargeTitle
-          title="รายชื่อที่อนุญาต"
+          title={t("whitelist.title")}
           right={
             <Pressable
               onPress={openModal}
               hitSlop={8}
               style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
               accessibilityRole="button"
-              accessibilityLabel="เพิ่มเบอร์"
+              accessibilityLabel={t("whitelist.addNumber")}
             >
               <Ionicons name="add" size={24} color={colors.white} />
             </Pressable>
           }
         />
 
-        {notice && <Banner tone="success" text={notice} actionLabel="ปิด" onAction={() => setNotice(null)} />}
-        {error && <Banner tone="error" text="โหลดรายชื่อไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่" />}
+        {notice && <Banner tone="success" text={notice} actionLabel={t("whitelist.close")} onAction={() => setNotice(null)} />}
+        {error && <Banner tone="error" text={t("whitelist.loadError")} />}
 
         {loading && entries.length === 0 ? (
           <View style={styles.skeletons}>
@@ -190,14 +194,14 @@ export default function WhitelistScreen() {
           error ? null : (
             <EmptyState
               icon="people"
-              title="ยังไม่มีเบอร์ที่อนุญาต"
-              subtitle="เพิ่มเบอร์ลูกหลานหรือคนที่ไว้ใจ เพื่อให้โทรถึงได้ทันที"
+              title={t("whitelist.empty.title")}
+              subtitle={t("whitelist.empty.subtitle")}
             />
           )
         ) : (
           <ListSection
-            header={`${entries.length} รายชื่อ`}
-            footer="เบอร์ในรายชื่อนี้จะต่อสายถึงผู้สูงอายุทันที ไม่ต้องผ่าน AI"
+            header={t("whitelist.count", { n: entries.length })}
+            footer={t("whitelist.footer")}
             separatorInset={spacing.lg + 40 + spacing.md}
           >
             {entries.map((item) => (
@@ -215,7 +219,7 @@ export default function WhitelistScreen() {
           <ListRow
             icon="hand-left"
             iconColor={colors.danger}
-            title="เบอร์ที่ถูกบล็อก"
+            title={t("whitelist.blockedLink")}
             onPress={() => router.push("/blocked")}
           />
         </ListSection>
@@ -223,7 +227,7 @@ export default function WhitelistScreen() {
 
       <Modal visible={modalOpen} transparent animationType="fade" onRequestClose={closeModal}>
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.backdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={closeModal} accessibilityLabel="ปิด" />
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeModal} accessibilityLabel={t("whitelist.close")} />
           <Animated.View
             entering={SlideInDown.duration(300)}
             style={[styles.sheet, { paddingBottom: spacing.xl + insets.bottom }]}
@@ -232,11 +236,11 @@ export default function WhitelistScreen() {
             <View style={styles.sheetBar}>
               <Pressable onPress={closeModal} disabled={saving} hitSlop={8} style={styles.barButton} accessibilityRole="button">
                 <AppText variant="body" color={colors.brand}>
-                  ยกเลิก
+                  {t("common.cancel")}
                 </AppText>
               </Pressable>
               <AppText variant="body" weight="semibold" style={styles.sheetTitle} numberOfLines={1}>
-                เพิ่มเบอร์ที่อนุญาต
+                {t("whitelist.sheetTitle")}
               </AppText>
               <Pressable
                 onPress={submit}
@@ -249,21 +253,21 @@ export default function WhitelistScreen() {
                   <ActivityIndicator color={colors.brand} />
                 ) : (
                   <AppText variant="body" weight="semibold" color={colors.brand}>
-                    เพิ่ม
+                    {t("whitelist.add")}
                   </AppText>
                 )}
               </Pressable>
             </View>
 
-            <ListSection footer={formError ?? "โทรเข้ามาครั้งหน้าจะต่อสายถึงทันที ไม่ต้องผ่าน AI"}>
+            <ListSection footer={formError ?? t("whitelist.sheetFooter")}>
               <View style={styles.inputRow}>
                 <AppText variant="body" style={styles.inputLabel}>
-                  ชื่อ
+                  {t("whitelist.nameLabel")}
                 </AppText>
                 <TextInput
                   value={name}
                   onChangeText={setName}
-                  placeholder="เช่น ลูกสาว, หลานชาย"
+                  placeholder={t("whitelist.namePlaceholder")}
                   placeholderTextColor={colors.textFaint}
                   style={styles.input}
                   returnKeyType="next"
@@ -273,12 +277,12 @@ export default function WhitelistScreen() {
               </View>
               <View style={styles.inputRow}>
                 <AppText variant="body" style={styles.inputLabel} color={formError ? colors.danger : colors.text}>
-                  เบอร์โทร
+                  {t("whitelist.phoneLabel")}
                 </AppText>
                 <TextInput
                   value={phone}
-                  onChangeText={(t) => {
-                    setPhone(t);
+                  onChangeText={(v) => {
+                    setPhone(v);
                     if (formError) setFormError(null);
                   }}
                   placeholder="08x-xxx-xxxx"

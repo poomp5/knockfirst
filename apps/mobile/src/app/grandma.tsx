@@ -3,20 +3,20 @@
 import { useEffect, useState } from "react";
 import { Alert, AppState, Pressable, StyleSheet, View } from "react-native";
 import * as Haptics from "expo-haptics";
-import { format } from "date-fns";
-import { th } from "date-fns/locale";
+import { format, type Locale } from "date-fns";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { USE_MOCKS } from "@/lib/firebase";
+import { translate, useLang, type Lang } from "@/lib/i18n";
 import { mockSimulateKnownCall } from "@/lib/mocks";
 import { useAutoRing } from "@/lib/ring";
 import { useDeviceRole } from "@/lib/role";
 import { AppText, IconTile, PrimaryButton } from "@/components";
 import { colors, radii, spacing, TAP } from "@/theme";
 
-/** "วันพฤหัสบดีที่ 15 ตุลาคม" */
-function thaiDate(d: Date): string {
-  return `วัน${format(d, "EEEE", { locale: th })}ที่ ${format(d, "d MMMM", { locale: th })}`;
+/** th: "วันพฤหัสบดีที่ 15 ตุลาคม" · en: "Thursday, 15 October" */
+function longDate(d: Date, lang: Lang, locale: Locale): string {
+  return translate(lang, "grandma.date", { weekday: format(d, "EEEE", { locale }), date: format(d, "d MMMM", { locale }) });
 }
 
 /** Now, refreshed every 15 s (so the clock never lags a minute) and when the app returns to the foreground. */
@@ -40,13 +40,15 @@ export default function GrandmaHome() {
   const insets = useSafeAreaInsets();
   const { role, setRole } = useDeviceRole();
   const now = useNow();
+  const { t, lang, dateLocale } = useLang();
+  const dateText = longDate(now, lang, dateLocale);
 
   useAutoRing(role === "grandma");
 
   function switchMode() {
-    Alert.alert("เปลี่ยนโหมด", "เปลี่ยนเครื่องนี้เป็นโหมดลูกหลาน (ผู้ดูแล) ใช่ไหม?", [
-      { text: "ยกเลิก", style: "cancel" },
-      { text: "เปลี่ยน", onPress: () => void setRole("guardian") },
+    Alert.alert(t("common.switchMode"), t("grandma.switchQuestion"), [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: t("grandma.switchConfirm"), onPress: () => void setRole("guardian") },
     ]);
   }
 
@@ -57,19 +59,19 @@ export default function GrandmaHome() {
           onPress={switchMode}
           hitSlop={12}
           accessibilityRole="button"
-          accessibilityLabel="เปลี่ยนโหมด"
+          accessibilityLabel={t("common.switchMode")}
           style={({ pressed }) => [styles.switchLink, pressed && styles.pressed]}
         >
           <AppText variant="body" color={colors.brand}>
-            เปลี่ยนโหมด
+            {t("common.switchMode")}
           </AppText>
         </Pressable>
       </View>
 
       {/* Lock Screen-style date + clock: the biggest, calmest thing on the screen. */}
-      <View style={styles.clockBlock} accessible accessibilityLabel={`${thaiDate(now)} เวลา ${format(now, "HH:mm")} น.`}>
+      <View style={styles.clockBlock} accessible accessibilityLabel={t("grandma.clockA11y", { date: dateText, time: format(now, "HH:mm") })}>
         <AppText variant="title" weight="semibold" color={colors.textMuted} style={styles.center}>
-          {thaiDate(now)}
+          {dateText}
         </AppText>
         <AppText weight="bold" color={colors.ink} style={[styles.center, styles.clock]}>
           {format(now, "HH:mm")}
@@ -80,17 +82,17 @@ export default function GrandmaHome() {
         <View style={styles.card}>
           <IconTile name="shield-checkmark" color={colors.brand} size={64} />
           <AppText variant="h1" weight="bold" style={styles.center}>
-            KnockFirst{"\n"}ปกป้องคุณอยู่
+            {t("grandma.title")}
           </AppText>
           <AppText variant="title" weight="medium" color={colors.textSubtle} style={styles.center}>
-            สายจากคนแปลกหน้า AI จะรับแทน{"\n"}ลูกหลานจะเป็นคนตรวจสอบ
+            {t("grandma.subtitle")}
           </AppText>
         </View>
       </View>
 
       {USE_MOCKS ? (
         <PrimaryButton
-          title="จำลองคนรู้จักโทรมา"
+          title={t("grandma.mockKnownCall")}
           variant="secondary"
           icon="flask"
           onPress={() => {

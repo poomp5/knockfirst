@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { SectionList, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { format } from "date-fns";
-import { th } from "date-fns/locale";
+import { format, type Locale } from "date-fns";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useCalls, useFamily } from "@/lib/hooks";
@@ -11,6 +10,7 @@ import { isToday, tsToDate } from "@/lib/time";
 import { USE_MOCKS } from "@/lib/firebase";
 import { mockSimulateIncomingCall } from "@/lib/mocks";
 import type { CallDoc } from "@/lib/contract";
+import { useLang, type StrKey } from "@/lib/i18n";
 import {
   AppText,
   Banner,
@@ -26,7 +26,7 @@ import {
 import { cardStyle, colors, spacing } from "@/theme";
 
 type SectionKey = "live" | "review" | "history";
-type InboxSection = { key: SectionKey; title: string; data: CallDoc[] };
+type InboxSection = { key: SectionKey; title: StrKey; data: CallDoc[] };
 
 const LIVE = new Set<CallDoc["status"]>(["screening", "analyzing"]);
 const BLOCKED = new Set<CallDoc["status"]>(["rejected", "auto_blocked", "blocked"]);
@@ -48,9 +48,9 @@ function buildSections(calls: CallDoc[]): InboxSection[] {
   review.sort((a, b) => Number(isUrgent(b)) - Number(isUrgent(a)) || newestFirst(a, b));
   history.sort(newestFirst);
   const sections: InboxSection[] = [
-    { key: "live", title: "กำลังรับสาย", data: live },
-    { key: "review", title: "รอคุณตัดสินใจ", data: review },
-    { key: "history", title: "ประวัติ", data: history },
+    { key: "live", title: "inbox.section.live", data: live },
+    { key: "review", title: "inbox.section.review", data: review },
+    { key: "history", title: "inbox.section.history", data: history },
   ];
   return sections.filter((s) => s.data.length > 0);
 }
@@ -71,10 +71,11 @@ export default function InboxScreen() {
   const insets = useSafeAreaInsets();
   const { family } = useFamily();
   const { calls, loading, error, retry } = useCalls();
+  const { t, dateLocale } = useLang();
 
   const sections = useMemo(() => buildSections(calls), [calls]);
   const stats = useMemo(() => computeStats(calls), [calls]);
-  const ownerName = family?.ownerName?.trim() || "คนที่คุณรัก";
+  const ownerName = family?.ownerName?.trim() || t("inbox.ownerFallback");
 
   // Haptic tick when a NEW needs_review call shows up while the app is open (not on first load).
   const seenReview = useRef<Set<string> | null>(null);
@@ -97,37 +98,37 @@ export default function InboxScreen() {
 
   const header = (
     <View style={styles.header}>
-      <LargeTitle title="สายเข้า" eyebrow={todayLabel()} />
+      <LargeTitle title={t("inbox.title")} eyebrow={todayLabel(t, dateLocale)} />
 
-      <View style={styles.summary} accessible accessibilityLabel={`KnockFirst กำลังปกป้อง ${ownerName}`}>
+      <View style={styles.summary} accessible accessibilityLabel={t("inbox.protectingA11y", { name: ownerName })}>
         <View style={styles.summaryTop}>
           <IconTile name="shield-checkmark" color={colors.brand} size={40} />
           <View style={styles.flex}>
             <AppText variant="body" weight="semibold" numberOfLines={2}>
-              กำลังปกป้อง {ownerName}
+              {t("inbox.protecting", { name: ownerName })}
             </AppText>
             <AppText variant="small" color={colors.textSubtle}>
-              KnockFirst ทำงานอยู่
+              {t("inbox.active")}
             </AppText>
           </View>
           <PulseDot color={colors.switchOn} size={8} />
         </View>
         <View style={styles.statRow}>
-          <Stat label="กรองแล้ว" value={stats.screened} color={colors.brand} />
+          <Stat label={t("inbox.stat.screened")} value={stats.screened} color={colors.brand} />
           <View style={styles.statDivider} />
-          <Stat label="บล็อก" value={stats.blocked} color={colors.danger} />
+          <Stat label={t("inbox.stat.blocked")} value={stats.blocked} color={colors.danger} />
           <View style={styles.statDivider} />
-          <Stat label="วันนี้" value={stats.today} color={colors.ink} />
+          <Stat label={t("inbox.stat.today")} value={stats.today} color={colors.ink} />
         </View>
       </View>
 
       {error ? (
-        <Banner tone="error" text="โหลดรายการสายไม่สำเร็จ ตรวจสอบอินเทอร์เน็ต" actionLabel="ลองใหม่" onAction={retry} />
+        <Banner tone="error" text={t("inbox.loadError")} actionLabel={t("common.retry")} onAction={retry} />
       ) : null}
 
       {USE_MOCKS ? (
         <PrimaryButton
-          title="จำลองสายเข้า (โหมดทดสอบ)"
+          title={t("inbox.mockCall")}
           variant="secondary"
           icon="flask"
           onPress={() => {
@@ -152,11 +153,11 @@ export default function InboxScreen() {
             <View style={styles.liveHeader}>
               <PulseDot color={colors.brand} size={8} />
               <View style={styles.flex}>
-                <SectionHeader title={section.title} count={section.data.length} />
+                <SectionHeader title={t(section.title)} count={section.data.length} />
               </View>
             </View>
           ) : (
-            <SectionHeader title={section.title} count={section.data.length} />
+            <SectionHeader title={t(section.title)} count={section.data.length} />
           )
         }
         renderItem={({ item, index, section }) => (
@@ -177,8 +178,8 @@ export default function InboxScreen() {
           ) : error ? null : (
             <EmptyState
               icon="shield-checkmark"
-              title="ยังไม่มีสายแปลก"
-              subtitle="เมื่อมีเบอร์ที่ไม่รู้จักโทรเข้า AI จะรับสายแทนและสรุปให้คุณที่นี่"
+              title={t("inbox.empty.title")}
+              subtitle={t("inbox.empty.subtitle")}
             />
           )
         }
@@ -190,14 +191,17 @@ export default function InboxScreen() {
 }
 
 /** "วันพฤหัสบดี 15 ตุลาคม" (Apple News-style eyebrow above the large title). */
-function todayLabel(): string {
+function todayLabel(t: ReturnType<typeof useLang>["t"], locale: Locale): string {
   const d = new Date();
-  return `วัน${format(d, "EEEE", { locale: th })} ${format(d, "d MMMM", { locale: th })}`;
+  const weekday = format(d, "EEEE", { locale });
+  const date = format(d, "d MMMM", { locale });
+  return t("inbox.todayLabel", { weekday, date });
 }
 
 function Stat({ label, value, color }: { label: string; value: number; color: string }) {
+  const { t } = useLang();
   return (
-    <View style={styles.stat} accessible accessibilityLabel={`${label} ${value} สาย`}>
+    <View style={styles.stat} accessible accessibilityLabel={t("inbox.statA11y", { label, n: value })}>
       <AppText variant="h1" weight="bold" color={color} style={styles.statValue}>
         {value}
       </AppText>

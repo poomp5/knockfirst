@@ -13,12 +13,14 @@ import {
   type TextInputProps,
 } from "react-native";
 import Constants from "expo-constants";
+import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFamily } from "@/lib/hooks";
 import { updateFamily } from "@/lib/actions";
 import { FAMILY_ID, USE_MOCKS } from "@/lib/firebase";
 import { useDeviceRole } from "@/lib/role";
+import { t as tNow, useLang, type StrKey } from "@/lib/i18n";
 import {
   getLastPushToken,
   getPushPermission,
@@ -36,11 +38,12 @@ const REPO_URL = "https://github.com/poomp5/knockfirst";
 const WEB_DEMO_URL = "https://knockfirst.pranakorn.co.th/";
 const SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL ?? "";
 const DEV_TAPS = 7;
+const DEFAULT_OWNER_LABEL = "เจ้าของเบอร์นี้";
 
-const PERM_LABEL: Record<PermStatus, string> = {
-  granted: "เปิดอยู่",
-  denied: "ถูกปิดไว้",
-  undetermined: "ยังไม่ได้ขออนุญาต",
+const PERM_LABEL: Record<PermStatus, StrKey> = {
+  granted: "settings.perm.granted",
+  denied: "settings.perm.denied",
+  undetermined: "settings.perm.undetermined",
 };
 
 /** Grouped-list text field: small grey label above a borderless input (Contacts edit style). */
@@ -82,12 +85,13 @@ async function openUrl(url: string) {
     await Linking.openURL(url);
   } catch (e) {
     console.error("open url failed", e);
-    Alert.alert("เปิดลิงก์ไม่สำเร็จ", url);
+    Alert.alert(tNow("settings.openLinkFailed"), url);
   }
 }
 
 export default function SettingsScreen() {
   const { family, loading, error } = useFamily();
+  const { t, lang, setLang } = useLang();
   const insets = useSafeAreaInsets();
 
   // Form: drafts override the live family doc; untouched fields always show the latest value.
@@ -108,18 +112,18 @@ export default function SettingsScreen() {
   const { role, setRole } = useDeviceRole();
   function switchToGrandma() {
     Alert.alert(
-      "เปลี่ยนเป็นโหมดคุณยาย?",
-      "เครื่องนี้จะแสดงหน้าจอเรียบง่ายสำหรับคุณยาย และดังเมื่อคนรู้จักโทรมา จะไม่ได้รับแจ้งเตือนสายแปลกอีก",
+      t("settings.toGrandma.title"),
+      t("settings.toGrandma.body"),
       [
-        { text: "ยกเลิก", style: "cancel" },
-        { text: "เปลี่ยน", onPress: () => void setRole("grandma") },
+        { text: t("common.cancel"), style: "cancel" },
+        { text: t("settings.switch"), onPress: () => void setRole("grandma") },
       ],
     );
   }
   function switchToCaller() {
-    Alert.alert("เปลี่ยนเป็นคนแปลกหน้า?", "ใช้เครื่องนี้ทดลองโทรหาคุณยายในนามเบอร์ที่ไม่รู้จัก เปลี่ยนกลับได้ที่มุมขวาบน", [
-      { text: "ยกเลิก", style: "cancel" },
-      { text: "เปลี่ยน", onPress: () => void setRole("caller") },
+    Alert.alert(t("settings.toCaller.title"), t("settings.toCaller.body"), [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: t("settings.switch"), onPress: () => void setRole("caller") },
     ]);
   }
 
@@ -144,8 +148,8 @@ export default function SettingsScreen() {
   // Auto-hide the feedback banner.
   useEffect(() => {
     if (!notice) return;
-    const t = setTimeout(() => setNotice(null), 4000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setNotice(null), 4000);
+    return () => clearTimeout(timer);
   }, [notice]);
 
   const value = (k: FormKey): string => draft[k] ?? family?.[k] ?? "";
@@ -162,16 +166,16 @@ export default function SettingsScreen() {
     if (!dirty || saving) return;
     const patch: Draft = { ...changedPatch };
     if (patch.ownerName === "") {
-      Alert.alert("กรุณากรอกชื่อผู้สูงอายุ");
+      Alert.alert(t("settings.ownerNameRequired"));
       return;
     }
-    if (patch.ownerLabelForCallers === "") patch.ownerLabelForCallers = "เจ้าของเบอร์นี้";
+    if (patch.ownerLabelForCallers === "") patch.ownerLabelForCallers = DEFAULT_OWNER_LABEL; // data the Thai AI speaks, not UI
     setSaving(true);
     try {
       const ok = await updateFamily(patch);
       if (ok) {
         setDraft({});
-        setNotice({ tone: "success", text: "บันทึกแล้ว" });
+        setNotice({ tone: "success", text: t("settings.saved") });
       }
     } finally {
       setSaving(false);
@@ -186,20 +190,20 @@ export default function SettingsScreen() {
       const s = await getPushPermission().catch(() => (granted ? "granted" : "denied") as PermStatus);
       setPerm(s);
       if (granted) {
-        setNotice({ tone: "success", text: "เปิดการแจ้งเตือนแล้ว" });
+        setNotice({ tone: "success", text: t("settings.notifEnabled") });
       } else {
         Alert.alert(
-          "ยังไม่ได้รับอนุญาต",
-          "เปิดการแจ้งเตือนของ KnockFirst ในการตั้งค่าเครื่อง เพื่อรับแจ้งเมื่อมีสายแปลก",
+          t("settings.notAllowed.title"),
+          t("settings.notAllowed.body"),
           [
-            { text: "ไว้ทีหลัง", style: "cancel" },
-            { text: "เปิดการตั้งค่า", onPress: () => Linking.openSettings().catch(() => {}) },
+            { text: t("settings.later"), style: "cancel" },
+            { text: t("settings.openSettings"), onPress: () => Linking.openSettings().catch(() => {}) },
           ],
         );
       }
     } catch (e) {
       console.error("request push permission failed", e);
-      setNotice({ tone: "error", text: "ขออนุญาตแจ้งเตือนไม่สำเร็จ" });
+      setNotice({ tone: "error", text: t("settings.askFailed") });
     } finally {
       setPermBusy(false);
     }
@@ -213,7 +217,7 @@ export default function SettingsScreen() {
     setLiveBusy(true);
     const ok = await updateFamily({ notifyOnIncoming: next });
     setLiveBusy(false);
-    if (ok) setNotice({ tone: "success", text: next ? "จะแจ้งเตือนทันทีเมื่อมีสายแปลกโทรเข้า" : "ปิดการแจ้งเตือนระหว่างสายแล้ว" });
+    if (ok) setNotice({ tone: "success", text: next ? t("settings.liveOnNotice") : t("settings.liveOffNotice") });
   }
 
   async function testNotification() {
@@ -221,10 +225,10 @@ export default function SettingsScreen() {
     setTestBusy(true);
     try {
       await scheduleTestNotification();
-      setNotice({ tone: "info", text: "จะมีการแจ้งเตือนทดสอบเด้งขึ้นใน 2 วินาที" });
+      setNotice({ tone: "info", text: t("settings.testScheduled") });
     } catch (e) {
       console.error("test notification failed", e);
-      setNotice({ tone: "error", text: "ส่งการแจ้งเตือนทดสอบไม่สำเร็จ" });
+      setNotice({ tone: "error", text: t("settings.testFailed") });
     } finally {
       setTestBusy(false);
     }
@@ -236,19 +240,19 @@ export default function SettingsScreen() {
     setVersionTaps(next);
     if (next === DEV_TAPS) {
       setToken(getLastPushToken());
-      setNotice({ tone: "info", text: "เปิดโหมดนักพัฒนาแล้ว" });
+      setNotice({ tone: "info", text: t("settings.devOn") });
     }
   }
 
   async function copyToken() {
-    const t = token ?? getLastPushToken();
-    if (!t) return;
+    const tok = token ?? getLastPushToken();
+    if (!tok) return;
     try {
-      await Clipboard.setStringAsync(t);
-      setNotice({ tone: "success", text: "คัดลอก push token แล้ว" });
+      await Clipboard.setStringAsync(tok);
+      setNotice({ tone: "success", text: t("settings.tokenCopied") });
     } catch (e) {
       console.error("copy failed", e);
-      setNotice({ tone: "error", text: "คัดลอกไม่สำเร็จ" });
+      setNotice({ tone: "error", text: t("settings.copyFailed") });
     }
   }
 
@@ -263,11 +267,27 @@ export default function SettingsScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
-        <LargeTitle title="ตั้งค่า" />
+        <LargeTitle title={t("settings.title")} />
         {notice && <Banner tone={notice.tone} text={notice.text} />}
 
+        {/* ---------- Language ---------- */}
+        <ListSection header={t("settings.lang.header")} separatorInset={SEPARATOR_INSET}>
+          {(["th", "en"] as const).map((l) => (
+            <ListRow
+              key={l}
+              icon="language"
+              iconColor={colors.blue}
+              title={l === "th" ? "ไทย" : "English"}
+              onPress={() => void setLang(l)}
+              trailing={lang === l ? <Ionicons name="checkmark" size={22} color={colors.brand} /> : undefined}
+              chevron={false}
+              accessibilityLabel={l === "th" ? "ไทย" : "English"}
+            />
+          ))}
+        </ListSection>
+
         {/* ---------- Family info ---------- */}
-        {error && <Banner tone="error" text="โหลดข้อมูลครอบครัวไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่" />}
+        {error && <Banner tone="error" text={t("settings.familyLoadError")} />}
         {loading && !family ? (
           <View style={styles.skeletons}>
             <Skeleton height={TAP + 20} />
@@ -276,18 +296,18 @@ export default function SettingsScreen() {
           </View>
         ) : (
           <>
-            <ListSection header="ข้อมูลผู้สูงอายุ">
+            <ListSection header={t("settings.elder.header")}>
               <Field
-                label="ชื่อผู้สูงอายุ"
+                label={t("settings.elder.name")}
                 value={value("ownerName")}
                 onChangeText={setField("ownerName")}
-                placeholder="เช่น คุณยายสมศรี"
+                placeholder={t("settings.elder.namePlaceholder")}
                 editable={!saving && !!family}
                 maxLength={60}
               />
               <Field
-                label="เบอร์โทรจริงของผู้สูงอายุ"
-                helper="เบอร์นี้จะดังเมื่อคนที่อนุญาตไว้โทรเข้ามา"
+                label={t("settings.elder.phone")}
+                helper={t("settings.elder.phoneHelper")}
                 value={value("ownerPhone")}
                 onChangeText={setField("ownerPhone")}
                 placeholder="+66812345678"
@@ -296,29 +316,29 @@ export default function SettingsScreen() {
                 maxLength={20}
               />
               <Field
-                label="ชื่อที่ AI ใช้เรียกตอนรับสาย"
-                helper="ค่าเริ่มต้น 'เจ้าของเบอร์นี้' เพื่อไม่ให้คนแปลกหน้ารู้ชื่อจริง"
+                label={t("settings.elder.label")}
+                helper={t("settings.elder.labelHelper")}
                 value={value("ownerLabelForCallers")}
                 onChangeText={setField("ownerLabelForCallers")}
-                placeholder="เจ้าของเบอร์นี้"
+                placeholder={t("settings.elder.labelPlaceholder")}
                 editable={!saving && !!family}
                 maxLength={60}
               />
             </ListSection>
 
-            <ListSection header="ผู้ดูแล">
+            <ListSection header={t("settings.guardian.header")}>
               <Field
-                label="ชื่อผู้ดูแล"
+                label={t("settings.guardian.name")}
                 value={value("guardianName")}
                 onChangeText={setField("guardianName")}
-                placeholder="เช่น ภูมิ"
+                placeholder={t("settings.guardian.namePlaceholder")}
                 editable={!saving && !!family}
                 maxLength={60}
               />
             </ListSection>
 
             <PrimaryButton
-              title={dirty ? "บันทึกการเปลี่ยนแปลง" : "บันทึกแล้ว"}
+              title={dirty ? t("settings.saveChanges") : t("settings.saved")}
               onPress={save}
               loading={saving}
               disabled={!dirty || saving}
@@ -328,22 +348,22 @@ export default function SettingsScreen() {
 
         {/* ---------- Notifications ---------- */}
         <ListSection
-          header="การแจ้งเตือน"
-          footer="การแจ้งเตือนจริงจากเซิร์ฟเวอร์ใช้ได้ในแอปที่ติดตั้งจาก APK เท่านั้น (ไม่ใช่ Expo Go)"
+          header={t("settings.notif.header")}
+          footer={t("settings.notif.footer")}
           separatorInset={SEPARATOR_INSET}
         >
           <ListRow
             icon="notifications"
             iconColor={colors.danger}
-            title="สถานะการแจ้งเตือน"
-            value={perm ? PERM_LABEL[perm] : "กำลังตรวจสอบ…"}
+            title={t("settings.notif.status")}
+            value={perm ? t(PERM_LABEL[perm]) : t("settings.perm.checking")}
             valueColor={perm === "granted" ? colors.success : perm ? colors.warning : colors.textSubtle}
           />
           <ListRow
             icon="call"
             iconColor={colors.switchOn}
-            title="แจ้งเตือนทันทีเมื่อมีสายแปลก"
-            subtitle="เด้งเตือนระหว่างที่ AI รับสาย แล้วเปลี่ยนเป็นสรุปเมื่อวางสาย"
+            title={t("settings.notif.live")}
+            subtitle={t("settings.notif.liveSub")}
             trailing={
               <Switch
                 value={notifyLive}
@@ -352,7 +372,7 @@ export default function SettingsScreen() {
                 trackColor={{ true: colors.switchOn, false: colors.fill }}
                 thumbColor={colors.white}
                 ios_backgroundColor={colors.fill}
-                accessibilityLabel="แจ้งเตือนทันทีเมื่อมีสายแปลกโทรเข้า"
+                accessibilityLabel={t("settings.notif.liveA11y")}
               />
             }
           />
@@ -360,7 +380,7 @@ export default function SettingsScreen() {
             <ListRow
               icon="notifications-outline"
               iconColor={colors.brand}
-              title={permBusy ? "กำลังขออนุญาต…" : "ขออนุญาตแจ้งเตือน"}
+              title={permBusy ? t("settings.asking") : t("settings.askPermission")}
               titleColor={colors.brand}
               onPress={askPermission}
               disabled={permBusy}
@@ -370,7 +390,7 @@ export default function SettingsScreen() {
           <ListRow
             icon="paper-plane"
             iconColor={colors.blue}
-            title={testBusy ? "กำลังส่ง…" : "ทดสอบการแจ้งเตือน"}
+            title={testBusy ? t("settings.sending") : t("settings.testNotification")}
             onPress={testNotification}
             disabled={testBusy}
           />
@@ -378,20 +398,20 @@ export default function SettingsScreen() {
 
         {/* ---------- Device role (update 05) ---------- */}
         <ListSection
-          header="โหมดของเครื่องนี้"
-          footer="เครื่องของคุณยายจะดังเมื่อคนในรายชื่อที่อนุญาตโทรมา ส่วนสายแปลก AI จะรับแทนและแจ้งเครื่องลูกหลาน"
+          header={t("settings.role.header")}
+          footer={t("settings.role.footer")}
           separatorInset={SEPARATOR_INSET}
         >
           <ListRow
             icon="phone-portrait"
             iconColor={colors.indigo}
-            title="เครื่องนี้เป็นของ"
-            value={role === "grandma" ? "คุณยาย" : "ลูกหลาน (ผู้ดูแล)"}
+            title={t("settings.role.owner")}
+            value={role === "grandma" ? t("settings.roleGrandma") : t("settings.roleGuardian")}
           />
           <ListRow
             icon="swap-horizontal"
             iconColor={colors.brand}
-            title="เปลี่ยนเป็นเครื่องของคุณยาย"
+            title={t("settings.role.toGrandma")}
             titleColor={colors.brand}
             onPress={switchToGrandma}
             chevron={false}
@@ -399,7 +419,7 @@ export default function SettingsScreen() {
           <ListRow
             icon="call"
             iconColor={colors.blue}
-            title="เปลี่ยนเป็นคนแปลกหน้า (ทดลองโทร)"
+            title={t("settings.role.toCaller")}
             titleColor={colors.brand}
             onPress={switchToCaller}
             chevron={false}
@@ -407,33 +427,33 @@ export default function SettingsScreen() {
         </ListSection>
 
         {/* ---------- About ---------- */}
-        <ListSection header="เกี่ยวกับ" separatorInset={SEPARATOR_INSET}>
+        <ListSection header={t("settings.about.header")} separatorInset={SEPARATOR_INSET}>
           <ListRow
             icon="information"
             iconColor={colors.gray}
-            title="เวอร์ชันแอป"
+            title={t("settings.about.version")}
             value={version}
             onPress={tapVersion}
             chevron={false}
-            accessibilityLabel={`เวอร์ชัน ${version}`}
+            accessibilityLabel={t("settings.versionA11y", { version })}
           />
           {WEB_DEMO_URL ? (
-            <ListRow icon="globe" iconColor={colors.blue} title="เปิดเว็บเดโม" onPress={() => openUrl(WEB_DEMO_URL)} />
+            <ListRow icon="globe" iconColor={colors.blue} title={t("settings.about.webDemo")} onPress={() => openUrl(WEB_DEMO_URL)} />
           ) : null}
-          <ListRow icon="logo-github" iconColor={colors.ink} title="ซอร์สโค้ดบน GitHub" onPress={() => openUrl(REPO_URL)} />
+          <ListRow icon="logo-github" iconColor={colors.ink} title={t("settings.about.github")} onPress={() => openUrl(REPO_URL)} />
         </ListSection>
 
         {/* ---------- Hidden dev section ---------- */}
         {devOpen && (
-          <ListSection header="สำหรับนักพัฒนา" separatorInset={SEPARATOR_INSET}>
+          <ListSection header={t("settings.dev.header")} separatorInset={SEPARATOR_INSET}>
             <DevRow label="FAMILY_ID" value={FAMILY_ID} />
             <DevRow label="USE_MOCKS" value={String(USE_MOCKS)} />
             <DevRow label="EXPO_PUBLIC_SERVER_URL" value={SERVER_URL} />
-            <DevRow label="Push token (FCM)" value={token ?? "ยังไม่มี (Expo Go / ไม่ได้อนุญาต / ไม่ใช่ Android)"} />
+            <DevRow label="Push token (FCM)" value={token ?? t("settings.dev.noToken")} />
             <ListRow
               icon="copy"
               iconColor={colors.blue}
-              title="คัดลอก token"
+              title={t("settings.dev.copy")}
               onPress={copyToken}
               disabled={!token}
               chevron={false}
@@ -441,11 +461,11 @@ export default function SettingsScreen() {
             <ListRow
               icon="refresh"
               iconColor={colors.gray}
-              title="รีเฟรช token"
+              title={t("settings.dev.refresh")}
               onPress={() => setToken(getLastPushToken())}
               chevron={false}
             />
-            <ListRow title="ซ่อนส่วนนี้" titleColor={colors.brand} onPress={() => setVersionTaps(0)} chevron={false} />
+            <ListRow title={t("settings.dev.hide")} titleColor={colors.brand} onPress={() => setVersionTaps(0)} chevron={false} />
           </ListSection>
         )}
       </ScrollView>

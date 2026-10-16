@@ -1,6 +1,7 @@
 import { StyleSheet, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
-import { RISK_COLOR, RISK_LABEL_TH, riskLevelFromScore, type RiskLevel } from "@/lib/contract";
+import { RISK_COLOR, riskLevelFromScore, type RiskLevel } from "@/lib/contract";
+import { useLang, type StrKey } from "@/lib/i18n";
 import { colors } from "@/theme";
 import { AppText } from "./app-text";
 
@@ -10,7 +11,7 @@ export interface RiskBadgeProps {
 }
 
 /** Short label so it fits inside the ring; full RISK_LABEL_TH is in the accessibility label. */
-const SHORT_LABEL: Record<RiskLevel, string> = { low: "ต่ำ", medium: "กลาง", high: "สูง" };
+const SHORT_LABEL: Record<RiskLevel, StrKey> = { low: "comp.riskShortLow", medium: "comp.riskShortMedium", high: "comp.riskShortHigh" };
 export const RISK_SOFT: Record<RiskLevel, string> = {
   low: colors.successSoft,
   medium: colors.warningSoft,
@@ -24,6 +25,7 @@ export function clampScore(score: number): number {
 
 /** Activity-ring style badge: progress ring in the risk color, score + level word inside (color + text). */
 export function RiskBadge({ score, size = "md" }: RiskBadgeProps) {
+  const { t, riskLabel } = useLang();
   const s = clampScore(score);
   const level = riskLevelFromScore(s);
   const color = RISK_COLOR[level];
@@ -34,7 +36,7 @@ export function RiskBadge({ score, size = "md" }: RiskBadgeProps) {
   return (
     <View
       accessible
-      accessibilityLabel={`คะแนนความเสี่ยง ${s} ${RISK_LABEL_TH[level]}`}
+      accessibilityLabel={t("comp.riskBadgeA11y", { score: s, label: riskLabel[level] })}
       style={{ width: dim, height: dim }}
     >
       <Svg width={dim} height={dim} style={StyleSheet.absoluteFill}>
@@ -59,7 +61,7 @@ export function RiskBadge({ score, size = "md" }: RiskBadgeProps) {
           {s}
         </AppText>
         <AppText variant="caption" weight="semibold" color={color} style={styles.label}>
-          {SHORT_LABEL[level]}
+          {t(SHORT_LABEL[level])}
         </AppText>
       </View>
     </View>

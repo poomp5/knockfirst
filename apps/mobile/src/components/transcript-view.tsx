@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import type { TranscriptTurn } from "@/lib/contract";
 import { colors, radii, spacing, TAP } from "@/theme";
 import { AppText } from "./app-text";
+import { useLang } from "@/lib/i18n";
 
 export interface TranscriptViewProps {
   turns: TranscriptTurn[];
@@ -13,12 +14,13 @@ export interface TranscriptViewProps {
 /** iMessage-style thread: the AI (our side) on the right in the tint color, the caller on the left in grey. */
 export function TranscriptView({ turns, collapsedCount = 4 }: TranscriptViewProps) {
   const [expanded, setExpanded] = useState(false);
+  const { t: tr } = useLang();
   const list = (Array.isArray(turns) ? turns : []).filter((t) => t && typeof t.text === "string" && t.text.trim());
 
   if (list.length === 0) {
     return (
       <AppText variant="body" color={colors.textSubtle}>
-        ไม่มีบทสนทนา
+        {tr("comp.transcriptEmpty")}
       </AppText>
     );
   }
@@ -41,7 +43,7 @@ export function TranscriptView({ turns, collapsedCount = 4 }: TranscriptViewProp
           >
             {firstOfGroup && (
               <AppText variant="caption" color={colors.textSubtle} style={styles.who}>
-                {isCaller ? "ผู้โทร" : "AI ผู้ช่วย"}
+                {isCaller ? tr("comp.caller") : tr("comp.aiAssistant")}
               </AppText>
             )}
             <View
@@ -67,7 +69,7 @@ export function TranscriptView({ turns, collapsedCount = 4 }: TranscriptViewProp
           style={({ pressed }) => [styles.toggle, pressed && styles.togglePressed]}
         >
           <AppText variant="small" weight="semibold" color={colors.brand}>
-            {expanded ? "ย่อ" : `ดูทั้งหมด ${list.length} ข้อความ`}
+            {expanded ? tr("comp.collapse") : tr("comp.showAll", { n: list.length })}
           </AppText>
           <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={16} color={colors.brand} />
         </Pressable>

@@ -7,9 +7,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCall, useFamily } from "@/lib/hooks";
 import { acceptCall, blockCall } from "@/lib/actions";
 import { formatClock, timeAgo } from "@/lib/time";
+import { useLang, type StrKey } from "@/lib/i18n";
 import {
   formatCallerKey,
-  RED_FLAG_LABEL_TH,
   type CallAnalysis,
   type CallDoc,
   type CallStatus,
@@ -39,10 +39,10 @@ type Decision = "accepted" | "blocked";
 const ACTIONABLE = new Set<CallStatus>(["needs_review", "auto_blocked", "no_message"]);
 const PENDING = new Set<CallStatus>(["screening", "analyzing"]);
 
-const RECOMMENDATION_TH: Record<CallAnalysis["recommendedAction"], { text: string; color: string; icon: keyof typeof Ionicons.glyphMap }> = {
-  accept: { text: "AI แนะนำ: รับสายได้", color: colors.success, icon: "checkmark" },
-  review: { text: "AI แนะนำ: ตรวจสอบก่อนตัดสินใจ", color: colors.warning, icon: "help" },
-  block: { text: "AI แนะนำ: ควรบล็อก", color: colors.danger, icon: "hand-left" },
+const RECOMMENDATION: Record<CallAnalysis["recommendedAction"], { text: StrKey; color: string; icon: keyof typeof Ionicons.glyphMap }> = {
+  accept: { text: "call.recAccept", color: colors.success, icon: "checkmark" },
+  review: { text: "call.recReview", color: colors.warning, icon: "help" },
+  block: { text: "call.recBlock", color: colors.danger, icon: "hand-left" },
 };
 
 function decisionOf(call: CallDoc): Decision | null {
@@ -52,21 +52,21 @@ function decisionOf(call: CallDoc): Decision | null {
   return null;
 }
 
-function formatDuration(sec: number | null | undefined): string | null {
+function formatDuration(sec: number | null | undefined, t: ReturnType<typeof useLang>["t"]): string | null {
   if (sec == null || !Number.isFinite(sec) || sec <= 0) return null;
   const m = Math.floor(sec / 60);
   const s = Math.round(sec % 60);
-  return m > 0 ? `${m} นาที ${s} วินาที` : `${s} วินาที`;
+  return m > 0 ? t("call.durMinSec", { m, s }) : t("call.durSec", { s });
 }
 
 /** Native confirm dialog; RN-web's Alert has no buttons, so fall back to window.confirm there. */
-function confirm(title: string, message: string, okText: string, destructive: boolean, onOk: () => void) {
+function confirm(title: string, message: string, okText: string, cancelText: string, destructive: boolean, onOk: () => void) {
   if (Platform.OS === "web") {
     if ((globalThis as { confirm?: (m: string) => boolean }).confirm?.(`${title}\n\n${message}`)) onOk();
     return;
   }
   Alert.alert(title, message, [
-    { text: "ยกเลิก", style: "cancel" },
+    { text: cancelText, style: "cancel" },
     { text: okText, style: destructive ? "destructive" : "default", onPress: onOk },
   ]);
 }
@@ -77,6 +77,7 @@ export default function CallDetailScreen() {
   const { call, loading, error } = useCall(id);
   const { family } = useFamily();
   const insets = useSafeAreaInsets();
+  const { t, lang, redFlagLabel } = useLang();
 
   const [busy, setBusy] = useState<Decision | null>(null);
   const [localDecision, setLocalDecision] = useState<Decision | null>(null);
@@ -88,12 +89,12 @@ export default function CallDetailScreen() {
       <View style={styles.centerWrap}>
         <EmptyState
           icon={error ? "cloud-offline" : "call"}
-          title={error ? "โหลดข้อมูลสายไม่สำเร็จ" : "ไม่พบสายนี้"}
-          subtitle={error ? "ตรวจสอบอินเทอร์เน็ต แล้วลองใหม่อีกครั้ง" : "สายนี้อาจถูกลบไปแล้ว หรือลิงก์ไม่ถูกต้อง"}
+          title={error ? t("call.loadError") : t("call.notFound")}
+          subtitle={error ? t("call.loadErrorHint") : t("call.notFoundHint")}
         />
         <View style={styles.centerButton}>
           <PrimaryButton
-            title="กลับไปหน้าสายเข้า"
+            title={t("call.backToInbox")}
             variant="secondary"
             onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))}
           />
@@ -102,7 +103,7 @@ export default function CallDetailScreen() {
     );
   }
 
-  const ownerName = family?.ownerName?.trim() || "ผู้สูงอายุ";
+  const ownerName = family?.ownerName?.trim() || t("call.ownerFallback");
   const analysis = call.analysis ?? null;
   const pending = PENDING.has(call.status);
   const decision = localDecision ?? decisionOf(call);
@@ -112,7 +113,10 @@ export default function CallDetailScreen() {
   // High-risk calls: Block is the main action, Accept is demoted so nobody whitelists a scammer by reflex.
   const risky = analysis?.recommendedAction === "block" || (analysis?.riskScore ?? 0) >= 70;
   const title = analysis?.callerName || formatCallerKey(call.callerKey);
-  const duration = formatDuration(call.durationSec);
+  // English UI shows the English summary/reason when the analysis has one.
+  const reason = (lang === "en" && analysis?.reasonEn) || analysis?.reason;
+  const summary = (lang === "en" && analysis?.summaryEn) || analysis?.summary;
+  const duration = formatDuration(call.durationSec, t);
 
   const runAccept = async () => {
     setBusy("accepted");
@@ -131,18 +135,19 @@ export default function CallDetailScreen() {
     }
   };
   const askAccept = () =>
-    confirm("อนุญาตเบอร์นี้?", `เบอร์นี้จะโทรถึง${ownerName}ได้ทันทีครั้งถัดไป`, "อนุญาต", false, runAccept);
+    confirm(t("call.acceptConfirmTitle"), t("call.acceptConfirmMsg", { ownerName }), t("call.acceptOk"), t("common.cancel"), false, runAccept);
   const askBlock = () =>
     confirm(
-      "บล็อกและรายงานเบอร์นี้?",
-      "ครั้งหน้าเบอร์นี้จะถูกตัดสายทันที และจะถูกรายงานเข้าบัญชีบล็อกกลางเพื่อเตือนครอบครัวอื่น",
-      "บล็อก",
+      t("call.blockConfirmTitle"),
+      t("call.blockConfirmMsg"),
+      t("call.blockOk"),
+      t("common.cancel"),
       true,
       runBlock,
     );
   const callBack = () => {
     Linking.openURL(`tel:${callbackTarget}`).catch(() =>
-      Alert.alert("โทรออกไม่ได้", "อุปกรณ์นี้ไม่รองรับการโทรออก"),
+      Alert.alert(t("call.cantCallTitle"), t("call.cantCallMsg")),
     );
   };
 
@@ -156,13 +161,13 @@ export default function CallDetailScreen() {
   const actionBarSpace = showActionBar ? Math.max(barHeight, 140 + insets.bottom) + spacing.lg : spacing.xxl + insets.bottom;
 
   const facts: { label: string; value?: string | null }[] = [
-    { label: "ผู้โทร", value: analysis?.callerName },
-    { label: "หน่วยงาน", value: analysis?.organization },
-    { label: "ต้องการติดต่อ", value: analysis?.targetPerson },
-    { label: "เรื่อง", value: analysis?.reason },
-    { label: "เบอร์ติดต่อกลับ", value: analysis?.callbackNumber ? formatCallerKey(analysis.callbackNumber) : null },
-    { label: "เบอร์ที่โทรมา", value: formatCallerKey(call.callerKey) },
-    { label: "เวลา", value: `${formatClock(call.startedAt)} · ${timeAgo(call.startedAt)}` },
+    { label: t("call.factCaller"), value: analysis?.callerName },
+    { label: t("call.factOrg"), value: analysis?.organization },
+    { label: t("call.factTarget"), value: analysis?.targetPerson },
+    { label: t("call.factReason"), value: reason },
+    { label: t("call.factCallback"), value: analysis?.callbackNumber ? formatCallerKey(analysis.callbackNumber) : null },
+    { label: t("call.factNumber"), value: formatCallerKey(call.callerKey) },
+    { label: t("call.factTime"), value: `${formatClock(call.startedAt)} · ${timeAgo(call.startedAt)}` },
   ].filter((f) => typeof f.value === "string" && f.value.trim());
 
   return (
@@ -189,7 +194,7 @@ export default function CallDetailScreen() {
               <View style={styles.pendingRow}>
                 <PulseDot color={colors.brand} size={10} />
                 <AppText variant="body" weight="semibold" color={colors.brand}>
-                  {call.status === "screening" ? "AI กำลังคุยกับผู้โทร…" : "กำลังสรุป…"}
+                  {call.status === "screening" ? t("call.aiTalking") : t("call.summarizing")}
                 </AppText>
               </View>
               <Skeleton height={110} width="65%" />
@@ -202,7 +207,7 @@ export default function CallDetailScreen() {
             <StatusPill status={call.status} ownerResponse={call.ownerResponse} />
             {duration ? (
               <AppText variant="caption" color={colors.textSubtle}>
-                ความยาวสาย {duration}
+                {t("call.duration", { duration })}
               </AppText>
             ) : null}
           </View>
@@ -212,18 +217,18 @@ export default function CallDetailScreen() {
         {decision ? (
           <Banner
             tone={decision === "accepted" ? "success" : "danger"}
-            text={decision === "accepted" ? "อนุญาตแล้ว ครั้งหน้าจะโทรเข้าได้เลย" : "บล็อกแล้ว เบอร์นี้จะถูกตัดสายอัตโนมัติ"}
-            actionLabel={busy ? undefined : "เปลี่ยนใจ"}
+            text={decision === "accepted" ? t("call.acceptedBanner") : t("call.blockedBanner")}
+            actionLabel={busy ? undefined : t("call.changeMind")}
             onAction={busy ? undefined : decision === "accepted" ? askBlock : askAccept}
           />
         ) : null}
 
         {/* ---------- AI summary ---------- */}
-        <ListSection header="สรุปจาก AI">
+        <ListSection header={t("call.aiSummary")}>
           {analysis ? (
             <View style={styles.cellPad}>
               <AppText variant="body" style={styles.summary}>
-                {analysis.summary || analysis.reason || "ไม่มีบทสรุป"}
+                {summary || reason || t("call.noSummary")}
               </AppText>
             </View>
           ) : pending ? (
@@ -235,7 +240,7 @@ export default function CallDetailScreen() {
           ) : (
             <View style={styles.cellPad}>
               <AppText variant="body" color={colors.textMuted}>
-                {noAnalysisText(call.status)}
+                {noAnalysisText(call.status, t)}
               </AppText>
             </View>
           )}
@@ -243,7 +248,7 @@ export default function CallDetailScreen() {
         </ListSection>
 
         {/* ---------- Facts ---------- */}
-        <ListSection header="ข้อมูลผู้โทร">
+        <ListSection header={t("call.callerInfo")}>
           {facts.map((f) => (
             <FactRow key={f.label} label={f.label} value={f.value} />
           ))}
@@ -251,12 +256,12 @@ export default function CallDetailScreen() {
 
         {/* ---------- Red flags ---------- */}
         {analysis ? (
-          <ListSection header="สัญญาณอันตราย" separatorInset={SEPARATOR_INSET - 4}>
+          <ListSection header={t("call.redFlags")} separatorInset={SEPARATOR_INSET - 4}>
             {noRedFlags ? (
               <ListRow
                 icon="checkmark"
                 iconColor={colors.success}
-                title="ไม่พบสัญญาณอันตราย"
+                title={t("call.noRedFlags")}
                 titleColor={colors.success}
               />
             ) : null}
@@ -265,7 +270,7 @@ export default function CallDetailScreen() {
                 <IconTile name="alert" color={colors.danger} size={26} />
                 <View style={styles.flex}>
                   <AppText variant="body" weight="semibold" color={colors.danger}>
-                    {RED_FLAG_LABEL_TH[e.flag] ?? "สัญญาณผิดปกติ"}
+                    {redFlagLabel[e.flag] ?? t("comp.flagUnknown")}
                   </AppText>
                   {e.quote ? (
                     <AppText variant="small" color={colors.textMuted} style={styles.quote}>
@@ -286,7 +291,7 @@ export default function CallDetailScreen() {
         ) : null}
 
         {/* ---------- Transcript ---------- */}
-        <ListSection header="บทสนทนา">
+        <ListSection header={t("call.transcript")}>
           <View style={styles.cellPad}>
             {transcript.length > 0 ? (
               <TranscriptView turns={transcript} collapsedCount={4} />
@@ -294,12 +299,12 @@ export default function CallDetailScreen() {
               <View style={styles.pendingRow}>
                 <PulseDot color={colors.brand} size={8} />
                 <AppText variant="body" color={colors.textMuted} style={styles.flex}>
-                  AI กำลังคุยกับผู้โทร บทสนทนาจะแสดงเมื่อวางสาย
+                  {t("call.transcriptPending")}
                 </AppText>
               </View>
             ) : (
               <AppText variant="body" color={colors.textMuted}>
-                ไม่มีบทสนทนาสำหรับสายนี้
+                {t("call.transcriptNone")}
               </AppText>
             )}
           </View>
@@ -313,7 +318,7 @@ export default function CallDetailScreen() {
           onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}
         >
           <PrimaryButton
-            title={risky ? "บล็อกและรายงาน" : "อนุญาตเบอร์นี้"}
+            title={risky ? t("call.blockReport") : t("call.acceptNumber")}
             icon={risky ? "hand-left" : "checkmark"}
             variant={risky ? "danger" : "primary"}
             onPress={risky ? askBlock : askAccept}
@@ -323,7 +328,7 @@ export default function CallDetailScreen() {
           <View style={styles.actionRow}>
             <View style={styles.flex}>
               <PrimaryButton
-                title={risky ? "อนุญาต" : "บล็อก"}
+                title={risky ? t("call.acceptOk") : t("call.blockOk")}
                 variant={risky ? "secondary" : "dangerTinted"}
                 onPress={risky ? askAccept : askBlock}
                 loading={busy === (risky ? "accepted" : "blocked")}
@@ -333,7 +338,7 @@ export default function CallDetailScreen() {
             {canCallBack ? (
               <View style={styles.flex}>
                 <PrimaryButton
-                  title="โทรกลับ"
+                  title={t("call.callBack")}
                   icon="call"
                   variant="secondary"
                   onPress={callBack}
@@ -348,23 +353,24 @@ export default function CallDetailScreen() {
   );
 }
 
-function noAnalysisText(status: CallStatus): string {
+function noAnalysisText(status: CallStatus, t: ReturnType<typeof useLang>["t"]): string {
   switch (status) {
     case "forwarded":
-      return "เบอร์นี้อยู่ในรายชื่อที่อนุญาต ระบบจึงต่อสายให้ทันทีโดยไม่ผ่าน AI";
+      return t("call.noAnalysisForwarded");
     case "rejected":
-      return "เบอร์นี้อยู่ในบัญชีบล็อก ระบบจึงตัดสายอัตโนมัติ";
+      return t("call.noAnalysisRejected");
     case "no_message":
-      return "ผู้โทรวางสายก่อนฝากข้อความ จึงไม่มีบทสรุป";
+      return t("call.noAnalysisNoMessage");
     default:
-      return "ยังไม่มีบทสรุปสำหรับสายนี้";
+      return t("call.noAnalysisDefault");
   }
 }
 
 function Recommendation({ action }: { action: CallAnalysis["recommendedAction"] }) {
-  const rec = RECOMMENDATION_TH[action];
+  const { t } = useLang();
+  const rec = RECOMMENDATION[action];
   if (!rec) return null;
-  return <ListRow icon={rec.icon} iconColor={rec.color} title={rec.text} titleColor={rec.color} />;
+  return <ListRow icon={rec.icon} iconColor={rec.color} title={t(rec.text)} titleColor={rec.color} />;
 }
 
 function StatusIcon({ status }: { status: CallStatus }) {

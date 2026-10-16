@@ -1,5 +1,6 @@
 import { StyleSheet, View } from "react-native";
-import { RED_FLAG_LABEL_TH, type RedFlag } from "@/lib/contract";
+import type { RedFlag } from "@/lib/contract";
+import { useLang } from "@/lib/i18n";
 import { colors, radii, spacing } from "@/theme";
 import { AppText } from "./app-text";
 
@@ -9,9 +10,10 @@ export interface RedFlagChipProps {
 
 /** Tinted red capsule with the Thai red-flag label. */
 export function RedFlagChip({ flag }: RedFlagChipProps) {
-  const label = RED_FLAG_LABEL_TH[flag] ?? "สัญญาณผิดปกติ";
+  const { t, redFlagLabel } = useLang();
+  const label = redFlagLabel[flag] ?? t("comp.flagUnknown");
   return (
-    <View style={styles.chip} accessible accessibilityLabel={`สัญญาณอันตราย: ${label}`}>
+    <View style={styles.chip} accessible accessibilityLabel={t("comp.flagA11y", { label })}>
       <AppText variant="caption" weight="medium" color={colors.danger} numberOfLines={1} style={styles.text}>
         {label}
       </AppText>

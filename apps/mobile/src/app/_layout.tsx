@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { ensureSignedIn, USE_MOCKS } from "@/lib/firebase";
 import { registerForPush, useNotificationRouting } from "@/lib/push";
 import { useDeviceRole, type DeviceRole } from "@/lib/role";
+import { loadLang, useLang } from "@/lib/i18n";
 import { AppText, PrimaryButton } from "@/components";
 import { colors, fonts, fontSize, spacing } from "@/theme";
 
@@ -32,6 +33,11 @@ export default function RootLayout() {
   });
   const fontsReady = fontsLoaded || !!fontError;
   const { role, loaded: roleLoaded } = useDeviceRole();
+  // Saved language is read before the splash hides, so an English user never sees Thai flash first.
+  const [langLoaded, setLangLoaded] = useState(false);
+  useEffect(() => {
+    void loadLang().finally(() => setLangLoaded(true));
+  }, []);
 
   const [authState, setAuthState] = useState<AuthState>(USE_MOCKS ? "ok" : "pending");
   const [attempt, setAttempt] = useState(0);
@@ -60,7 +66,7 @@ export default function RootLayout() {
     registerForPush().catch((e: unknown) => console.warn("registerForPush failed", e));
   }, [authState, role]);
 
-  const ready = fontsReady && authState !== "pending" && roleLoaded;
+  const ready = fontsReady && authState !== "pending" && roleLoaded && langLoaded;
   useEffect(() => {
     if (ready) SplashScreen.hideAsync().catch(() => {});
   }, [ready]);
@@ -68,7 +74,7 @@ export default function RootLayout() {
   if (fontError) console.warn("font load failed, falling back to system font", fontError);
 
   // Text components need the fonts; the native splash is still covering the screen here (role read is ~instant).
-  if (!fontsReady || !roleLoaded) return null;
+  if (!fontsReady || !roleLoaded || !langLoaded) return null;
 
   return (
     <View style={styles.root}>
@@ -100,6 +106,7 @@ export default function RootLayout() {
  */
 function AppStack({ role }: { role: DeviceRole | null }) {
   useNotificationRouting();
+  const { t } = useLang();
   return (
     <Stack
       screenOptions={{
@@ -114,7 +121,7 @@ function AppStack({ role }: { role: DeviceRole | null }) {
     >
       <Stack.Protected guard={role === "guardian"}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="blocked" options={{ title: "เบอร์ที่ถูกบล็อก" }} />
+        <Stack.Screen name="blocked" options={{ title: t("layout.blockedTitle") }} />
       </Stack.Protected>
       <Stack.Protected guard={role === "grandma"}>
         <Stack.Screen name="grandma" options={{ headerShown: false }} />
@@ -125,7 +132,7 @@ function AppStack({ role }: { role: DeviceRole | null }) {
       <Stack.Protected guard={role === null}>
         <Stack.Screen name="welcome" options={{ headerShown: false, gestureEnabled: false }} />
       </Stack.Protected>
-      <Stack.Screen name="call/[id]" options={{ title: "รายละเอียดสาย" }} />
+      <Stack.Screen name="call/[id]" options={{ title: t("layout.callDetailTitle") }} />
       <Stack.Screen
         name="ring/[callId]"
         options={{ headerShown: false, presentation: "fullScreenModal", gestureEnabled: false }}
@@ -135,17 +142,18 @@ function AppStack({ role }: { role: DeviceRole | null }) {
 }
 
 function SignInError({ onRetry }: { onRetry: () => void }) {
+  const { t } = useLang();
   return (
     <View style={[styles.center, styles.errorWrap]}>
       <Ionicons name="cloud-offline" size={56} color={colors.textFaint} style={styles.errorIcon} />
       <AppText variant="title" weight="bold" style={styles.textCenter}>
-        เชื่อมต่อไม่สำเร็จ
+        {t("layout.connectFailed")}
       </AppText>
       <AppText variant="small" color={colors.textSubtle} style={styles.textCenter}>
-        ตรวจสอบอินเทอร์เน็ตของโทรศัพท์ แล้วลองใหม่อีกครั้ง
+        {t("layout.connectFailedHint")}
       </AppText>
       <View style={styles.errorButton}>
-        <PrimaryButton title="ลองใหม่" onPress={onRetry} />
+        <PrimaryButton title={t("common.retry")} onPress={onRetry} />
       </View>
     </View>
   );

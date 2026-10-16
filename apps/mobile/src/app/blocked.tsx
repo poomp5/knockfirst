@@ -5,12 +5,13 @@ import { useBlocked } from "@/lib/hooks";
 import { unblockNumber } from "@/lib/actions";
 import { timeAgo } from "@/lib/time";
 import { formatCallerKey, type BlockedEntry } from "@/lib/contract";
+import { useLang, type StrKey } from "@/lib/i18n";
 import { AppText, Banner, EmptyState, ListRow, ListSection, Skeleton } from "@/components";
 import { colors, radii, SEPARATOR_INSET, spacing } from "@/theme";
 
-const REASON_LABEL: Record<BlockedEntry["reason"], string> = {
-  auto: "บล็อกอัตโนมัติ",
-  guardian: "คุณบล็อกเอง",
+const REASON_LABEL: Record<BlockedEntry["reason"], StrKey> = {
+  auto: "blocked.reason.auto",
+  guardian: "blocked.reason.guardian",
 };
 
 function entryTitle(e: BlockedEntry): string {
@@ -28,11 +29,12 @@ function BlockedRow({
   disabled: boolean;
   onUnblock: (e: BlockedEntry) => void;
 }) {
+  const { t } = useLang();
   const isAuto = entry.reason === "auto";
   const title = entryTitle(entry);
   const meta = [
     entry.displayName ? formatCallerKey(entry.callerKey) : null,
-    REASON_LABEL[entry.reason] ?? "บล็อกแล้ว",
+    t(REASON_LABEL[entry.reason] ?? "blocked.reason.default"),
     timeAgo(entry.addedAt),
   ]
     .filter(Boolean)
@@ -50,14 +52,14 @@ function BlockedRow({
           disabled={disabled}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel={`ปลดบล็อก ${title}`}
+          accessibilityLabel={t("blocked.unblockA11y", { name: title })}
           style={({ pressed }) => [styles.capsule, pressed && styles.pressed, disabled && !busy && styles.dim]}
         >
           {busy ? (
             <ActivityIndicator size="small" color={colors.brand} />
           ) : (
             <AppText variant="small" weight="semibold" color={colors.brand}>
-              ปลดบล็อก
+              {t("blocked.unblock")}
             </AppText>
           )}
         </Pressable>
@@ -68,6 +70,7 @@ function BlockedRow({
 
 export default function BlockedScreen() {
   const { entries, loading, error } = useBlocked();
+  const { t } = useLang();
   const insets = useSafeAreaInsets();
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -76,17 +79,17 @@ export default function BlockedScreen() {
     if (busyKey) return;
     const title = entryTitle(entry);
     Alert.alert(
-      "ปลดบล็อกเบอร์นี้?",
-      `${title} จะโทรเข้ามาได้อีกครั้ง โดย AI จะรับสายและสรุปให้คุณตรวจสอบก่อน`,
+      t("blocked.confirmTitle"),
+      t("blocked.confirmBody", { name: title }),
       [
-        { text: "ยกเลิก", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "ปลดบล็อก",
+          text: t("blocked.unblock"),
           onPress: async () => {
             setBusyKey(entry.callerKey);
             try {
               const ok = await unblockNumber(entry.callerKey);
-              if (ok) setNotice(`ปลดบล็อก ${title} แล้ว`);
+              if (ok) setNotice(t("blocked.unblocked", { name: title }));
             } finally {
               setBusyKey(null);
             }
@@ -98,8 +101,8 @@ export default function BlockedScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={[styles.list, { paddingBottom: spacing.xxl + insets.bottom }]}>
-      {notice && <Banner tone="success" text={notice} actionLabel="ปิด" onAction={() => setNotice(null)} />}
-      {error && <Banner tone="error" text="โหลดรายการเบอร์ที่บล็อกไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่" />}
+      {notice && <Banner tone="success" text={notice} actionLabel={t("blocked.close")} onAction={() => setNotice(null)} />}
+      {error && <Banner tone="error" text={t("blocked.loadError")} />}
 
       {loading && entries.length === 0 ? (
         <View style={styles.skeletons}>
@@ -110,14 +113,14 @@ export default function BlockedScreen() {
         error ? null : (
           <EmptyState
             icon="hand-left"
-            title="ยังไม่มีเบอร์ที่ถูกบล็อก"
-            subtitle="เมื่อคุณบล็อกสายแปลก หรือ AI บล็อกสายเสี่ยงสูง จะแสดงที่นี่"
+            title={t("blocked.empty.title")}
+            subtitle={t("blocked.empty.subtitle")}
           />
         )
       ) : (
         <ListSection
-          header={`${entries.length} เบอร์`}
-          footer="เบอร์เหล่านี้จะถูกตัดสายทันที ไม่ถึงผู้สูงอายุ"
+          header={t("blocked.count", { n: entries.length })}
+          footer={t("blocked.footer")}
           separatorInset={SEPARATOR_INSET}
         >
           {entries.map((item) => (

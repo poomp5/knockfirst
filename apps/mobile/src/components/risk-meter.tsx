@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { Easing, useAnimatedProps, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
-import { RISK_COLOR, RISK_LABEL_TH, riskLevelFromScore } from "@/lib/contract";
+import { RISK_COLOR, riskLevelFromScore } from "@/lib/contract";
+import { useLang } from "@/lib/i18n";
 import { colors, radii, spacing } from "@/theme";
 import { AppText } from "./app-text";
 import { clampScore, RISK_SOFT } from "./risk-badge";
@@ -35,6 +36,7 @@ export function RiskMeter({ score, width = 232 }: RiskMeterProps) {
   const level = riskLevelFromScore(s);
   const color = RISK_COLOR[level];
   const reduceMotion = useReducedMotion();
+  const { t, riskLabel } = useLang();
 
   const r = (width - STROKE) / 2;
   const cx = width / 2;
@@ -56,7 +58,7 @@ export function RiskMeter({ score, width = 232 }: RiskMeterProps) {
       style={styles.wrap}
       accessible
       accessibilityRole="progressbar"
-      accessibilityLabel={`คะแนนความเสี่ยง ${s} จาก 100 ${RISK_LABEL_TH[level]}`}
+      accessibilityLabel={t("comp.riskMeterA11y", { score: s, label: riskLabel[level] })}
     >
       <View style={{ width, height }}>
         <Svg width={width} height={height}>
@@ -78,14 +80,14 @@ export function RiskMeter({ score, width = 232 }: RiskMeterProps) {
             {s}
           </AppText>
           <AppText variant="caption" weight="medium" color={colors.textSubtle}>
-            คะแนนความเสี่ยง
+            {t("comp.riskScore")}
           </AppText>
         </View>
       </View>
       <View style={[styles.label, { backgroundColor: RISK_SOFT[level] }]}>
         <View style={[styles.labelDot, { backgroundColor: color }]} />
         <AppText variant="small" weight="semibold" color={color}>
-          {RISK_LABEL_TH[level]}
+          {riskLabel[level]}
         </AppText>
       </View>
     </View>

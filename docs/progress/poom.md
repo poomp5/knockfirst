@@ -33,3 +33,8 @@
 | ID | Task | Status | Notes |
 |---|---|---|---|
 | R1 | Apple-style redesign, no emoji in the UI | ✅ | iOS grouped lists (`components/list.tsx`: ListSection/ListRow/IconTile/LargeTitle), large titles on tabs, ring risk badge, rounded gauge, iMessage transcript, Settings-style settings, bottom-sheet add form, lock-screen clock on grandma home, iOS incoming-call ring screen. Removed 📞 and ✓. Checked on web (mock mode); needs an on-device pass. Server push titles still contain 📞/⚠️ (Tete's `services/push.ts`). |
+
+## Thai / English
+| ID | Task | Status | Notes |
+|---|---|---|---|
+| L1 | i18n (`src/lib/i18n.ts`, `useLang`, AsyncStorage, default Thai) + ภาษา / Language switch in Settings | ✅ | All UI strings in `src/app/**` + `src/components/**` go through `t()`; Thai wording unchanged. Contract labels via `statusLabel/redFlagLabel/riskLabel`; English mode shows `summaryEn`/`reasonEn` when present. Checked on web (mock) in both languages: inbox, call detail, settings, grandma, ring. Version 0.3.0 (versionCode 3) → needs Tete to tag `v0.3.0`. |
