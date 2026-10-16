@@ -1,4 +1,4 @@
-# KnockFirst brand kit
+# KnockFirst brand kit.
 
 **Name:** KnockFirst
 **Tagline (EN):** "Strangers knock first. Family opens the door."
