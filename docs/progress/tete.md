@@ -6,7 +6,7 @@
 
 | ID | Task | Status | Notes |
 |---|---|---|---|
-| B0.1 | GitHub repo + collaborators | ✅ | Using `poomp5/u-hackathon` (the planned separate repo was never created); teterw, poomp5, Skysosmart, mil3rd already have access. Repo is **private**: must go public before submission. Actions secrets still to add (B9). |
+| B0.1 | GitHub repo + collaborators | ✅ | Using `poomp5/knockfirst` (the planned separate repo was never created); teterw, poomp5, Skysosmart, mil3rd already have access. Repo is **private**: must go public before submission. Actions secrets still to add (B9). |
 | B0.2 | Firebase project, Firestore, Anonymous Auth, Android + Web apps, service account | ❌ | |
 | B0.4 | ElevenLabs API key + agent id from Sky | ❌ | |
 | B0.5 | LLM key | ❌ | |
@@ -22,7 +22,7 @@
 | B10 | Deploy + end-to-end test matrix | ❌ | Use update 05's call test (7 rows) instead of the Twilio matrix. |
 | B11 | README for judges | 🟡 | Done: logo, links, problem, how it works + diagram, web/app screenshots, try-it steps, eval table, safety, tech, run locally, roadmap, 8 diagrams in docs/assets. Pending: PM's validation numbers + pitch deck link, PM's GitHub handle. |
 | B12 | Extras (U-Bot, signature validation, /stats) | ❌ | Only after M2. |
-| U04-0 | Update 04 Part 0: KnockFirst rename, CLAUDE.md v2, contract v2 | ✅ | Repo stays `poomp5/u-hackathon` (no rename/set-url); APK `knockfirst.apk`; tagline "Strangers knock first. Family opens the door." |
+| U04-0 | Update 04 Part 0: KnockFirst rename, CLAUDE.md v2, contract v2 | ✅ | Repo stays `poomp5/knockfirst` (no rename/set-url); APK `knockfirst.apk`; tagline "Strangers knock first. Family opens the door." |
 | U04-1 | Update 04 Part 1: instant "calling now" push + decision guard | 🟡 | Server done: `sendToGuardians` (tag = callId), `notifyIncoming` (not awaited in `/twilio/voice`), `notifyUpdate`, transactional guard in the pipeline. Emulator + mocked FCM: 14/14 checks pass (push matrix, replace-by-tag, `notifyOnIncoming=false`, whitelist no push, guard). Real-phone tests (a)–(e) wait for the APK; record the (a) delay here. |
 | U05-1 | Remove Twilio | ✅ | Packages `twilio` + `@elevenlabs/elevenlabs-js` dropped (ElevenLabs via `fetch`); route kept in `src/adapters/twilio.ts`, excluded from tsconfig. |
 | U05-2 | `POST /call/start` | ✅ | Rate limit 10/min/IP, ≥9 digits; blocked → rejected; whitelisted → forwarded + `owner_ring` push; unknown → token first (502 if it fails, nothing written), then call doc + `conversations/{id}` mapping + instant alert. |

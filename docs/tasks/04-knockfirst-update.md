@@ -1,6 +1,6 @@
 # Update 04: rename to **KnockFirst** + new CLAUDE.md + instant "someone is calling grandma" alert
 
-> **Applied by Tete (Thu 15 Oct).** Team decisions on top of this file: the repo **stays `poomp5/u-hackathon`** (it was never `teterw/luklan`), so nobody renames it or changes their remote; the APK is `knockfirst.apk`; the tagline is *"Strangers knock first. Family opens the door."* Poom's KnockFirst brand kit is already in `brand/`.
+> **Applied by Tete (Thu 15 Oct).** Team decisions on top of this file: the repo **stays `poomp5/knockfirst`** (it was never `teterw/luklan`), so nobody renames it or changes their remote; the APK is `knockfirst.apk`; the tagline is *"Strangers knock first. Family opens the door."* Poom's KnockFirst brand kit is already in `brand/`.
 
 > **This is the only file you need for this update.** Tete applies Part 0 first and pushes. Then everyone pulls and does their own section of Part 1.
 >
@@ -71,7 +71,7 @@ Run these replacements **in this order** on `docs/tasks/00-START-HERE.md`, `01-t
 | 3 | `com.luklan.guardian` | `com.knockfirst.guardian` |
 | 4 | `luklan-guardian.apk` | `knockfirst.apk` |
 | 5 | `luklan-guardian` | `knockfirst` |
-| 6 | `teterw/luklan` | `poomp5/u-hackathon` |
+| 6 | `teterw/luklan` | `poomp5/knockfirst` |
 | 7 | `LukLan` | `KnockFirst` |
 | 8 | `luklan` | `knockfirst` |
 
@@ -83,14 +83,14 @@ Also update A5 in all three task files to **contract v2** (0.5), so Part A stays
 
 | Where | Change |
 |---|---|
-| GitHub repo | **No rename.** The repo stays `poomp5/u-hackathon`; nobody changes their remote |
+| GitHub repo | **No rename.** The repo stays `poomp5/knockfirst`; nobody changes their remote |
 | Railway / Vercel | Check that auto-deploy still triggers after the rename. Reconnect the repo if not. Rename the services to `knockfirst-server` / `knockfirst` if you like (domains can stay) |
 | Firebase | **If the Android app was already registered as `com.luklan.guardian`:** Project settings → Add app → Android → **`com.knockfirst.guardian`** → download the new `google-services.json` → send it to Poom → update the GitHub secret `GOOGLE_SERVICES_JSON_BASE64`. You can delete the old Android app. The project display name can become "KnockFirst" (the project ID can't change, and that's fine) |
 | `.github/workflows/android-release.yml` | `luklan-guardian.apk` → `knockfirst.apk`; artifact name `knockfirst`; workflow name "KnockFirst APK release" |
-| `README.md` | Title **KnockFirst**, tagline, links to `poomp5/u-hackathon`, APK link below |
+| `README.md` | Title **KnockFirst**, tagline, links to `poomp5/knockfirst`, APK link below |
 | Server | Startup log "KnockFirst server on :PORT", any user-facing strings. **Firestore paths and `demo-family` don't change** |
 | Twilio | TwiML App name "KnockFirst Web Demo" (cosmetic) |
-| Env values (team chat) | `VITE_APK_URL=https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst.apk`, `VITE_REPO_URL=https://github.com/poomp5/u-hackathon` |
+| Env values (team chat) | `VITE_APK_URL=https://github.com/poomp5/knockfirst/releases/latest/download/knockfirst.apk`, `VITE_REPO_URL=https://github.com/poomp5/knockfirst` |
 
 **Name and tagline for everyone (README, app, web, deck):**
 - **KnockFirst**: *"Strangers knock first. Family opens the door."*

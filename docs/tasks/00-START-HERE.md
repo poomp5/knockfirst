@@ -25,7 +25,7 @@ All three task files share an identical **Part A: Shared contract** (data model,
 
 ## 1. Locked decisions (change NOW or never)
 
-- App name **KnockFirst**, Android package **`com.knockfirst.guardian`**, repo **`github.com/poomp5/u-hackathon`** (private now; Poom makes it **public** before submission). The Firebase Android app is registered with this package name, so renaming later costs time.
+- App name **KnockFirst**, Android package **`com.knockfirst.guardian`**, repo **`github.com/poomp5/knockfirst`** (private now; Poom makes it **public** before submission). The Firebase Android app is registered with this package name, so renaming later costs time.
 - Stack:
   - Expo + React Native → **Android APK**.
   - Node/Express server on **Railway**.
@@ -48,7 +48,7 @@ All three task files share an identical **Part A: Shared contract** (data model,
 ## 3. The first 30 minutes (run in parallel)
 
 **Tete (unblocks everyone, go first):**
-1–2. ✅ Done: the repo `poomp5/u-hackathon` (Poom's; everyone has write access) has all task files, `CLAUDE.md` and the server. Post **"skeleton is up"**.
+1–2. ✅ Done: the repo `poomp5/knockfirst` (Poom's; everyone has write access) has all task files, `CLAUDE.md` and the server. Post **"skeleton is up"**.
 3. Firebase project → send the **web config** to Poom and Sky, and **`google-services.json`** to Poom.
 4. Twilio: upgrade, buy a US voice number, enable Thailand in Geo permissions.
 5. **Register the team on hub.team1.network** if not done yet. Organisers must approve the team before we can submit.
@@ -70,8 +70,8 @@ All three task files share an identical **Part A: Shared contract** (data model,
 ## 4. How each dev starts Claude Code
 
 ```bash
-git clone https://github.com/poomp5/u-hackathon.git
-cd u-hackathon
+git clone https://github.com/poomp5/knockfirst.git
+cd knockfirst
 git checkout -b <yourname>/<topic>        # tete/server · poom/app · sky/ai
 claude
 ```
@@ -136,7 +136,7 @@ Thu **18:00** (hall closes, move home and keep the voice call open) · **20:30**
 
 - [ ] Repo **public**; README has the pitch, links, architecture, eval numbers, team, and how to run
 - [ ] **Demo website** URL works in an incognito window, on desktop and phone
-- [ ] **APK** downloads from `https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst.apk` and installs
+- [ ] **APK** downloads from `https://github.com/poomp5/knockfirst/releases/latest/download/knockfirst.apk` and installs
 - [ ] Pitch deck link set to **"Anyone with the link can view"**
 - [ ] `/demo/reset` run, then `npm run simulate -- --demo`, so judges see clean, realistic cards
 - [ ] Submitted on **hub.team1.network** by **13:30**

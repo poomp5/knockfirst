@@ -56,7 +56,7 @@
 ## A3. Repo layout
 
 ```
-u-hackathon/                    public GitHub repo: github.com/poomp5/u-hackathon
+knockfirst/                     public GitHub repo: github.com/poomp5/knockfirst
 ├─ README.md                    Tete   (judge-facing: what it is, links, architecture, how to run)
 ├─ CLAUDE.md                    Tete   (auto-read by Claude Code: asks "who are you?" and routes to the task file)
 ├─ .gitignore                   Tete
@@ -448,8 +448,8 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 VITE_FAMILY_ID=demo-family
 VITE_SERVER_URL=
-VITE_APK_URL=https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst.apk
-VITE_REPO_URL=https://github.com/poomp5/u-hackathon
+VITE_APK_URL=https://github.com/poomp5/knockfirst/releases/latest/download/knockfirst.apk
+VITE_REPO_URL=https://github.com/poomp5/knockfirst
 ```
 
 ## A9. Push notifications

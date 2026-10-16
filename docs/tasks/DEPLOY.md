@@ -39,7 +39,7 @@ npx firebase-tools@latest deploy --only firestore:rules --project knockfirst-hac
 ## 2. Railway: the server (Poom, about 10 min)
 
 1. **railway.com → Login with GitHub.** The repo is yours, so it shows up directly.
-2. **New Project → Deploy from GitHub repo → `poomp5/u-hackathon`.** The first build fails; that's expected.
+2. **New Project → Deploy from GitHub repo → `poomp5/knockfirst`.** The first build fails; that's expected.
 3. Open the service → **Settings**:
    - **Source → Root Directory:** `/apps/server`
    - **Source → Branch:** `main`. Every push to `main` now redeploys.
@@ -69,7 +69,7 @@ npx firebase-tools@latest deploy --only firestore:rules --project knockfirst-hac
 
 ## 3. Vercel: the web demo (Poom, about 5 min)
 
-1. **vercel.com → Continue with GitHub → Add New → Project → Import `poomp5/u-hackathon`.**
+1. **vercel.com → Continue with GitHub → Add New → Project → Import `poomp5/knockfirst`.**
 2. **Configure:**
    - **Root Directory:** Edit → `apps/web-demo`
    - **Framework Preset:** Vite (auto). Leave Build/Output on defaults; Vercel sees `bun.lock` and builds with bun.
@@ -83,8 +83,8 @@ npx firebase-tools@latest deploy --only firestore:rules --project knockfirst-hac
    VITE_FIREBASE_APP_ID=…
    VITE_FAMILY_ID=demo-family
    VITE_SERVER_URL=https://YOUR-APP.up.railway.app
-   VITE_APK_URL=https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst.apk
-   VITE_REPO_URL=https://github.com/poomp5/u-hackathon
+   VITE_APK_URL=https://github.com/poomp5/knockfirst/releases/latest/download/knockfirst.apk
+   VITE_REPO_URL=https://github.com/poomp5/knockfirst
    ```
    `VITE_` values are baked in at build time. After changing one: Deployments → ⋯ → **Redeploy**.
 4. **Deploy** → you get `https://YOUR-SITE.vercel.app`. Post it in the team chat.

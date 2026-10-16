@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://u-hackathon.vercel.app"><b>Try the web demo</b></a> ·
-  <a href="https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst.apk"><b>Download the Android app</b></a> ·
+  <a href="https://github.com/poomp5/knockfirst/releases/latest/download/knockfirst.apk"><b>Download the Android app</b></a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#results">Results</a> ·
   <a href="#safety--privacy">Safety</a>
@@ -75,7 +75,7 @@ Blocking apps only know numbers that were already reported, and iPhone's call sc
 1. Open **[u-hackathon.vercel.app](https://u-hackathon.vercel.app)** (earphones help), pick a role (delivery rider, fake police or clinic), and press **Call grandma**. Speak Thai or English.
 2. Hang up. Within about 15 seconds your call appears in the family inbox with a summary and risk score. Open it and press **Accept** or **Block**.
 3. Call again with **Same number again**: accepted numbers now ring grandma's phone (no AI); blocked numbers are cut off.
-4. Install the app: download **[knockfirst.apk](https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst.apk)**, allow installing from unknown sources, open KnockFirst and choose *ลูกหลาน* (guardian) or *คุณยาย* (grandma).
+4. Install the app: download **[knockfirst.apk](https://github.com/poomp5/knockfirst/releases/latest/download/knockfirst.apk)**, allow installing from unknown sources, open KnockFirst and choose *ลูกหลาน* (guardian) or *คุณยาย* (grandma).
 
 ## Results
 
@@ -175,8 +175,8 @@ docs/tasks       the team's task files and updates
 1. Read [`docs/tasks/00-START-HERE.md`](docs/tasks/00-START-HERE.md), then every update file (`docs/tasks/04-*.md`, `05-*.md`, …). Deploy steps: [`docs/tasks/DEPLOY.md`](docs/tasks/DEPLOY.md).
 2. Clone, make your branch, run Claude Code:
    ```bash
-   git clone https://github.com/poomp5/u-hackathon.git
-   cd u-hackathon
+   git clone https://github.com/poomp5/knockfirst.git
+   cd knockfirst
    git checkout -b <yourname>/<topic>   # tete/server · poom/app · sky/ai
    claude
    ```

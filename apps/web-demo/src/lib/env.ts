@@ -13,8 +13,8 @@ export const firebaseConfig = {
 export const FAMILY_ID = (e.VITE_FAMILY_ID as string | undefined) || "demo-family";
 export const SERVER_URL = ((e.VITE_SERVER_URL as string | undefined) ?? "").replace(/\/+$/, "");
 export const APK_URL =
-  (e.VITE_APK_URL as string | undefined) || "https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst.apk";
-export const REPO_URL = (e.VITE_REPO_URL as string | undefined) || "https://github.com/poomp5/u-hackathon";
+  (e.VITE_APK_URL as string | undefined) || "https://github.com/poomp5/knockfirst/releases/latest/download/knockfirst.apk";
+export const REPO_URL = (e.VITE_REPO_URL as string | undefined) || "https://github.com/poomp5/knockfirst";
 
 /** No Firebase config → local preview with clearly labelled sample cards (never in a configured build). */
 export const PREVIEW_MODE = !firebaseConfig.apiKey || !firebaseConfig.projectId;

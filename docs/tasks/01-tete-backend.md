@@ -56,7 +56,7 @@
 ## A3. Repo layout
 
 ```
-u-hackathon/                    public GitHub repo: github.com/poomp5/u-hackathon
+knockfirst/                     public GitHub repo: github.com/poomp5/knockfirst
 ├─ README.md                    Tete   (judge-facing: what it is, links, architecture, how to run)
 ├─ CLAUDE.md                    Tete   (auto-read by Claude Code: asks "who are you?" and routes to the task file)
 ├─ .gitignore                   Tete
@@ -448,8 +448,8 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 VITE_FAMILY_ID=demo-family
 VITE_SERVER_URL=
-VITE_APK_URL=https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst.apk
-VITE_REPO_URL=https://github.com/poomp5/u-hackathon
+VITE_APK_URL=https://github.com/poomp5/knockfirst/releases/latest/download/knockfirst.apk
+VITE_REPO_URL=https://github.com/poomp5/knockfirst
 ```
 
 ## A9. Push notifications
@@ -519,7 +519,7 @@ VITE_REPO_URL=https://github.com/poomp5/u-hackathon
 Keep a private note called **"KnockFirst secrets"** and paste each value there as you get it. Share it with the team **only in the private chat**.
 
 ### B0.1 GitHub
-- [x] Repo `poomp5/u-hackathon` (Poom owns it; teterw, Skysosmart and mil3rd have write access). **Poom makes it public before submission.**
+- [x] Repo `poomp5/knockfirst` (Poom owns it; teterw, Skysosmart and mil3rd have write access). **Poom makes it public before submission.**
 - [ ] Later, in Settings → Secrets and variables → Actions, add the secrets listed in B9.
 
 ### B0.2 Firebase (project id e.g. `knockfirst-hackathon`)
@@ -550,7 +550,7 @@ Keep a private note called **"KnockFirst secrets"** and paste each value there a
 - [ ] Get one key: Anthropic (`LLM_PROVIDER=anthropic`, `LLM_MODEL=claude-haiku-5-5`) **or** any OpenAI-compatible API (`LLM_PROVIDER=openai_compatible`, plus `LLM_BASE_URL`, `LLM_MODEL`). Ask organisers whether the participant AI credits cover a specific provider.
 
 ### B0.6 Railway (server hosting; no sleeping, so Twilio webhooks don't time out)
-- [ ] New project → Deploy from GitHub repo `poomp5/u-hackathon` → service **root directory `apps/server`**. Poom owns the repo, so either Poom grants Railway's GitHub app access to it, or deploy with the Railway CLI (`railway up` from `apps/server`).
+- [ ] New project → Deploy from GitHub repo `poomp5/knockfirst` → service **root directory `apps/server`**. Poom owns the repo, so either Poom grants Railway's GitHub app access to it, or deploy with the Railway CLI (`railway up` from `apps/server`).
 - [ ] Build `npm ci && npm run build`, start `npm start`. Add all `apps/server/.env` vars.
 - [ ] Settings → Networking → **Generate domain** → `PUBLIC_BASE_URL`. Share it with Poom and Sky.
 - [ ] Do **not** use Render's free tier: it sleeps, and the first Twilio webhook after sleep times out.
@@ -1095,7 +1095,7 @@ jobs:
 ```
 
 - The Expo prebuild template signs `release` with the debug keystore, so the APK installs on any phone with "install unknown apps" allowed. That's fine for a demo. Store publishing would need a real keystore, which we skip.
-- The stable download link is `https://github.com/poomp5/u-hackathon/releases/latest/download/knockfirst.apk`. The web demo and README point to it.
+- The stable download link is `https://github.com/poomp5/knockfirst/releases/latest/download/knockfirst.apk`. The web demo and README point to it.
 - **Release cadence:** tag `v0.1.0` as soon as Poom's app opens (target Thu 22:00) to prove the pipeline works. Then tag again whenever Poom says "ready": `v0.2.x` tonight, **`v1.0.0` by Fri 11:00**. Only Tete pushes tags: `git tag v1.0.0 && git push origin v1.0.0`.
 - If the build fails, read the log. Common causes are a Java version mismatch (try 17, or whatever the Expo SDK docs say), a missing `google-services.json`, or Gradle running out of memory (add `org.gradle.jvmargs=-Xmx4g` through an Expo config plugin, which is Poom's area). If CI is still red at 23:30, Poom builds locally (fallback in A12) and you upload the APK to a GitHub Release by hand.
 

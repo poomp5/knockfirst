@@ -32,7 +32,7 @@ type FormKey = "ownerName" | "ownerPhone" | "ownerLabelForCallers" | "guardianNa
 type Draft = Partial<Record<FormKey, string>>;
 type PermStatus = "granted" | "denied" | "undetermined";
 
-const REPO_URL = "https://github.com/poomp5/u-hackathon";
+const REPO_URL = "https://github.com/poomp5/knockfirst";
 const WEB_DEMO_URL = "https://knockfirst.pranakorn.co.th/";
 const SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL ?? "";
 const DEV_TAPS = 7;
