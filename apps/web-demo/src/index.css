@@ -614,3 +614,10 @@ button { font: inherit; color: inherit; }
   .admin-door-knock i, .admin-status--wait .admin-status-dot, .admin-spin, .admin-call { animation: none; }
   .admin-door-knock i:first-child { opacity: 0.5; }
 }
+.admin-more .link-btn {
+  margin: -6px -10px; padding: 6px 10px; border-radius: 10px;
+  transition: background-color 0.15s var(--ease), color 0.15s var(--ease), text-decoration-color 0.15s var(--ease);
+}
+.admin-more .link-btn:hover:not(:disabled) { background: var(--orange-wash); color: var(--orange-press); text-decoration-thickness: 2px; }
+.admin-more .link-btn--danger:hover:not(:disabled) { background: var(--high-wash); color: #b3261e; }
+.admin-more .link-btn:active:not(:disabled) { transform: scale(0.98); }
