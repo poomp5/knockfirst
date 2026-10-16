@@ -307,13 +307,28 @@ export function AdminPanel() {
       <button className="btn btn--primary admin-wide admin-go" disabled={!ready} onClick={() => run(["reset", "load"])}>
         {busy ? "Working…" : armed === "reset+load" ? "Tap again to confirm" : `Reset and load the ${demo} demo calls`}
       </button>
-      <p className="admin-more">
-        <button type="button" className="link-btn" disabled={!ready} onClick={() => run(["load"])}>Add the demo calls without resetting</button>
-        <button type="button" className="link-btn link-btn--danger" disabled={!ready} onClick={() => run(["reset"])}>
-          {armed === "reset" ? "Tap again to empty the inbox" : "Only empty the inbox"}
+      <p className="admin-hint">Resets this family's calls, blocked numbers and added known callers. Seed callers stay.</p>
+
+      <div className="admin-more" role="group" aria-label="Other actions">
+        <button type="button" className="admin-opt" disabled={!ready} onClick={() => run(["load"])}>
+          <span className="admin-opt-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+          </span>
+          <span className="admin-opt-text">
+            <strong>Add the demo calls without resetting</strong>
+            <small>Keeps every call already in the inbox and adds the {demo} demo calls on top.</small>
+          </span>
         </button>
-      </p>
-      <p className="admin-hint">Reset deletes this family's calls, blocked numbers and added known callers. Seed callers stay.</p>
+        <button type="button" className={`admin-opt admin-opt--danger${armed === "reset" ? " is-armed" : ""}`} disabled={!ready} onClick={() => run(["reset"])}>
+          <span className="admin-opt-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>
+          </span>
+          <span className="admin-opt-text">
+            <strong>{armed === "reset" ? "Tap again to empty the inbox" : "Only empty the inbox"}</strong>
+            <small>Deletes every call and leaves the inbox empty. No demo calls are loaded.</small>
+          </span>
+        </button>
+      </div>
 
       {note}
 

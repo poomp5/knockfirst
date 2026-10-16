@@ -589,7 +589,7 @@ button { font: inherit; color: inherit; }
 @media (max-width: 520px) { .admin-checks { grid-template-columns: 1fr; } }
 
 .admin-go { min-height: 60px; font-size: 1.125rem; }
-.admin-more { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 16px 0 0; font-size: 0.9375rem; }
+.admin-more { display: grid; margin: 20px 0 0; border-radius: var(--r-sm); background: var(--surface); overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
 .link-btn { background: none; border: 0; padding: 0; color: var(--orange-ink); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .link-btn:disabled { color: var(--ink-3); cursor: not-allowed; }
 .link-btn--danger { color: var(--high); }
@@ -614,10 +614,22 @@ button { font: inherit; color: inherit; }
   .admin-door-knock i, .admin-status--wait .admin-status-dot, .admin-spin, .admin-call { animation: none; }
   .admin-door-knock i:first-child { opacity: 0.5; }
 }
-.admin-more .link-btn {
-  margin: -6px -10px; padding: 6px 10px; border-radius: 10px;
-  transition: background-color 0.15s var(--ease), color 0.15s var(--ease), text-decoration-color 0.15s var(--ease);
+.admin-opt {
+  display: grid; grid-template-columns: 40px 1fr; gap: 14px; align-items: center; width: 100%; padding: 14px 16px;
+  border: 0; background: none; text-align: left; cursor: pointer; color: var(--ink);
+  transition: background-color 0.15s var(--ease);
 }
-.admin-more .link-btn:hover:not(:disabled) { background: var(--orange-wash); color: var(--orange-press); text-decoration-thickness: 2px; }
-.admin-more .link-btn--danger:hover:not(:disabled) { background: var(--high-wash); color: #b3261e; }
-.admin-more .link-btn:active:not(:disabled) { transform: scale(0.98); }
+.admin-opt + .admin-opt { border-top: 1px solid var(--line); }
+.admin-opt-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--orange-wash); color: var(--orange-ink); transition: background-color 0.15s var(--ease), color 0.15s var(--ease); }
+.admin-opt-text { display: grid; gap: 2px; min-width: 0; }
+.admin-opt-text strong { font-weight: 600; }
+.admin-opt-text small { font-size: 0.875rem; color: var(--ink-2); line-height: 1.4; }
+.admin-opt:hover:not(:disabled) { background: var(--orange-wash); }
+.admin-opt:hover:not(:disabled) .admin-opt-icon { background: var(--orange); color: #fff; }
+.admin-opt--danger .admin-opt-icon { background: var(--high-wash); color: var(--high); }
+.admin-opt--danger strong { color: var(--high); }
+.admin-opt--danger:hover:not(:disabled), .admin-opt--danger.is-armed { background: var(--high-wash); }
+.admin-opt--danger:hover:not(:disabled) .admin-opt-icon, .admin-opt--danger.is-armed .admin-opt-icon { background: var(--high); color: #fff; }
+.admin-opt:active:not(:disabled) { background: var(--fill); }
+.admin-opt:focus-visible { outline-offset: -3px; border-radius: var(--r-sm); }
+.admin-opt:disabled { cursor: not-allowed; opacity: 0.5; }
