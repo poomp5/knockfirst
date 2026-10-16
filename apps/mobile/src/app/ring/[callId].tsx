@@ -62,6 +62,7 @@ export default function RingScreen() {
 
   const [tapped, setTapped] = useState<Response | null>(null);
   const [timedOut, setTimedOut] = useState(false);
+  const [inVoice, setInVoice] = useState(false); // live voice page is open on top of this screen
 
   // Missed after 30 s of ringing (or immediately if the call is long over).
   const hasCall = call != null;
@@ -85,8 +86,10 @@ export default function RingScreen() {
   useRingtone(phase === "ringing");
 
   // Result screens close by themselves; "not found" waits for a tap.
-  const autoCloseMs =
-    phase === "answered" || phase === "declined" ? RESULT_CLOSE_MS : phase === "missed" ? MISSED_CLOSE_MS : null;
+  // Not while the voice page is open: closing this modal would dismiss the browser presented on top of it.
+  const autoCloseMs = inVoice
+    ? null
+    : phase === "answered" || phase === "declined" ? RESULT_CLOSE_MS : phase === "missed" ? MISSED_CLOSE_MS : null;
   useEffect(() => {
     if (autoCloseMs == null) return;
     const timer = setTimeout(close, autoCloseMs);
@@ -99,7 +102,15 @@ export default function RingScreen() {
     const ok = await setOwnerResponse(callId, response);
     if (!ok) setTapped(null); // actions already showed an error Alert → let her try again
     // Live voice with the web caller (WebRTC page on the web demo; Expo Go has no native WebRTC).
-    else if (response === "answered") WebBrowser.openBrowserAsync(`${VOICE_URL}${callId}`).catch(() => {});
+    else if (response === "answered") {
+      setInVoice(true);
+      WebBrowser.openBrowserAsync(`${VOICE_URL}${callId}`)
+        .catch(() => {})
+        .finally(() => {
+          setInVoice(false);
+          close(); // back home once grandma closes the voice page
+        });
+    }
   };
 
   const callerName = (() => {
