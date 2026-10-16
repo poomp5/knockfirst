@@ -4,6 +4,7 @@ import { RISK_LABEL_EN, riskLevelFromScore, type RiskLevel, type TranscriptTurn 
 import demoCases from "../lib/demoCases.json";
 import { FAMILY_ID, SERVER_URL } from "../lib/env";
 import { useCalls } from "../lib/useCalls";
+import { Icon } from "./Icon";
 
 // Team-only page at /admin: reset the demo family and load the 5 stage-demo calls before going on stage.
 // Uses the server's admin endpoints (/demo/reset, /dev/simulate-call). Two ways in:
@@ -310,15 +311,13 @@ export function AdminPanel() {
       <p className="admin-hint">Resets this family's calls, blocked numbers and added known callers. Seed callers stay.</p>
 
       <div className="admin-more" role="group" aria-label="Other actions">
-        <button type="button" className="admin-pill" disabled={!ready} onClick={() => run(["load"])}
+        <button type="button" className="btn btn--chip" disabled={!ready} onClick={() => run(["load"])}
           title={`Keeps the calls already in the inbox and adds the ${demo} demo calls`}>
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-          Add demo calls
+          <Icon name="plus" size={16} /> Add demo calls
         </button>
-        <button type="button" className={`admin-pill admin-pill--danger${armed === "reset" ? " is-armed" : ""}`} disabled={!ready} onClick={() => run(["reset"])}
+        <button type="button" className={`btn btn--chip admin-chip-danger${armed === "reset" ? " is-armed" : ""}`} disabled={!ready} onClick={() => run(["reset"])}
           title="Deletes every call and leaves the inbox empty">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>
-          {armed === "reset" ? "Tap again to empty" : "Empty the inbox"}
+          <Icon name="trash" size={16} /> {armed === "reset" ? "Tap again to empty" : "Empty the inbox"}
         </button>
       </div>
 

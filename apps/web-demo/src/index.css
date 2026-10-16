@@ -589,7 +589,7 @@ button { font: inherit; color: inherit; }
 @media (max-width: 520px) { .admin-checks { grid-template-columns: 1fr; } }
 
 .admin-go { min-height: 60px; font-size: 1.125rem; }
-.admin-more { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 0; }
+.admin-more { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; }
 .link-btn { background: none; border: 0; padding: 0; color: var(--orange-ink); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .link-btn:disabled { color: var(--ink-3); cursor: not-allowed; }
 .link-btn--danger { color: var(--high); }
@@ -614,13 +614,6 @@ button { font: inherit; color: inherit; }
   .admin-door-knock i, .admin-status--wait .admin-status-dot, .admin-spin, .admin-call { animation: none; }
   .admin-door-knock i:first-child { opacity: 0.5; }
 }
-.admin-pill {
-  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 18px; border: 0; border-radius: 999px;
-  background: var(--orange-wash); color: var(--orange-ink); font-weight: 600; font-size: 0.9375rem; cursor: pointer;
-  transition: background-color 0.15s var(--ease), color 0.15s var(--ease), transform 0.15s var(--ease);
-}
-.admin-pill:hover:not(:disabled) { background: var(--orange); color: #fff; }
-.admin-pill--danger { background: var(--high-wash); color: var(--high); }
-.admin-pill--danger:hover:not(:disabled), .admin-pill--danger.is-armed { background: var(--high); color: #fff; }
-.admin-pill:active:not(:disabled) { transform: scale(0.97); }
-.admin-pill:disabled { opacity: 0.45; cursor: not-allowed; }
+.admin-chip-danger .icon { color: var(--high); }
+.admin-chip-danger.is-armed, .admin-chip-danger.is-armed:hover:not(:disabled) { background: var(--high); color: #fff; }
+.admin-chip-danger.is-armed .icon { color: #fff; }
