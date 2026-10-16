@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { signInWithGoogle, signOutAdmin, useAdminUser } from "../lib/adminAuth";
 import { RISK_LABEL_EN, riskLevelFromScore, type RiskLevel, type TranscriptTurn } from "../lib/contract";
 import demoCases from "../lib/demoCases.json";
 import { FAMILY_ID, SERVER_URL } from "../lib/env";
 import { useCalls } from "../lib/useCalls";
+import { CallDrawer } from "./CallDrawer";
+import { Door, type DoorMode } from "./Door";
+import { FamilySide } from "./FamilySide";
 import { Icon } from "./Icon";
 
 // Team-only page at /admin: reset the demo family and load the 5 stage-demo calls before going on stage.
@@ -78,6 +81,9 @@ export function AdminPanel() {
   const { user } = useAdminUser();
   const inbox = useCalls();
   const armTimer = useRef<number | undefined>(undefined);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const closeDrawer = useCallback(() => setOpenId(null), []);
+  const noop = useCallback(() => {}, []);
 
   useEffect(() => {
     document.title = "KnockFirst admin";
@@ -278,72 +284,99 @@ export function AdminPanel() {
     );
   }
 
+  const calls = inbox.kind === "live" ? inbox.calls : [];
+  const openCall = openId ? calls.find(c => c.id === openId) ?? null : null;
+  const door: DoorMode = busy ? "send" : status.tone === "ok" ? "done" : "idle";
+
   return (
-    <main className="admin">
-      {logo}
+    <>
+      <header className="top">
+        <a href="/" aria-label="KnockFirst demo"><img className="top-logo" src="/brand/logo-wordmark.png" alt="KnockFirst" width="154" height="32" /></a>
+        <nav className="top-nav" aria-label="Admin">
+          <span className="admin-user">
+            <span className="admin-avatar" aria-hidden="true">{who.slice(0, 1).toUpperCase()}</span>
+            <span className="admin-user-name">{who}</span>
+          </span>
+          <button type="button" className="link-btn" onClick={() => { logOut(); setMessage(null); }}>Log out</button>
+          <a className="top-app" href="/">Open the demo</a>
+        </nav>
+      </header>
 
-      <section className={`admin-status admin-status--${status.tone}`} aria-live="polite">
-        <span className="admin-status-dot" aria-hidden="true" />
-        <div>
-          <h1>{status.title}</h1>
-          <p>{status.detail}</p>
+      <main className="admin-main">
+        <div className={`stage admin-stage stage--${door}`}>
+          <section className="side side--caller admin-control" aria-labelledby="control-h">
+            <div className="side-head">
+              <h2 id="control-h" className="side-title"><span className="step">1</span>Stage control</h2>
+              <p className="side-sub">Get the family's inbox ready before the pitch.</p>
+            </div>
+
+            <div className={`admin-status admin-status--${status.tone}`} aria-live="polite">
+              <span className="admin-status-dot" aria-hidden="true" />
+              <div>
+                <p className="admin-status-title">{status.title}</p>
+                <p>{status.detail}</p>
+              </div>
+            </div>
+
+            <ul className="admin-checks">
+              <li className={health.kind === "ok" ? "is-ok" : health.kind === "down" ? "is-bad" : ""}>
+                <span>Server</span>
+                <strong title={health.kind === "ok" ? `Contract v${health.version}` : undefined}>{health.kind === "ok" ? "Online" : health.kind === "down" ? "Offline" : "Checking"}</strong>
+              </li>
+              <li className={count === demo ? "is-ok" : count === null ? "" : "is-warn"}>
+                <span>Inbox</span>
+                <strong>{count === null ? (inbox.kind === "error" ? "Can't read" : "Checking") : `${count} ${count === 1 ? "call" : "calls"}`}</strong>
+              </li>
+            </ul>
+
+            <button className="btn btn--primary admin-wide admin-go" disabled={!ready} onClick={() => run(["reset", "load"])}>
+              {busy ? "Working…" : armed === "reset+load" ? "Tap again to confirm" : `Reset and load the ${demo} demo calls`}
+            </button>
+            <p className="admin-hint">Resets {FAMILY_ID}'s calls, blocked numbers and added known callers. Seed callers stay.</p>
+
+            <div className="admin-more" role="group" aria-label="Other actions">
+              <button type="button" className="btn btn--chip" disabled={!ready} onClick={() => run(["load"])}
+                title={`Keeps the calls already in the inbox and adds the ${demo} demo calls`}>
+                <Icon name="plus" size={16} /> Add demo calls
+              </button>
+              <button type="button" className={`btn btn--chip admin-chip-danger${armed === "reset" ? " is-armed" : ""}`} disabled={!ready} onClick={() => run(["reset"])}
+                title="Deletes every call and leaves the inbox empty">
+                <Icon name="trash" size={16} /> {armed === "reset" ? "Tap again to empty" : "Empty the inbox"}
+              </button>
+            </div>
+
+            {note}
+
+            {rows.length > 0 && (
+              <ol className="admin-run" aria-label="Demo calls">
+                {rows.map(r => (
+                  <li key={r.id} className={`admin-call admin-call--${r.state}`}>
+                    <span className={`admin-tile${r.level ? ` admin-tile--${r.level}` : ""}`} aria-hidden="true">
+                      {r.state === "done" && r.score != null ? r.score : r.state === "failed" ? "!" : r.state === "sending" ? <i className="admin-spin" /> : ""}
+                    </span>
+                    <span className="admin-call-main">
+                      <span className="admin-call-title">{r.title}</span>
+                      <span className="admin-call-state">
+                        {r.state === "waiting" ? "Waiting" : r.state === "sending" ? "AI is analyzing…"
+                          : r.state === "failed" ? r.detail
+                          : `${r.detail}${r.level ? `, ${RISK_LABEL_EN[r.level].toLowerCase()}` : ""}`}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+
+            <p className="admin-foot">Logs out by itself after 15 minutes without use.</p>
+          </section>
+
+          <Door mode={door} />
+
+          <FamilySide inbox={inbox} myKeys={[]} onOpen={setOpenId} onLanded={noop} />
         </div>
-      </section>
+      </main>
 
-      <ul className="admin-checks">
-        <li className={health.kind === "ok" ? "is-ok" : health.kind === "down" ? "is-bad" : ""}>
-          <span>Server</span>
-          <strong title={health.kind === "ok" ? `Contract v${health.version}` : undefined}>{health.kind === "ok" ? "Online" : health.kind === "down" ? "Offline" : "Checking"}</strong>
-        </li>
-        <li className={count === demo ? "is-ok" : count === null ? "" : "is-warn"}>
-          <span>Inbox ({FAMILY_ID})</span>
-          <strong>{count === null ? (inbox.kind === "error" ? "Can't read" : "Checking") : `${count} ${count === 1 ? "call" : "calls"}`}</strong>
-        </li>
-        <li className="is-ok">
-          <span>Logged in</span>
-          <strong>{who}</strong>
-        </li>
-      </ul>
-
-      <button className="btn btn--primary admin-wide admin-go" disabled={!ready} onClick={() => run(["reset", "load"])}>
-        {busy ? "Working…" : armed === "reset+load" ? "Tap again to confirm" : `Reset and load the ${demo} demo calls`}
-      </button>
-      <p className="admin-hint">Resets this family's calls, blocked numbers and added known callers. Seed callers stay.</p>
-
-      <div className="admin-more" role="group" aria-label="Other actions">
-        <button type="button" className="btn btn--chip" disabled={!ready} onClick={() => run(["load"])}
-          title={`Keeps the calls already in the inbox and adds the ${demo} demo calls`}>
-          <Icon name="plus" size={16} /> Add demo calls
-        </button>
-        <button type="button" className={`btn btn--chip admin-chip-danger${armed === "reset" ? " is-armed" : ""}`} disabled={!ready} onClick={() => run(["reset"])}
-          title="Deletes every call and leaves the inbox empty">
-          <Icon name="trash" size={16} /> {armed === "reset" ? "Tap again to empty" : "Empty the inbox"}
-        </button>
-      </div>
-
-      {note}
-
-      {rows.length > 0 && (
-        <ol className="admin-run" aria-label="Demo calls">
-          {rows.map(r => (
-            <li key={r.id} className={`admin-call admin-call--${r.state}`}>
-              <span className={`admin-tile${r.level ? ` admin-tile--${r.level}` : ""}`} aria-hidden="true">
-                {r.state === "done" && r.score != null ? r.score : r.state === "failed" ? "!" : r.state === "sending" ? <i className="admin-spin" /> : ""}
-              </span>
-              <span className="admin-call-main">
-                <span className="admin-call-title">{r.title}</span>
-                <span className="admin-call-state">
-                  {r.state === "waiting" ? "Waiting" : r.state === "sending" ? "AI is analyzing…"
-                    : r.state === "failed" ? r.detail
-                    : `${r.detail}${r.level ? `, ${RISK_LABEL_EN[r.level].toLowerCase()}` : ""}`}
-                </span>
-              </span>
-            </li>
-          ))}
-        </ol>
-      )}
-
-      <p className="admin-foot">Logs out by itself after 15 minutes without use. <a href="/">Open the demo</a></p>
-    </main>
+      {openCall && <CallDrawer call={openCall} onClose={closeDrawer} />}
+    </>
   );
 }

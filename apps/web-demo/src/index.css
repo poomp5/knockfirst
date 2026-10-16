@@ -617,3 +617,18 @@ button { font: inherit; color: inherit; }
 .admin-chip-danger .icon { color: var(--high); }
 .admin-chip-danger.is-armed, .admin-chip-danger.is-armed:hover:not(:disabled) { background: var(--high); color: #fff; }
 .admin-chip-danger.is-armed .icon { color: #fff; }
+
+/* Logged-in admin: the same stage as the demo, control panel | door | the family's live inbox */
+.admin-main { padding: 16px 0 32px; }
+.admin-stage { grid-template-columns: minmax(0, 1fr) var(--door-w) minmax(0, 1.2fr); }
+.admin-control .admin-status { padding: 20px 22px; border-radius: var(--r-sm); }
+.admin-status .admin-status-title { margin: 0; font: 700 clamp(1.5rem, 2.4vw, 2.125rem)/1.1 var(--display); letter-spacing: -0.025em; color: var(--ink); }
+.admin-control .admin-status p + p { margin: 6px 0 0; }
+.admin-control .admin-status-dot { margin-top: 0.45em; }
+.admin-control .admin-checks { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 10px 0 20px; }
+.admin-control .admin-checks li { background: var(--bg); }
+.admin-control .admin-call { background: var(--bg); }
+.admin-control .admin-foot { margin-top: 28px; }
+.top .admin-user { font-size: 0.875rem; }
+.top .admin-avatar { width: 28px; height: 28px; }
+.top .link-btn { font-size: 0.875rem; }
