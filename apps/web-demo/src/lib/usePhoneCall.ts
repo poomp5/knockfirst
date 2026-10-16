@@ -12,7 +12,7 @@ export type CallPhase =
   | "idle" | "dialing" | "connecting" | "talking" | "ended"   // unknown number → AI
   | "ringing" | "answered" | "declined" | "noAnswer"         // known number → grandma's phone
   | "blocked";
-export type CallError = "unavailable" | "aiUnavailable" | "badNumber" | "busy" | "micDenied" | "micMissing" | "failed";
+export type CallError = "unavailable" | "aiUnavailable" | "aiQuota" | "badNumber" | "busy" | "micDenied" | "micMissing" | "failed";
 export interface Caption { role: "assistant" | "caller"; text: string }
 export interface CallState {
   phase: CallPhase;
@@ -168,6 +168,10 @@ export function usePhoneCall() {
     // screened → talk to the AI in the browser (WebRTC)
     if (!r.conversationToken) { setState({ ...IDLE, error: "aiUnavailable" }); return; }
     setState({ ...base, phase: "connecting" });
+    // ElevenLabs can refuse the session after we have a token (e.g. out of credits): it just disconnects.
+    // Without this the caller hears silence and the page looks like a normal hang-up.
+    let connected = false;
+    let failure = "";
     try {
       // Loaded on first call only: keeps the first page load small.
       const { Conversation } = await import("@elevenlabs/client");
@@ -175,20 +179,23 @@ export function usePhoneCall() {
         conversationToken: r.conversationToken,
         connectionType: "webrtc",
         dynamicVariables: r.dynamicVariables,
-        onConnect: () => setState(s => ({ ...s, phase: "talking", since: Date.now() })),
+        onConnect: () => { connected = true; setState(s => ({ ...s, phase: "talking", since: Date.now() })); },
         onMessage: m => {
           const role: Caption["role"] = m.role === "agent" ? "assistant" : "caller";
           const text = role === "assistant" ? stripVoiceTags(m.message ?? "") : m.message?.trim();
           if (!text) return;
           setState(s => ({ ...s, captions: [...s.captions, { role, text }].slice(-8) }));
         },
-        onDisconnect: () => {
+        onDisconnect: details => {
           const id = conv.current?.getId();
           conv.current = null;
           endOnServer(r.callId, id);
-          setState(s => (s.callId === r.callId ? { ...s, phase: "ended" } : s));
+          const why = `${failure} ${details.reason === "error" ? details.message : ""} ${"closeReason" in details ? details.closeReason ?? "" : ""}`;
+          const error: CallError | null = /quota|credit/i.test(why) ? "aiQuota"
+            : details.reason === "error" || !connected ? "aiUnavailable" : null;
+          setState(s => (s.callId === r.callId ? { ...s, phase: error ? "idle" : "ended", error } : s));
         },
-        onError: (message: string) => console.warn("[call] conversation error", message),
+        onError: (message: string) => { failure += ` ${message}`; console.warn("[call] conversation error", message); },
       })) as VoiceConversation;
       conv.current = c;
     } catch (e) {

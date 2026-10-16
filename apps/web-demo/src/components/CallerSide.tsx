@@ -6,11 +6,15 @@ import { useClock } from "../lib/useClock";
 import type { CallPhase, CallState } from "../lib/usePhoneCall";
 import { Icon, type IconName } from "./Icon";
 
+const KNOWN_CALLER = "081-111-2222";
+
 const SCENARIOS = [
   { id: "rider", icon: "truck", label: "role_rider", say: "scenario_rider_say" },
   { id: "police", icon: "badge", label: "role_police", say: "scenario_police_say" },
   { id: "clinic", icon: "cross", label: "role_clinic", say: "scenario_clinic_say" },
-] as const satisfies readonly { id: string; icon: IconName; label: StrKey; say: StrKey }[];
+  // Seeded on grandma's known-callers list: skips the AI and rings grandma's phone.
+  { id: "family", icon: "home", label: "role_family", say: "scenario_family_say", number: KNOWN_CALLER },
+] as const satisfies readonly { id: string; icon: IconName; label: StrKey; say: StrKey; number?: string }[];
 
 export const ACTIVE: ReadonlySet<CallPhase> = new Set(["dialing", "connecting", "talking", "ringing"]);
 
@@ -39,6 +43,12 @@ export function CallerSide({ state, onCall, onHangUp, myLiveCall }: Props) {
   const { text: statusLine, clock } = useStatusLine(state);
   const current = SCENARIOS.find(s => s.id === scenario)!;
 
+  function pick(s: (typeof SCENARIOS)[number]) {
+    setScenario(s.id);
+    if ("number" in s) setNumber(s.number);
+    else if (number === KNOWN_CALLER) setNumber(randomThaiMobile()); // leaving "family": back to a stranger's number
+  }
+
   function call() {
     saveLastNumber(number);
     setLast(number);
@@ -48,6 +58,7 @@ export function CallerSide({ state, onCall, onHangUp, myLiveCall }: Props) {
   const errorText = state.error && ({
     unavailable: t("callUnavailable"),
     aiUnavailable: t("aiUnavailable"),
+    aiQuota: t("aiQuota"),
     badNumber: t("badNumber"),
     busy: t("tooManyCalls"),
     micDenied: t("micDenied"),
@@ -69,7 +80,7 @@ export function CallerSide({ state, onCall, onHangUp, myLiveCall }: Props) {
         <div className="role-chips">
           {SCENARIOS.map(s => (
             <label key={s.id} className="role-chip">
-              <input type="radio" name="scenario" value={s.id} checked={scenario === s.id} onChange={() => setScenario(s.id)} />
+              <input type="radio" name="scenario" value={s.id} checked={scenario === s.id} onChange={() => pick(s)} disabled={active} />
               <span><Icon name={s.icon} size={20} className="icon role-icon" />{t(s.label)}</span>
             </label>
           ))}
@@ -141,6 +152,11 @@ export function CallerSide({ state, onCall, onHangUp, myLiveCall }: Props) {
         <div className="note note--error" role="alert">
           <p>{errorText}</p>
           {state.error === "unavailable" && <p className="note-hint">{t("callUnavailableHint")}</p>}
+          {(state.error === "aiQuota" || state.error === "aiUnavailable") && (
+            <p className="note-hint">
+              <button type="button" className="link-btn" onClick={() => pick(SCENARIOS.find(s => s.id === "family")!)}>{t("tryKnownCaller")}</button>
+            </p>
+          )}
         </div>
       )}
       <p className="tip"><Icon name="headphones" size={16} /> {t("earphones")}</p>

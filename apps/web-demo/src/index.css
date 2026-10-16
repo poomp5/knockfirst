@@ -207,7 +207,7 @@ button { font: inherit; color: inherit; }
 .roles { border: 0; padding: 0; margin: 0 0 24px; min-width: 0; }
 .roles legend { font-weight: 600; font-size: 0.9375rem; color: var(--ink-2); padding: 0; margin-bottom: 10px; }
 /* segmented control */
-.role-chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; background: var(--fill); border-radius: 16px; }
+.role-chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; background: var(--fill); border-radius: 16px; }
 .role-chip { display: grid; }
 .role-chip input { position: absolute; opacity: 0; pointer-events: none; }
 .role-chip > span {
