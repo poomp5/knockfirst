@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { signInWithGoogle, signOutAdmin, useAdminUser } from "../lib/adminAuth";
-import type { TranscriptTurn } from "../lib/contract";
+import { RISK_LABEL_EN, riskLevelFromScore, type RiskLevel, type TranscriptTurn } from "../lib/contract";
 import demoCases from "../lib/demoCases.json";
 import { FAMILY_ID, SERVER_URL } from "../lib/env";
 import { useCalls } from "../lib/useCalls";
@@ -18,7 +18,7 @@ const LOCK_AFTER_MS = 15 * 60_000;
 const CASES = demoCases as { id: string; title: string; from: string; transcript: TranscriptTurn[] }[];
 
 type Health = { kind: "checking" } | { kind: "ok"; version: number } | { kind: "down"; detail: string };
-type Row = { id: string; title: string; state: "waiting" | "sending" | "done" | "failed"; detail?: string };
+type Row = { id: string; title: string; state: "waiting" | "sending" | "done" | "failed"; detail?: string; score?: number; level?: RiskLevel; blocked?: boolean };
 type Session = { name: string; token: string } | null;
 
 const DENIED = "Wrong password";
@@ -156,7 +156,8 @@ export function AdminPanel() {
   async function reset() {
     const r = await call("/demo/reset", { familyId: FAMILY_ID });
     const d = r.deleted ?? {};
-    return `Inbox cleared: ${d.calls ?? 0} calls, ${d.blocked ?? 0} blocked numbers, ${d.whitelist ?? 0} added known callers, ${d.globalReports ?? 0} blocklist reports. Seed callers kept.`;
+    const n = (k: number | undefined, one: string, many: string) => `${k ?? 0} ${(k ?? 0) === 1 ? one : many}`;
+    return `Inbox cleared: ${n(d.calls, "call", "calls")}, ${n(d.blocked, "blocked number", "blocked numbers")}, ${n(d.whitelist, "added known caller", "added known callers")}, ${n(d.globalReports, "blocklist report", "blocklist reports")}. Seed callers kept.`;
   }
 
   async function loadDemo() {
@@ -166,9 +167,11 @@ export function AdminPanel() {
       setRows(rs => rs.map(r => (r.id === c.id ? { ...r, state: "sending" } : r)));
       try {
         const j = await call("/dev/simulate-call", { familyId: FAMILY_ID, from: c.from, transcript: c.transcript });
-        const score = j.analysis?.riskScore ?? "–";
-        const status = String(j.status).replace("_", " ");
-        setRows(rs => rs.map(r => (r.id === c.id ? { ...r, state: "done", detail: `${status}, risk ${score}` } : r)));
+        const score: number | undefined = j.analysis?.riskScore;
+        const level: RiskLevel | undefined = j.analysis?.riskLevel ?? (score != null ? riskLevelFromScore(score) : undefined);
+        const blocked = j.status === "auto_blocked";
+        const detail = blocked ? "Auto-blocked" : j.status === "needs_review" ? "Waiting for the family" : String(j.status).replace("_", " ");
+        setRows(rs => rs.map(r => (r.id === c.id ? { ...r, state: "done", detail, score, level, blocked } : r)));
       } catch (e) {
         failed++;
         const detail = e instanceof Error ? e.message : String(e);
@@ -203,91 +206,138 @@ export function AdminPanel() {
   }
 
   const count = inbox.kind === "live" ? inbox.calls.length : null;
+  const demo = CASES.length;
+  const status: { tone: "ok" | "warn" | "bad" | "wait"; title: string; detail: string } =
+    health.kind === "down" ? { tone: "bad", title: "Server offline", detail: `Can't reach the KnockFirst server (${health.detail}). Calls and the admin buttons won't work.` }
+    : health.kind === "checking" || count === null ? { tone: "wait", title: "Checking the demo…", detail: "Looking at the server and the inbox." }
+    : busy ? { tone: "wait", title: "Getting the stage ready…", detail: "Keep this page open. It takes about 30 seconds." }
+    : count === demo ? { tone: "ok", title: "Ready for stage", detail: `The inbox holds the ${demo} demo calls.` }
+    : count === 0 ? { tone: "bad", title: "The inbox is empty", detail: `Load the ${demo} demo calls before the pitch.` }
+    : { tone: "warn", title: `${count} calls in the inbox`, detail: `Reset before the pitch, so judges see the ${demo} demo calls.` };
+
+  const logo = (
+    <header className="admin-top">
+      <a href="/" className="admin-brand"><img src="/brand/logo-wordmark.png" alt="KnockFirst" /></a>
+      {who ? (
+        <span className="admin-user">
+          <span className="admin-avatar" aria-hidden="true">{who.slice(0, 1).toUpperCase()}</span>
+          <span className="admin-user-name">{who}</span>
+          <button type="button" className="link-btn" onClick={() => { logOut(); setMessage(null); }}>Log out</button>
+        </span>
+      ) : (
+        <a href="/" className="admin-back">Back to the demo</a>
+      )}
+    </header>
+  );
+
+  const note = message && (
+    <p className={`note ${message.ok ? "note--ok" : "note--error"}`} role={message.ok ? "status" : "alert"}>{message.text}</p>
+  );
+
+  if (!who) {
+    return (
+      <main className="admin">
+        {logo}
+        {session ? (
+          <p className="admin-checking">Checking your saved login…</p>
+        ) : (
+          <div className="admin-gate">
+            <div className="admin-door" aria-hidden="true">
+              <img src="/brand/logo-mark.png" alt="" />
+              <span className="admin-door-knock"><i /><i /><i /></span>
+            </div>
+            <form className="admin-login" onSubmit={logIn}>
+              <h1>Team login</h1>
+              <p className="admin-sub">Get the demo ready before the pitch.</p>
+              <label className="field">
+                <span>Username</span>
+                <input name="username" autoComplete="username" value={formName} onChange={e => setFormName(e.target.value)} placeholder="Your name" />
+              </label>
+              <label className="field">
+                <span>Password</span>
+                <input name="password" type="password" autoComplete="current-password" spellCheck={false} required
+                  value={formPass} onChange={e => setFormPass(e.target.value)} />
+              </label>
+              <button className="btn btn--primary admin-wide" type="submit" disabled={loggingIn || !formPass.trim()}>
+                {loggingIn ? "Checking…" : "Log in"}
+              </button>
+              <p className="admin-hint">Use the team admin password. Your browser can save it for next time.</p>
+              <p className="admin-alt">
+                <button type="button" className="link-btn" onClick={async () => {
+                  setMessage(null);
+                  const err = await signInWithGoogle();
+                  if (err) setMessage({ ok: false, text: err });
+                }}>Sign in with Google instead</button>
+              </p>
+              {note}
+            </form>
+          </div>
+        )}
+      </main>
+    );
+  }
 
   return (
     <main className="admin">
-      <header className="admin-head">
-        <img src="/brand/logo-wordmark.png" alt="KnockFirst" height="26" />
-        <a href="/">Back to the demo</a>
-      </header>
+      {logo}
 
-      <h1>Demo admin</h1>
-      <p className="admin-lead">Clean the inbox and load the stage-demo calls for <strong>{FAMILY_ID}</strong>. For the team only.</p>
-
-      <dl className="admin-facts">
+      <section className={`admin-status admin-status--${status.tone}`} aria-live="polite">
+        <span className="admin-status-dot" aria-hidden="true" />
         <div>
-          <dt>Server</dt>
-          <dd>{health.kind === "checking" ? "Checking…" : health.kind === "ok" ? `Online (contract v${health.version})` : `Offline: ${health.detail}`}</dd>
+          <h1>{status.title}</h1>
+          <p>{status.detail}</p>
         </div>
-        <div>
-          <dt>Calls in the inbox</dt>
-          <dd aria-live="polite">{count ?? (inbox.kind === "error" ? "Can't read Firestore" : "…")}</dd>
-        </div>
-      </dl>
+      </section>
 
-      {who ? (
-        <>
-          <p className="admin-who">
-            Logged in as <strong>{who}</strong>{" "}
-            <button type="button" className="link-btn" onClick={() => { logOut(); setMessage(null); }}>Log out</button>
-          </p>
-          <p className="admin-hint">Logs out by itself after 15 minutes without use.</p>
+      <ul className="admin-checks">
+        <li className={health.kind === "ok" ? "is-ok" : health.kind === "down" ? "is-bad" : ""}>
+          <span>Server</span>
+          <strong title={health.kind === "ok" ? `Contract v${health.version}` : undefined}>{health.kind === "ok" ? "Online" : health.kind === "down" ? "Offline" : "Checking"}</strong>
+        </li>
+        <li className={count === demo ? "is-ok" : count === null ? "" : "is-warn"}>
+          <span>Inbox ({FAMILY_ID})</span>
+          <strong>{count === null ? (inbox.kind === "error" ? "Can't read" : "Checking") : `${count} ${count === 1 ? "call" : "calls"}`}</strong>
+        </li>
+        <li className="is-ok">
+          <span>Logged in</span>
+          <strong>{who}</strong>
+        </li>
+      </ul>
 
-          <div className="admin-actions">
-            <button className="btn btn--primary" disabled={!ready} onClick={() => run(["reset", "load"])}>
-              {armed === "reset+load" ? "Click again to reset and load" : "Reset and load demo calls"}
-            </button>
-            <button className="btn btn--chip" disabled={!ready} onClick={() => run(["load"])}>Load demo calls only</button>
-            <button className="btn btn--chip" disabled={!ready} onClick={() => run(["reset"])}>
-              {armed === "reset" ? "Click again to reset" : "Reset inbox only"}
-            </button>
-          </div>
-          <p className="admin-hint">Reset deletes every call, blocked number and added known caller of this family. Loading takes about 30 seconds.</p>
-        </>
-      ) : session ? (
-        <p className="admin-hint">Checking your saved login…</p>
-      ) : (
-        <form className="admin-login" onSubmit={logIn}>
-          <h2>Log in</h2>
-          <label className="field">
-            <span>Username</span>
-            <input name="username" autoComplete="username" value={formName} onChange={e => setFormName(e.target.value)} placeholder="Your name" />
-          </label>
-          <label className="field">
-            <span>Password</span>
-            <input name="password" type="password" autoComplete="current-password" spellCheck={false} required
-              value={formPass} onChange={e => setFormPass(e.target.value)} />
-          </label>
-          <p className="admin-hint">The password is the team admin password. Your browser can save it for next time.</p>
-          <button className="btn btn--primary" type="submit" disabled={loggingIn || !formPass.trim()}>
-            {loggingIn ? "Checking…" : "Log in"}
-          </button>
-          <p className="admin-alt">
-            <button type="button" className="link-btn" onClick={async () => {
-              setMessage(null);
-              const err = await signInWithGoogle();
-              if (err) setMessage({ ok: false, text: err });
-            }}>Or sign in with Google</button>
-          </p>
-        </form>
-      )}
+      <button className="btn btn--primary admin-wide admin-go" disabled={!ready} onClick={() => run(["reset", "load"])}>
+        {busy ? "Working…" : armed === "reset+load" ? "Tap again to confirm" : `Reset and load the ${demo} demo calls`}
+      </button>
+      <p className="admin-more">
+        <button type="button" className="link-btn" disabled={!ready} onClick={() => run(["load"])}>Add the demo calls without resetting</button>
+        <button type="button" className="link-btn link-btn--danger" disabled={!ready} onClick={() => run(["reset"])}>
+          {armed === "reset" ? "Tap again to empty the inbox" : "Only empty the inbox"}
+        </button>
+      </p>
+      <p className="admin-hint">Reset deletes this family's calls, blocked numbers and added known callers. Seed callers stay.</p>
 
-      {message && (
-        <p className={`note ${message.ok ? "note--ok" : "note--error"}`} role={message.ok ? "status" : "alert"}>{message.text}</p>
-      )}
+      {note}
 
       {rows.length > 0 && (
-        <ol className="admin-rows">
+        <ol className="admin-run" aria-label="Demo calls">
           {rows.map(r => (
-            <li key={r.id} className={`admin-row admin-row--${r.state}`}>
-              <span className="admin-row-title">{r.title}</span>
-              <span className="admin-row-state">
-                {r.state === "waiting" ? "Waiting" : r.state === "sending" ? "Analyzing…" : r.detail}
+            <li key={r.id} className={`admin-call admin-call--${r.state}`}>
+              <span className={`admin-tile${r.level ? ` admin-tile--${r.level}` : ""}`} aria-hidden="true">
+                {r.state === "done" && r.score != null ? r.score : r.state === "failed" ? "!" : r.state === "sending" ? <i className="admin-spin" /> : ""}
+              </span>
+              <span className="admin-call-main">
+                <span className="admin-call-title">{r.title}</span>
+                <span className="admin-call-state">
+                  {r.state === "waiting" ? "Waiting" : r.state === "sending" ? "AI is analyzing…"
+                    : r.state === "failed" ? r.detail
+                    : `${r.detail}${r.level ? `, ${RISK_LABEL_EN[r.level].toLowerCase()}` : ""}`}
+                </span>
               </span>
             </li>
           ))}
         </ol>
       )}
+
+      <p className="admin-foot">Logs out by itself after 15 minutes without use. <a href="/">Open the demo</a></p>
     </main>
   );
 }

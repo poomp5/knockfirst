@@ -532,33 +532,85 @@ button { font: inherit; color: inherit; }
   .row--fresh { box-shadow: 0 0 0 6px rgb(255 90 31 / 0.4); }
 }
 
-/* ---------- Team admin page (#admin) ---------- */
-.admin { max-width: 640px; margin: 0 auto; padding: 24px var(--gutter) 64px; }
-.admin-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 40px; }
-.admin-head img { height: 26px; width: auto; }
-.admin-head a { flex: none; white-space: nowrap; }
-.admin h1 { font-size: 2rem; margin: 0 0 8px; }
-.admin-lead { margin: 0 0 24px; color: var(--ink-2); }
-.admin-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 0 0 28px; }
-.admin-facts div { background: var(--fill); border-radius: 16px; padding: 14px 18px; }
-.admin-facts dt { font-size: 0.8125rem; color: var(--ink-2); }
-.admin-facts dd { margin: 2px 0 0; font-weight: 600; font-variant-numeric: tabular-nums; }
-.admin-token input { font-family: ui-monospace, monospace; letter-spacing: 0.04em; }
-.admin-hint { margin: 6px 0 0; font-size: 0.875rem; color: var(--ink-2); }
-.admin-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 28px 0 0; }
-.admin-rows { list-style: none; margin: 24px 0 0; padding: 0; display: grid; gap: 8px; }
-.admin-row { display: flex; justify-content: space-between; gap: 16px; padding: 12px 16px; border-radius: 14px; background: var(--fill); }
-.admin-row-title { min-width: 0; }
-.admin-row-state { flex: none; font-weight: 600; font-variant-numeric: tabular-nums; }
-.admin-row--sending .admin-row-state { color: var(--orange-ink); }
-.admin-row--done .admin-row-state { color: var(--low); }
-.admin-row--failed .admin-row-state { color: var(--high); }
-@media (max-width: 520px) { .admin-row { flex-direction: column; gap: 2px; } }
-.link-btn { background: none; border: 0; padding: 0; color: var(--orange-ink); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
-.link-btn + .link-btn { margin-left: 14px; }
-.admin-who { margin: 0; font-size: 1rem; }
-.admin-login { display: grid; gap: 14px; padding: 24px; border-radius: 20px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
-.admin-login h2 { font-size: 1.25rem; }
+/* ---------- Team admin page (/admin): one job, "is the demo ready for stage?" ---------- */
+.admin { max-width: 600px; margin: 0 auto; padding: 18px var(--gutter) 64px; }
+.admin-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px; margin: 0 0 clamp(28px, 6vh, 56px); }
+.admin-brand img { height: 24px; width: auto; }
+.admin-back { font-size: 0.9375rem; white-space: nowrap; }
+.admin-user { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 0.9375rem; }
+.admin-avatar { display: grid; place-items: center; flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--ink); color: #fff; font: 600 0.8125rem/1 var(--display); }
+.admin-user-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.admin-hint { margin: 10px 0 0; font-size: 0.875rem; color: var(--ink-2); }
+.admin-checking { color: var(--ink-2); }
+.admin-wide { width: 100%; }
+
+/* Login: the site's door, then the form */
+.admin-gate { display: grid; grid-template-columns: 92px 1fr; background: var(--surface); border-radius: var(--r); overflow: hidden; box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 12px 40px rgb(0 0 0 / 0.06); }
+.admin-door { position: relative; display: grid; place-items: center; overflow: hidden; background: var(--orange-wash); }
+.admin-door img { width: 34px; height: auto; position: absolute; top: 28px; }
+.admin-door-knock { display: grid; place-items: center; }
+.admin-door-knock i { grid-area: 1 / 1; width: 40px; height: 40px; border: 2px solid var(--orange); border-radius: 50%; opacity: 0; animation: knock 2.4s ease-out infinite; }
+.admin-door-knock i:nth-child(2) { animation-delay: 0.8s; }
+.admin-door-knock i:nth-child(3) { animation-delay: 1.6s; }
+.admin-login { display: grid; gap: 16px; padding: clamp(24px, 5vw, 40px); }
+.admin-login h1 { font-size: clamp(1.75rem, 4vw, 2.25rem); letter-spacing: -0.02em; }
+.admin-sub { margin: -10px 0 4px; color: var(--ink-2); }
 .admin-login .admin-hint { margin: -6px 0 0; }
-.admin-login .btn--primary { justify-self: start; }
 .admin-alt { margin: 0; font-size: 0.9375rem; }
+.admin-login .note { margin: 0; }
+@media (max-width: 520px) {
+  .admin-gate { grid-template-columns: 1fr; }
+  .admin-door { height: 76px; }
+  .admin-door img { position: static; justify-self: start; margin-left: 24px; grid-area: 1 / 1; }
+  .admin-door-knock { grid-area: 1 / 1; justify-self: end; margin-right: 32px; }
+}
+
+/* Logged in: the status is the headline */
+.admin-status { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: start; padding: clamp(22px, 4vw, 32px); border-radius: var(--r); background: var(--surface); }
+.admin-status h1 { font-size: clamp(2rem, 6vw, 3rem); letter-spacing: -0.03em; line-height: 1.05; }
+.admin-status p { margin: 8px 0 0; color: var(--ink-2); }
+.admin-status-dot { width: 14px; height: 14px; margin-top: 0.55em; border-radius: 50%; background: var(--ink-3); }
+.admin-status--ok { background: var(--low-wash); }
+.admin-status--ok .admin-status-dot { background: var(--low); box-shadow: 0 0 0 6px rgb(30 142 90 / 0.15); }
+.admin-status--warn { background: var(--medium-wash); }
+.admin-status--warn .admin-status-dot { background: var(--medium); }
+.admin-status--bad { background: var(--high-wash); }
+.admin-status--bad .admin-status-dot { background: var(--high); }
+.admin-status--wait .admin-status-dot { background: var(--orange); animation: blink 1.2s ease-in-out infinite; }
+
+.admin-checks { list-style: none; margin: 12px 0 28px; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.admin-checks li { min-width: 0; padding: 12px 14px; border-radius: var(--r-sm); background: var(--surface); }
+.admin-checks span { display: block; font-size: 0.8125rem; color: var(--ink-2); }
+.admin-checks strong { display: flex; align-items: center; gap: 6px; font-weight: 600; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-checks strong::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
+.admin-checks .is-ok strong::before { background: var(--low); }
+.admin-checks .is-warn strong::before { background: var(--medium); }
+.admin-checks .is-bad strong::before { background: var(--high); }
+@media (max-width: 520px) { .admin-checks { grid-template-columns: 1fr; } }
+
+.admin-go { min-height: 60px; font-size: 1.125rem; }
+.admin-more { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 16px 0 0; font-size: 0.9375rem; }
+.link-btn { background: none; border: 0; padding: 0; color: var(--orange-ink); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.link-btn:disabled { color: var(--ink-3); cursor: not-allowed; }
+.link-btn--danger { color: var(--high); }
+
+/* Progress: each demo call as the family will see it */
+.admin-run { list-style: none; margin: 28px 0 0; padding: 0; display: grid; gap: 8px; }
+.admin-call { display: grid; grid-template-columns: 52px 1fr; gap: 14px; align-items: center; padding: 10px 14px 10px 10px; border-radius: var(--r-sm); background: var(--surface); animation: rise 0.4s var(--spring) both; }
+.admin-tile { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 12px; background: var(--fill); color: #fff; font: 700 1.25rem/1 var(--display); font-variant-numeric: tabular-nums; }
+.admin-tile--low { background: var(--low); }
+.admin-tile--medium { background: var(--medium); }
+.admin-tile--high { background: var(--high); }
+.admin-call--failed .admin-tile { background: var(--high-wash); color: var(--high); }
+.admin-spin { width: 18px; height: 18px; border: 2px solid var(--orange); border-right-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.admin-call-main { min-width: 0; display: grid; }
+.admin-call-title { font-weight: 600; line-height: 1.35; }
+.admin-call-state { font-size: 0.875rem; color: var(--ink-2); }
+.admin-call--sending .admin-call-state { color: var(--orange-ink); }
+.admin-call--failed .admin-call-state { color: var(--high); }
+.admin-foot { margin: 40px 0 0; font-size: 0.875rem; color: var(--ink-2); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+@media (prefers-reduced-motion: reduce) {
+  .admin-door-knock i, .admin-status--wait .admin-status-dot, .admin-spin, .admin-call { animation: none; }
+  .admin-door-knock i:first-child { opacity: 0.5; }
+}
