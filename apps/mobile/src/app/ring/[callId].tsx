@@ -1,7 +1,8 @@
 // Grandma-mode ringing screen (update 05). Opened by an owner_ring push tap or by useAutoRing.
 // Demo honesty: tapping รับสาย only records ownerResponse; there is no voice line on this phone.
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Animated as RNAnimated, PanResponder, Pressable, StyleSheet, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -19,7 +20,7 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 
-import * as WebBrowser from "expo-web-browser";
+import { WebView, type WebViewMessageEvent } from "react-native-webview";
 import { setOwnerResponse } from "@/lib/actions";
 import { formatCallerKey } from "@/lib/contract";
 import { useCall, useWhitelist } from "@/lib/hooks";
@@ -27,10 +28,12 @@ import { useLang, type StrKey } from "@/lib/i18n";
 import { RING_TIMEOUT_MS, useRingtone } from "@/lib/ring";
 import { tsToDate } from "@/lib/time";
 import { AppText } from "@/components";
+import { CALL_GRADIENT, CallScreen } from "@/components/call-screen";
+import { CALL_WEBVIEW_PROPS, muteJs, resetAudioRoute, setCallRoute, WEB_DEMO_URL, WEB_PRELOAD } from "@/lib/web-call";
 import { colors, radii, spacing } from "@/theme";
 
 type Response = "answered" | "declined";
-const VOICE_URL = "https://knockfirst.pranakorn.co.th/#voice/";
+const VOICE_URL = `${WEB_DEMO_URL}#voice/`;
 type Phase = "loading" | "notFound" | "ringing" | Response | "missed";
 
 /** Older than this when opened (e.g. a stale notification tap) → shown as missed right away. */
@@ -46,6 +49,13 @@ const AVATAR_BG = "#636366";
 const CALL_RED = "#FF3B30";
 const CALL_GREEN = "#34C759";
 const AVATAR = 144;
+// Realistic iOS call look: teal → navy for an incoming call, slate for a live call, frosted round keys.
+const RING_GRADIENT = ["#1E5D5A", "#123C52", "#0B2238"] as const;
+const GLASS = "rgba(255,255,255,0.16)";
+const SKY = "#8FD3FF";
+const KNOB = 68;
+const TRACK_PAD = 6;
+const KEY = 76;
 const ROUND_BTN = 84;
 
 function close() {
@@ -99,17 +109,11 @@ export default function RingScreen() {
   const respond = async (response: Response) => {
     if (!callId || tapped) return;
     setTapped(response); // stops ringing immediately
+    if (response === "answered") setInVoice(true); // straight into the call screen
     const ok = await setOwnerResponse(callId, response);
-    if (!ok) setTapped(null); // actions already showed an error Alert → let her try again
-    // Live voice with the web caller (WebRTC page on the web demo; Expo Go has no native WebRTC).
-    else if (response === "answered") {
-      setInVoice(true);
-      WebBrowser.openBrowserAsync(`${VOICE_URL}${callId}`)
-        .catch(() => {})
-        .finally(() => {
-          setInVoice(false);
-          close(); // back home once grandma closes the voice page
-        });
+    if (!ok) {
+      setTapped(null); // actions already showed an error Alert → let her try again
+      setInVoice(false);
     }
   };
 
@@ -131,6 +135,9 @@ export default function RingScreen() {
         }}
       />
       <StatusBar style="light" />
+      {phase === "ringing" || inVoice ? (
+        <LinearGradient colors={inVoice ? CALL_GRADIENT : RING_GRADIENT} style={StyleSheet.absoluteFill} />
+      ) : null}
 
       {phase === "loading" ? (
         <View style={styles.center}>
@@ -138,6 +145,15 @@ export default function RingScreen() {
         </View>
       ) : phase === "notFound" ? (
         <NotFound />
+      ) : inVoice && callId ? (
+        <InCall
+          name={callerName}
+          callId={callId}
+          onEnd={() => {
+            setInVoice(false);
+            close();
+          }}
+        />
       ) : phase === "ringing" ? (
         <Ringing name={callerName} onAnswer={() => respond("answered")} onDecline={() => respond("declined")} />
       ) : (
@@ -147,14 +163,91 @@ export default function RingScreen() {
   );
 }
 
+// ---------- In call (live voice with the web caller) ----------
+
+// Runs inside the hidden voice page (web demo #voice/<callId>, WebRTC via PeerJS): taps its start button once,
+// so grandma never taps twice, and reports the page's status line back to the app.
+const VOICE_BRIDGE = `(function () {
+  var started = false, last = null;
+  setInterval(function () {
+    var b = document.querySelector("button"), h = document.querySelector("h1");
+    if (!started && b) { started = true; b.click(); }
+    var t = h ? h.textContent : "";
+    if (t !== last) { last = t; window.ReactNativeWebView.postMessage(t); }
+  }, 300);
+})(); true;`;
+const VOICE_HANG_UP = `(function () { var b = document.querySelector("button"); if (b) b.click(); })(); true;`;
+
+function InCall({ name, callId, onEnd }: { name: string; callId: string; onEnd: () => void }) {
+  const { lang } = useLang();
+  const th = lang !== "en";
+  const web = useRef<WebView>(null);
+  const [status, setStatus] = useState<"connecting" | "talking" | "error">("connecting");
+  const [since, setSince] = useState<number | null>(null);
+  const [speaker, setSpeaker] = useState(false);
+  const [muted, setMuted] = useState(false);
+
+  useEffect(() => {
+    setCallRoute(false); // before the page opens the mic
+    return resetAudioRoute;
+  }, []);
+
+  function onMessage(e: WebViewMessageEvent) {
+    const text = e.nativeEvent.data;
+    if (text.includes("กำลังคุย")) {
+      setStatus("talking");
+      setSince((s) => s ?? Date.now());
+    } else if (text.includes("วางสาย")) onEnd(); // the caller hung up
+    else if (text.includes("ไม่ได้")) setStatus("error");
+  }
+
+  function hangUp() {
+    web.current?.injectJavaScript(VOICE_HANG_UP); // closes the WebRTC call so the caller's page hears it end
+    setTimeout(onEnd, 400);
+  }
+
+  return (
+    <View style={styles.fill}>
+      <WebView
+        ref={web}
+        source={{ uri: `${VOICE_URL}${callId}` }}
+        style={styles.voiceWeb}
+        containerStyle={StyleSheet.absoluteFill}
+        injectedJavaScriptBeforeContentLoaded={WEB_PRELOAD}
+        injectedJavaScript={VOICE_BRIDGE}
+        onMessage={onMessage}
+        onError={() => setStatus("error")}
+        {...CALL_WEBVIEW_PROPS}
+      />
+      <CallScreen
+        name={name}
+        status={status === "error" ? (th ? "เชื่อมต่อเสียงไม่ได้" : "Couldn't connect audio") : th ? "กำลังเชื่อมต่อ…" : "Connecting…"}
+        since={status === "talking" ? since : null}
+        speaker={speaker}
+        muted={muted}
+        onSpeaker={() => {
+          setCallRoute(!speaker);
+          setSpeaker(!speaker);
+        }}
+        onMute={() => {
+          web.current?.injectJavaScript(muteJs(!muted));
+          setMuted(!muted);
+        }}
+        onEnd={hangUp}
+      />
+    </View>
+  );
+}
+
 // ---------- Ringing ----------
 
 function Ringing({ name, onAnswer, onDecline }: { name: string; onAnswer: () => void; onDecline: () => void }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const th = lang !== "en";
   return (
     <View style={styles.fill}>
       <View style={styles.top}>
-        <AppText variant="title" weight="medium" color={FG_MUTED} style={styles.center_text}>
+        <AppText variant="title" weight="medium" color={SKY} style={styles.center_text}>
           {t("ring.incoming")}
         </AppText>
         <AppText
@@ -164,32 +257,118 @@ function Ringing({ name, onAnswer, onDecline }: { name: string; onAnswer: () => 
           numberOfLines={2}
           adjustsFontSizeToFit
           minimumFontScale={0.6}
-          style={[styles.center_text, styles.name]}
+          style={styles.center_text}
           accessibilityRole="header"
         >
           {name}
         </AppText>
       </View>
 
-      <PulsingAvatar />
+      <View style={styles.flex1} />
 
-      <View style={styles.buttons}>
-        <RoundButton
-          label={t("ring.decline")}
-          color={CALL_RED}
+      <View style={styles.smallRow}>
+        <SmallAction icon="chatbubble" label={th ? "ข้อความ" : "Message"} />
+        <SmallAction
           icon="call"
-          iconRotate="135deg"
+          rotate="135deg"
+          label={t("ring.decline")}
           onPress={onDecline}
           a11y={t("ring.declineA11y", { name })}
         />
-        <RoundButton
-          label={t("ring.answer")}
-          color={CALL_GREEN}
-          icon="call"
-          onPress={onAnswer}
-          a11y={t("ring.answerA11y", { name })}
-        />
       </View>
+
+      <SlideToAnswer label={th ? "เลื่อนเพื่อรับสาย" : "slide to answer"} onAnswer={onAnswer} a11y={t("ring.answerA11y", { name })} />
+    </View>
+  );
+}
+
+/** Small frosted action above the slider. No onPress = decorative (dimmed, like iOS). */
+function SmallAction({
+  icon,
+  rotate,
+  label,
+  onPress,
+  a11y,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  rotate?: string;
+  label: string;
+  onPress?: () => void;
+  a11y?: string;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole="button"
+      accessibilityLabel={a11y ?? label}
+      accessibilityState={{ disabled: !onPress }}
+      style={({ pressed }) => [styles.smallCol, !onPress && styles.dim, pressed && styles.pressedDim]}
+    >
+      <View style={styles.smallBtn}>
+        <Ionicons name={icon} size={22} color={FG} style={rotate ? { transform: [{ rotate }] } : undefined} />
+      </View>
+      <AppText variant="small" color={FG}>
+        {label}
+      </AppText>
+    </Pressable>
+  );
+}
+
+/** iOS "slide to answer": drag the white knob to the end. VoiceOver: double-tap answers. */
+function SlideToAnswer({ label, onAnswer, a11y }: { label: string; onAnswer: () => void; a11y: string }) {
+  const [width, setWidth] = useState(0);
+  const max = Math.max(0, width - KNOB - TRACK_PAD * 2);
+  const [x] = useState(() => new RNAnimated.Value(0));
+  const latest = useRef({ max: 0, onAnswer, done: false });
+  useEffect(() => {
+    latest.current.max = max;
+    latest.current.onAnswer = onAnswer;
+  });
+
+  // The handlers only read `latest` when a drag happens, never during render.
+  // eslint-disable-next-line react-hooks/refs
+  const [pan] = useState(() =>
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, g) => {
+        const l = latest.current;
+        if (!l.done) x.setValue(Math.min(Math.max(0, g.dx), l.max));
+      },
+      onPanResponderRelease: (_, g) => {
+        const l = latest.current;
+        if (l.done) return;
+        if (l.max > 0 && g.dx >= l.max * 0.8) {
+          l.done = true;
+          RNAnimated.timing(x, { toValue: l.max, duration: 120, useNativeDriver: true }).start();
+          l.onAnswer();
+        } else {
+          RNAnimated.spring(x, { toValue: 0, useNativeDriver: true }).start();
+        }
+      },
+    }),
+  );
+
+  const labelOpacity = x.interpolate({ inputRange: [0, Math.max(1, max * 0.6)], outputRange: [1, 0], extrapolate: "clamp" });
+
+  return (
+    <View
+      style={styles.slideTrack}
+      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={a11y}
+      onAccessibilityTap={onAnswer}
+    >
+      <RNAnimated.View style={[styles.slideLabel, { opacity: labelOpacity }]} pointerEvents="none">
+        <AppText variant="title" weight="medium" color={FG}>
+          {label}
+        </AppText>
+      </RNAnimated.View>
+      <RNAnimated.View {...pan.panHandlers} style={[styles.knob, { transform: [{ translateX: x }] }]}>
+        <Ionicons name="call" size={30} color={CALL_GREEN} />
+      </RNAnimated.View>
     </View>
   );
 }
@@ -344,6 +523,39 @@ function CloseButton() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: BG, paddingHorizontal: spacing.xl },
   fill: { flex: 1 },
+  voiceWeb: { flex: 1, backgroundColor: "transparent" },
+  flex1: { flex: 1 },
+  dim: { opacity: 0.4 },
+  pressedDim: { opacity: 0.6 },
+  smallRow: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: spacing.lg, marginBottom: spacing.xl },
+  smallCol: { alignItems: "center", gap: spacing.sm, width: 96 },
+  smallBtn: { width: 52, height: 52, borderRadius: 26, backgroundColor: GLASS, alignItems: "center", justifyContent: "center" },
+  slideTrack: {
+    height: KNOB + TRACK_PAD * 2,
+    borderRadius: (KNOB + TRACK_PAD * 2) / 2,
+    backgroundColor: GLASS,
+    justifyContent: "center",
+    padding: TRACK_PAD,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  slideLabel: { position: "absolute", left: KNOB + TRACK_PAD, right: 0, alignItems: "center" },
+  knob: { width: KNOB, height: KNOB, borderRadius: KNOB / 2, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  timerPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderRadius: 20,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+  },
+  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: CALL_GREEN },
+  grid: { flexDirection: "row", flexWrap: "wrap", rowGap: spacing.xl, paddingHorizontal: spacing.sm, paddingBottom: spacing.xl },
+  keyCol: { width: "33.33%", alignItems: "center", gap: spacing.sm },
+  key: { width: KEY, height: KEY, borderRadius: KEY / 2, backgroundColor: GLASS, alignItems: "center", justifyContent: "center" },
+  keyActive: { backgroundColor: "#FFFFFF" },
+  keyDanger: { backgroundColor: CALL_RED },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   centerCol: { alignItems: "center", justifyContent: "center", gap: spacing.lg },
   center_text: { textAlign: "center" },
