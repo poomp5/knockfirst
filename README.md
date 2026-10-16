@@ -4,7 +4,7 @@
     <img src="brand/logo-wordmark.png" alt="KnockFirst" width="380">
   </picture>
 </p>
-
+<!-- Redeploy -->
 <h3 align="center">Strangers knock first. Family opens the door.</h3>
 <p align="center">คนแปลกหน้าต้องเคาะประตูก่อน ลูกหลานเป็นคนเปิด</p>
 
