@@ -126,7 +126,7 @@ export function CallerSide({ state, onCall, onHangUp, myLiveCall }: Props) {
         </div>
       )}
 
-      {myLiveCall && (myLiveCall.status === "screening" || myLiveCall.status === "analyzing") && (
+      {myLiveCall && !state.error && (myLiveCall.status === "screening" || myLiveCall.status === "analyzing") && (
         <p className="note note--alert" role="status"><Icon name="bell" /> {t("guardianAlertedNow")}</p>
       )}
       {state.phase === "blocked" && <p className="note note--error" role="status"><Icon name="block" /> {t("blockedNow")}</p>}

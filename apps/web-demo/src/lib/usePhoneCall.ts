@@ -80,6 +80,7 @@ export function usePhoneCall() {
   const audio = useRef<AudioContext | null>(null);
   const cleanup = useRef<(() => void)[]>([]);
   const ended = useRef(false);
+  const attemptId = useRef(0); // bumped by every start and by hanging up while dialing
   const ringFinish = useRef<((p: "answered" | "declined" | "noAnswer" | "ended") => void) | null>(null);
 
   const runCleanup = useCallback(() => { cleanup.current.splice(0).forEach(f => { try { f(); } catch { /* already stopped */ } }); }, []);
@@ -103,6 +104,19 @@ export function usePhoneCall() {
     try { audio.current ??= new AudioContext(); void audio.current.resume(); } catch { audio.current = null; }
     const tone = tones(audio.current);
     setState({ ...IDLE, phase: "dialing" });
+    const attempt = ++attemptId.current;
+
+    // Ask for the mic BEFORE /call/start: a blocked mic must not create a call or push the family.
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) { setState({ ...IDLE, error: "micMissing" }); return; }
+      const probe = await navigator.mediaDevices.getUserMedia({ audio: true });
+      probe.getTracks().forEach(t => t.stop()); // the voice SDK opens its own stream; permission is now granted
+    } catch (e) {
+      console.warn("[call] mic check failed", e);
+      if (attempt === attemptId.current) setState({ ...IDLE, error: classify(e) });
+      return;
+    }
+    if (attempt !== attemptId.current) return; // hung up while the mic prompt was open
 
     let r: StartReply;
     try {
@@ -189,6 +203,7 @@ export function usePhoneCall() {
   const hangUp = useCallback(() => {
     if (conv.current) { void conv.current.endSession(); return; } // onDisconnect finishes the call
     if (ringFinish.current) { ringFinish.current("ended"); return; }
+    attemptId.current++;
     runCleanup();
     setState(s => ({ ...s, phase: s.phase === "dialing" || s.phase === "connecting" ? "idle" : s.phase }));
   }, [runCleanup]);
