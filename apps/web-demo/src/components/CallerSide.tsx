@@ -16,7 +16,7 @@ const SCENARIOS = [
   { id: "family", icon: "home", label: "role_family", say: "scenario_family_say", number: KNOWN_CALLER },
 ] as const satisfies readonly { id: string; icon: IconName; label: StrKey; say: StrKey; number?: string }[];
 
-export const ACTIVE: ReadonlySet<CallPhase> = new Set(["dialing", "connecting", "talking", "ringing"]);
+export const ACTIVE: ReadonlySet<CallPhase> = new Set(["dialing", "connecting", "talking", "ringing", "answered"]); // answered = live line with grandma
 
 /** Status text + clock, shared by the caller panel and the mobile sticky call bar. */
 export function useStatusLine(state: CallState) {
@@ -142,7 +142,7 @@ export function CallerSide({ state, onCall, onHangUp, myLiveCall }: Props) {
       )}
       {state.phase === "blocked" && <p className="note note--error" role="status"><Icon name="block" /> {t("blockedNow")}</p>}
       {state.phase === "answered" && (
-        <p className="note note--ok" role="status"><Icon name="checkCircle" /> {t("grandmaAnswered")}<br /><small>{t("noVoiceLine")}</small></p>
+        <p className="note note--ok" role="status"><Icon name="checkCircle" /> {t("grandmaAnswered")}</p>
       )}
       {(state.phase === "declined" || state.phase === "noAnswer") && (
         <p className="note note--done" role="status">{state.phase === "declined" ? t("grandmaDeclined") : t("grandmaNoAnswer")}</p>

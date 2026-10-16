@@ -11,6 +11,7 @@ import { usePhoneCall } from "./lib/usePhoneCall";
 import { Icon } from "./components/Icon";
 import { useCalls } from "./lib/useCalls";
 import { AdminPanel } from "./components/AdminPanel";
+import { VoicePage } from "./components/VoicePage";
 
 // Team-only admin page at /admin, #admin or #admin/<token> (see AdminPanel). Not linked from the public page.
 export default function App() {
@@ -21,6 +22,8 @@ export default function App() {
     return () => window.removeEventListener("hashchange", on);
   }, []);
   const admin = window.location.pathname.replace(/\/+$/, "") === "/admin" || hash === "#admin" || hash.startsWith("#admin/");
+  const voice = hash.match(/^#voice\/(.+)$/);
+  if (voice) return <VoicePage callId={decodeURIComponent(voice[1])} />;
   return admin ? <AdminPanel /> : <Demo />;
 }
 

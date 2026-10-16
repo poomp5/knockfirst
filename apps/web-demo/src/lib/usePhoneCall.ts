@@ -7,6 +7,7 @@ import { paths } from "./contract";
 import { FAMILY_ID, SERVER_URL } from "./env";
 import { db, ensureSignedIn } from "./firebase";
 import { stripVoiceTags } from "./speech";
+import { listenAsCaller, type VoiceLink } from "./voice";
 
 export type CallPhase =
   | "idle" | "dialing" | "connecting" | "talking" | "ended"   // unknown number → AI
@@ -80,11 +81,13 @@ export function usePhoneCall() {
   const audio = useRef<AudioContext | null>(null);
   const cleanup = useRef<(() => void)[]>([]);
   const ended = useRef(false);
+  const voice = useRef<VoiceLink | null>(null); // known-caller live line (survives the ring cleanup)
+  const voiceAudio = useRef<HTMLAudioElement | null>(null);
   const attemptId = useRef(0); // bumped by every start and by hanging up while dialing
   const ringFinish = useRef<((p: "answered" | "declined" | "noAnswer" | "ended") => void) | null>(null);
 
   const runCleanup = useCallback(() => { cleanup.current.splice(0).forEach(f => { try { f(); } catch { /* already stopped */ } }); }, []);
-  useEffect(() => () => { runCleanup(); void conv.current?.endSession(); }, [runCleanup]);
+  useEffect(() => () => { runCleanup(); voice.current?.stop(); void conv.current?.endSession(); }, [runCleanup]);
 
   /** Tell the server the call is over (once). Screened calls pass the conversation id for the fallback fetch. */
   const endOnServer = useCallback((callId: string, conversationId?: string) => {
@@ -102,6 +105,7 @@ export function usePhoneCall() {
 
     // Create the AudioContext inside the click, before any await, so browsers allow sound.
     try { audio.current ??= new AudioContext(); void audio.current.resume(); } catch { audio.current = null; }
+    voiceAudio.current ??= new Audio(); // inside the click, so grandma's voice may autoplay later (iOS)
     const tone = tones(audio.current);
     setState({ ...IDLE, phase: "dialing" });
     const attempt = ++attemptId.current;
@@ -141,8 +145,14 @@ export function usePhoneCall() {
 
     if (r.route === "whitelist") {
       setState({ ...base, phase: "ringing", since: Date.now() });
+      // Live voice: grandma's app opens #voice/<callId>, which calls this page. Failure → ring-only demo as before.
+      voice.current?.stop();
+      listenAsCaller(r.callId, voiceAudio.current ?? new Audio(), () => setState(s => (s.callId === r.callId ? { ...s, phase: "answered" } : s)))
+        .then(l => { voice.current = l; })
+        .catch(e => console.warn("[call] live voice unavailable", e));
       cleanup.current.push(tone.ringback());
       const finish = (phase: "answered" | "declined" | "noAnswer" | "ended") => {
+        if (phase !== "answered") { voice.current?.stop(); voice.current = null; }
         runCleanup();
         endOnServer(r.callId);
         setState(s => (s.callId === r.callId ? { ...s, phase } : s));
@@ -209,10 +219,12 @@ export function usePhoneCall() {
 
   const hangUp = useCallback(() => {
     if (conv.current) { void conv.current.endSession(); return; } // onDisconnect finishes the call
+    voice.current?.stop();
+    voice.current = null;
     if (ringFinish.current) { ringFinish.current("ended"); return; }
     attemptId.current++;
     runCleanup();
-    setState(s => ({ ...s, phase: s.phase === "dialing" || s.phase === "connecting" ? "idle" : s.phase }));
+    setState(s => ({ ...s, phase: s.phase === "dialing" || s.phase === "connecting" || s.phase === "answered" ? "idle" : s.phase }));
   }, [runCleanup]);
 
   return { state, start, hangUp };

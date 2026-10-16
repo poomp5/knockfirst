@@ -19,6 +19,7 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 
+import * as WebBrowser from "expo-web-browser";
 import { setOwnerResponse } from "@/lib/actions";
 import { formatCallerKey } from "@/lib/contract";
 import { useCall, useWhitelist } from "@/lib/hooks";
@@ -29,6 +30,7 @@ import { AppText } from "@/components";
 import { colors, radii, spacing } from "@/theme";
 
 type Response = "answered" | "declined";
+const VOICE_URL = "https://knockfirst.pranakorn.co.th/#voice/";
 type Phase = "loading" | "notFound" | "ringing" | Response | "missed";
 
 /** Older than this when opened (e.g. a stale notification tap) → shown as missed right away. */
@@ -96,6 +98,8 @@ export default function RingScreen() {
     setTapped(response); // stops ringing immediately
     const ok = await setOwnerResponse(callId, response);
     if (!ok) setTapped(null); // actions already showed an error Alert → let her try again
+    // Live voice with the web caller (WebRTC page on the web demo; Expo Go has no native WebRTC).
+    else if (response === "answered") WebBrowser.openBrowserAsync(`${VOICE_URL}${callId}`).catch(() => {});
   };
 
   const callerName = (() => {
