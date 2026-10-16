@@ -83,7 +83,7 @@ export async function registerForPush(): Promise<string | null> {
   // Remote push is not available in Expo Go on Android (SDK 53+); local notifications still work.
   if (IS_EXPO_GO) return null;
   const role = getDeviceRole();
-  if (!role) return null;
+  if (!role || role === "caller") return null; // the stranger phone gets no family pushes
   try {
     const { status } = await Notifications.requestPermissionsAsync();
     if (status !== "granted") return null;

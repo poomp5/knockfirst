@@ -95,7 +95,7 @@ export default function RootLayout() {
 /**
  * Mounted only after sign-in, so notification taps (incl. cold start) navigate into a live navigator.
  * Routing by device role uses guards: when a guard turns false the router moves to the first available
- * screen, so null → welcome (chooser), "guardian" → (tabs), "grandma" → grandma home.
+ * screen, so null → welcome (chooser), "guardian" → (tabs), "grandma" → grandma home, "caller" → caller.
  * call/[id] and ring/[callId] are unguarded so deep links / notification taps work in every role.
  */
 function AppStack({ role }: { role: DeviceRole | null }) {
@@ -118,6 +118,9 @@ function AppStack({ role }: { role: DeviceRole | null }) {
       </Stack.Protected>
       <Stack.Protected guard={role === "grandma"}>
         <Stack.Screen name="grandma" options={{ headerShown: false }} />
+      </Stack.Protected>
+      <Stack.Protected guard={role === "caller"}>
+        <Stack.Screen name="caller" options={{ headerShown: false }} />
       </Stack.Protected>
       <Stack.Protected guard={role === null}>
         <Stack.Screen name="welcome" options={{ headerShown: false, gestureEnabled: false }} />

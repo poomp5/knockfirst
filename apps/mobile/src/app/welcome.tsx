@@ -34,6 +34,13 @@ const OPTIONS: Option[] = [
     body: "รับสายจากคนรู้จัก หน้าจอเรียบง่าย ตัวใหญ่",
     tint: colors.switchOn,
   },
+  {
+    role: "caller",
+    icon: "call",
+    title: "คนแปลกหน้า (ทดลองโทร)",
+    body: "โทรหาคุณยายเหมือนเบอร์ที่ไม่รู้จัก ให้ AI รับสาย",
+    tint: colors.blue,
+  },
 ];
 
 export default function WelcomeScreen() {

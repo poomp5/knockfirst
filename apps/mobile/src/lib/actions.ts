@@ -181,7 +181,7 @@ export function setOwnerResponse(callId: string, response: "answered" | "decline
  * REGISTER push token by device role (silent: no haptic, no Alert; used by push.ts).
  * guardian → pushTokens (and out of ownerPushTokens); grandma → ownerPushTokens (and out of pushTokens). One update.
  */
-export async function registerPushToken(token: string, role: DeviceRole = "guardian"): Promise<boolean> {
+export async function registerPushToken(token: string, role: Exclude<DeviceRole, "caller"> = "guardian"): Promise<boolean> {
   try {
     if (USE_MOCKS) {
       mockSetPushTokenRole(token, role);

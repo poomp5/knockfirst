@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export type DeviceRole = "guardian" | "grandma";
+// "caller" = demo-only stranger phone: opens the web caller page to ring grandma's number through the AI.
+export type DeviceRole = "guardian" | "grandma" | "caller";
 
 const STORAGE_KEY = "knockfirst.role";
 
@@ -28,7 +29,7 @@ function subscribe(listener: () => void): () => void {
 const getSnapshot = (): RoleState => state;
 
 function isRole(v: unknown): v is DeviceRole {
-  return v === "guardian" || v === "grandma";
+  return v === "guardian" || v === "grandma" || v === "caller";
 }
 
 /** Reads the saved role once (idempotent). Storage errors count as "never chosen". */

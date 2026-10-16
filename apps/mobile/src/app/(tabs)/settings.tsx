@@ -116,6 +116,12 @@ export default function SettingsScreen() {
       ],
     );
   }
+  function switchToCaller() {
+    Alert.alert("เปลี่ยนเป็นคนแปลกหน้า?", "ใช้เครื่องนี้ทดลองโทรหาคุณยายในนามเบอร์ที่ไม่รู้จัก เปลี่ยนกลับได้ที่มุมขวาบน", [
+      { text: "ยกเลิก", style: "cancel" },
+      { text: "เปลี่ยน", onPress: () => void setRole("caller") },
+    ]);
+  }
 
   // Permission status: on mount and whenever the app returns to foreground (user may change it in system settings).
   useEffect(() => {
@@ -388,6 +394,14 @@ export default function SettingsScreen() {
             title="เปลี่ยนเป็นเครื่องของคุณยาย"
             titleColor={colors.brand}
             onPress={switchToGrandma}
+            chevron={false}
+          />
+          <ListRow
+            icon="call"
+            iconColor={colors.blue}
+            title="เปลี่ยนเป็นคนแปลกหน้า (ทดลองโทร)"
+            titleColor={colors.brand}
+            onPress={switchToCaller}
             chevron={false}
           />
         </ListSection>
