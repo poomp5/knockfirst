@@ -473,9 +473,6 @@ button { font: inherit; color: inherit; }
 .lane-branch { padding: 16px 18px; background: var(--surface); border-radius: 18px; grid-template-columns: minmax(0, 1fr); }
 .lane-branch span { grid-column: 1; }
 @media (max-width: 860px) { .lanes { grid-template-columns: minmax(0, 1fr); } }
-.built { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 8px 22px; margin: clamp(48px, 6vw, 72px) 0 0; color: var(--ink-3); font-size: 0.9375rem; }
-.built span:first-child { color: var(--ink-2); font-weight: 500; }
-.built strong { color: var(--ink); font-weight: 600; }
 
 .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(24px, 4vw, 56px); margin: clamp(48px, 7vw, 88px) 0 0; text-align: center; }
 .metrics > div { display: grid; justify-items: center; align-content: start; gap: 4px; }

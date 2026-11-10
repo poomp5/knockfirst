@@ -23,10 +23,6 @@ export function HowItWorks() {
           <p className="lane-step"><span className="step" aria-hidden="true">4</span><strong>{t("how5")}</strong><span>{t("how5b")}</span></p>
         </li>
       </ol>
-      <p className="built">
-        <span>{t("builtWith")}</span>
-        <strong>ElevenLabs Agents</strong><span>WebRTC</span><span>Claude</span><span>Firebase</span><span>Expo / React Native</span>
-      </p>
     </section>
   );
 }
