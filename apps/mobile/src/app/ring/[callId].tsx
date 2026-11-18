@@ -20,7 +20,7 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 
-import { WebView, type WebViewMessageEvent } from "react-native-webview";
+import { WebView, type WebViewMessageEvent } from "@/lib/webview";
 import { setOwnerResponse } from "@/lib/actions";
 import { formatCallerKey } from "@/lib/contract";
 import { useCall, useWhitelist } from "@/lib/hooks";

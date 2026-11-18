@@ -3,7 +3,8 @@
 // Shared by grandma's ring screen and the stranger phone.
 import { setAudioModeAsync } from "expo-audio";
 
-export const WEB_DEMO_URL = "https://knockfirst.pranakorn.co.th/";
+// EXPO_PUBLIC_WEB_DEMO_URL overrides it for local testing (e.g. a tunnel to a local web demo); keep the trailing slash.
+export const WEB_DEMO_URL = process.env.EXPO_PUBLIC_WEB_DEMO_URL || "https://knockfirst.pranakorn.co.th/";
 
 /** Runs before the page loads: makes it transparent and invisible, and keeps every mic stream it opens (for Mute). */
 export const WEB_PRELOAD = `(function () { try {

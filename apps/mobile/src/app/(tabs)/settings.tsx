@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFamily } from "@/lib/hooks";
 import { updateFamily } from "@/lib/actions";
 import { FAMILY_ID, USE_MOCKS } from "@/lib/firebase";
+import { WEB_DEMO_URL } from "@/lib/web-call";
 import { useDeviceRole } from "@/lib/role";
 import { t as tNow, useLang, type StrKey } from "@/lib/i18n";
 import {
@@ -35,7 +36,6 @@ type Draft = Partial<Record<FormKey, string>>;
 type PermStatus = "granted" | "denied" | "undetermined";
 
 const REPO_URL = "https://github.com/poomp5/knockfirst";
-const WEB_DEMO_URL = "https://knockfirst.pranakorn.co.th/";
 const SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL ?? "";
 const DEV_TAPS = 7;
 const DEFAULT_OWNER_LABEL = "เจ้าของเบอร์นี้";

@@ -175,7 +175,7 @@ export default function InboxScreen() {
               <Skeleton height={88} />
               <Skeleton height={88} />
             </View>
-          ) : error ? null : (
+          ) : error ? undefined : (
             <EmptyState
               icon="shield-checkmark"
               title={t("inbox.empty.title")}

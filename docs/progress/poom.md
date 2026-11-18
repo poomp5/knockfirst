@@ -38,3 +38,10 @@
 | ID | Task | Status | Notes |
 |---|---|---|---|
 | L1 | i18n (`src/lib/i18n.ts`, `useLang`, AsyncStorage, default Thai) + ภาษา / Language switch in Settings | ✅ | All UI strings in `src/app/**` + `src/components/**` go through `t()`; Thai wording unchanged. Contract labels via `statusLabel/redFlagLabel/riskLabel`; English mode shows `summaryEn`/`reasonEn` when present. Checked on web (mock) in both languages: inbox, call detail, settings, grandma, ring. Version 0.3.0 (versionCode 3) → needs Tete to tag `v0.3.0`. |
+
+## After the hackathon (Nov 2026)
+| ID | Task | Status | Notes |
+|---|---|---|---|
+| P1 | Expo SDK 58 (Expo Go on iPhone only runs 58) | ✅ | react-native 0.88, react 19.3, react-native-webview 14 (typed via `src/lib/webview.ts`), `expo-asset` added. `apps/mobile/.npmrc` sets `legacy-peer-deps` to match the lockfile. tsc + lint + expo-doctor clean. |
+| P2 | `EXPO_PUBLIC_WEB_DEMO_URL` overrides the web demo URL | ✅ | Empty → https://knockfirst.pranakorn.co.th/. Used for testing through a tunnel to a local web demo. |
+| P3 | Server moved Railway → Render | ✅ | https://knockfirst-server.onrender.com (free, sleeps after ~15 min). Vercel `VITE_SERVER_URL` updated. ElevenLabs webhook endpoint "KnockFirst server (Render)" created; webhook route now fails closed without a secret. |

@@ -40,7 +40,11 @@
           "defaultChannel": "screened-calls"
         }
       ],
-      "expo-audio"
+      "expo-audio",
+      "expo-image",
+      "expo-status-bar",
+      "expo-web-browser",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,
