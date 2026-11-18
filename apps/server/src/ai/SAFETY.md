@@ -33,7 +33,7 @@ Owner: Sky. Tete pastes the first section into the root README.
 
 | # | Severity | Finding | Fix |
 |---|---|---|---|
-| 1 | ✅ Resolved | `/webhooks/elevenlabs` skipped the HMAC check when `ELEVENLABS_WEBHOOK_SECRET` was empty. | The secret is set on Railway; probes show 401 for unsigned, forged and stale signatures. |
+| 1 | ✅ Resolved | `/webhooks/elevenlabs` skipped the HMAC check when `ELEVENLABS_WEBHOOK_SECRET` was empty. | The route now fails closed: with no secret it returns 401 (cards still arrive via the 25 s API fallback). Secret set on Render; probes show 401 for unsigned, forged and stale signatures. |
 | 2 | ✅ Resolved | `/twilio/voice` accepted unsigned requests. | Twilio was removed in update 05 (`/twilio/*` now 404). |
 | 3 | ✅ Mitigated | `trust proxy: true` trusts `X-Forwarded-For`, which could let a client dodge the per-IP limit (now on `/call/start`). | Live probe: spoofed headers are still limited, because Railway's edge rewrites the header. |
 | 4 | ✅ Resolved | `requireAdmin` compared the admin token with `!==` (not constant-time). | Now `crypto.timingSafeEqual` on equal-length buffers. |

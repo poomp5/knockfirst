@@ -10,7 +10,13 @@ export const elevenlabsRouter = Router();
 
 elevenlabsRouter.post("/webhooks/elevenlabs", raw({ type: "*/*", limit: "5mb" }), async (req, res) => {
   const body = Buffer.isBuffer(req.body) ? req.body.toString("utf8") : "";
-  if (env.ELEVENLABS_WEBHOOK_SECRET && !verifyElevenLabsSignature(body, req.header("elevenlabs-signature"), env.ELEVENLABS_WEBHOOK_SECRET)) {
+  // Fail closed: without a secret anyone could inject transcripts. Calls still complete through the
+  // 25 s ElevenLabs API fallback in services/elevenlabs.ts, which needs no webhook.
+  if (!env.ELEVENLABS_WEBHOOK_SECRET) {
+    console.warn("elevenlabs webhook rejected: ELEVENLABS_WEBHOOK_SECRET is not set");
+    return res.sendStatus(401);
+  }
+  if (!verifyElevenLabsSignature(body, req.header("elevenlabs-signature"), env.ELEVENLABS_WEBHOOK_SECRET)) {
     console.warn("bad elevenlabs signature");
     return res.sendStatus(401);
   }
